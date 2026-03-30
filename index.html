@@ -258,22 +258,27 @@
         const clearTextBtn = document.getElementById('clearTextBtn');
 
         let synth = window.speechSynthesis;
-        let utterance = null;
-        let isPlaying = false;
-        let isPaused = false; // 一時停止状態の管理用
+        let utterance = null; 
+        let isPlaying = false; 
         let currentIndex = 0;
         let segments = [];
         let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v5') || '[]');
         let geminiApiKey = localStorage.getItem('crb_gemini_key') || '';
+        
+        // Bluetooth/iOS対策用：オーディオセッションをアクティブにするための無音オーディオ
+        const silentAudio = new Audio();
+        silentAudio.loop = true;
+        // Data URI for 1 second of silence to keep audio session alive
+        silentAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFRm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==";
 
         apiKeyInput.value = geminiApiKey;
 
-        // --- Bluetooth / iOS Audio Patch ---
-        function unlockAudio() {
-            // iOS等のモバイル環境でBluetooth等への音声を初期化・有効化するための処理
-            const silent = new SpeechSynthesisUtterance("");
-            silent.volume = 0;
-            synth.speak(silent);
+        function keepAudioAlive() {
+            silentAudio.play().catch(e => console.warn("Silent audio failed:", e));
+            // ダミー発話も一度行う
+            const dummy = new SpeechSynthesisUtterance("");
+            dummy.volume = 0;
+            synth.speak(dummy);
         }
 
         document.getElementById('openSettingsBtn').onclick = () => settingsModal.classList.remove('hidden');
@@ -297,6 +302,7 @@
                 clearTextBtn.classList.add('hidden');
             } else {
                 stopSpeech();
+                silentAudio.pause();
                 textInput.classList.remove('hidden');
                 readerDisplay.classList.add('hidden');
                 startReadBtn.classList.remove('hidden');
@@ -316,12 +322,13 @@
         startReadBtn.onclick = () => {
             const raw = textInput.value.trim();
             if (!raw) return showToast("INPUT TEXT FIRST");
-            unlockAudio(); // Bluetooth等の出力をアクティブ化
+            keepAudioAlive(); // 重要：ユーザー操作時にオーディオセッションを確保
             segments = splitIntoSegments(raw);
             currentIndex = 0;
             renderReader();
             setMode('reading');
-            startSpeech();
+            isPlaying = true;
+            speak();
         };
 
         function renderReader() {
@@ -331,7 +338,8 @@
                     if (window.getSelection().toString().trim()) return;
                     stopSpeech();
                     currentIndex = parseInt(el.dataset.idx);
-                    startSpeech();
+                    isPlaying = true;
+                    speak();
                 };
             });
         }
@@ -339,32 +347,30 @@
         document.getElementById('stopBtn').onclick = () => setMode('input');
         clearTextBtn.onclick = () => { textInput.value = ''; showToast("TEXT CLEARED"); };
 
-        function startSpeech() {
-            if (currentIndex >= segments.length) currentIndex = 0;
-            isPlaying = true;
-            isPaused = false;
-            updateIcons();
-            speak();
-        }
-
         function speak() {
             if (!isPlaying || currentIndex >= segments.length) {
                 isPlaying = false;
                 updateIcons();
                 return;
             }
-            synth.cancel(); // 既存の再生を確実に停止
+
+            synth.cancel(); 
+            updateIcons();
+
             const textToRead = segments[currentIndex];
+            // インスタンスを確実に保持（iOSでのガベージコレクション対策）
             utterance = new SpeechSynthesisUtterance(textToRead);
             utterance.lang = 'zh-CN';
             utterance.rate = parseFloat(rateRange.value);
+            
             updateHighlight(currentIndex);
             
             utterance.onend = () => { 
-                if (isPlaying && !isPaused) {
+                if (isPlaying) {
                     currentIndex++;
-                    if (autoModeToggle.checked) speak(); 
-                    else {
+                    if (autoModeToggle.checked && currentIndex < segments.length) {
+                        speak(); 
+                    } else {
                         isPlaying = false;
                         updateIcons();
                     }
@@ -373,8 +379,11 @@
 
             utterance.onerror = (e) => {
                 console.error("Speech Error:", e);
-                isPlaying = false;
-                updateIcons();
+                // 再生中にエラーが出た場合は一度止める
+                if (e.error !== 'interrupted') {
+                    isPlaying = false;
+                    updateIcons();
+                }
             };
 
             synth.speak(utterance);
@@ -382,32 +391,27 @@
 
         playBtn.onclick = () => {
             if (isPlaying) {
-                // 再生中の場合は一時停止
-                synth.pause();
+                // 一時停止（synth.pauseを使わず、状態を切ってcancelする方がiOS/Bluetoothで確実）
                 isPlaying = false;
-                isPaused = true;
-                updateIcons();
-            } else if (isPaused) {
-                // 一時停止中の場合は再開
-                synth.resume();
-                isPlaying = true;
-                isPaused = false;
+                synth.cancel();
                 updateIcons();
             } else {
-                // 停止状態から再生
-                startSpeech();
+                // 再生開始
+                isPlaying = true;
+                keepAudioAlive();
+                if (currentIndex >= segments.length) currentIndex = 0;
+                speak();
             }
         };
 
         function stopSpeech() { 
             isPlaying = false; 
-            isPaused = false;
             synth.cancel(); 
             updateIcons(); 
         }
 
         function updateIcons() {
-            // isPlayingがtrueならPauseアイコン、falseならPlayアイコン
+            // isPlayingの状態をボタンに反映。再生中はPauseアイコン、停止中はPlayアイコン
             document.getElementById('playIcon').classList.toggle('hidden', isPlaying);
             document.getElementById('pauseIcon').classList.toggle('hidden', !isPlaying);
         }
@@ -474,9 +478,12 @@
             openDictionary(word);
         };
 
-        // --- Gemini AI Integration with Retry ---
+        // --- Gemini AI Integration with Detailed Logging ---
         async function callGeminiWithRetry(userPrompt, systemPrompt, retries = 5, delay = 1000) {
             const apiKey = geminiApiKey || ""; 
+            if (!apiKey) {
+                throw new Error("API KEY MISSING: Please set it in settings.");
+            }
             const modelName = "gemini-2.5-flash-preview-09-2025";
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
@@ -505,10 +512,15 @@
                         })
                     });
 
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        const msg = errorData.error?.message || response.statusText;
+                        throw new Error(`API ERROR (${response.status}): ${msg}`);
+                    }
                     const data = await response.json();
                     return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text);
                 } catch (error) {
+                    console.error(`Retry ${i+1} failed:`, error.message);
                     if (i === retries - 1) throw error;
                     await new Promise(res => setTimeout(res, delay));
                     delay *= 2; 
@@ -537,8 +549,8 @@
                 loading.classList.add('hidden');
                 content.classList.remove('hidden');
             } catch (err) {
-                console.error("AI Error:", err);
-                showToast("API ERROR: CHECK KEY & SIGNAL");
+                console.error("AI Error Detailed:", err);
+                showToast(err.message.substring(0, 50)); // 詳細を少しトーストに出す
                 dictModal.classList.add('hidden');
             }
         }
@@ -615,7 +627,7 @@
         function showToast(msg) {
             const t = document.getElementById('toast');
             t.innerText = msg; t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2000);
+            setTimeout(() => t.classList.remove('show'), 3000);
         }
 
         window.onload = renderVocabTable;
