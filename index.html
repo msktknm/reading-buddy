@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v12</title>
+    <title>Chinese Reading Buddy Pro v13</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -60,7 +60,7 @@
         <div class="max-w-5xl mx-auto flex items-center justify-between">
             <h1 class="text-xl font-black text-indigo-600 tracking-tight flex items-center gap-1">
                 <span style="font-family: 'Syne', sans-serif;">READING BUDDY</span>
-                <span class="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded ml-1">PRO v12</span>
+                <span class="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded ml-1">PRO v13</span>
             </h1>
             <button id="openSettingsBtn" class="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -235,6 +235,9 @@
     <div id="toast" class="bg-slate-900 text-white px-8 py-4 rounded-3xl text-[10px] font-black shadow-2xl tracking-widest uppercase">Message</div>
 
     <script>
+        // ---------------------------------------------------------
+        //  GLOBAL STATE & CONFIG
+        // ---------------------------------------------------------
         const apiKey = ""; 
         const textInput = document.getElementById('textInput');
         const readerDisplay = document.getElementById('readerDisplay');
@@ -260,44 +263,65 @@
         let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v5') || '[]');
         let geminiApiKey = localStorage.getItem('crb_gemini_key') || apiKey;
 
-        // --- 強力な外部デバイス出力対策 (iOS FIX) ---
-        let audioCtx = null;
-        let silentSource = null;
+        // ---------------------------------------------------------
+        //  iOS BLUETOOTH / AUDIO ENGINE FIX (Pro v13)
+        // ---------------------------------------------------------
+        let audioContext = null;
+        let keepAliveOscillator = null;
+        let isAudioInitialized = false;
 
-        // オーディオセッションを強固に初期化する関数
-        function forceAudioRouting() {
+        // 常に無音を再生し続けるための初期化（Bluetooth切断防止）
+        function initAudioKeepAlive() {
+            if (isAudioInitialized) return;
             try {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 
-                // 無音を生成し続ける（バックグラウンド維持）
-                if (!silentSource) {
-                    const buffer = audioCtx.createBuffer(1, 1, 22050);
-                    silentSource = audioCtx.createBufferSource();
-                    silentSource.buffer = buffer;
-                    silentSource.loop = true;
-                    silentSource.connect(audioCtx.destination);
-                    silentSource.start();
-                }
+                // 無音のオシレーターを作成
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = 0.0001; // ほぼ無音
+                
+                keepAliveOscillator = audioContext.createOscillator();
+                keepAliveOscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                keepAliveOscillator.start();
+                
+                // iOS Safariは定期的に再開しないとサスペンドされる場合がある
+                setInterval(() => {
+                    if (audioContext.state === 'suspended') audioContext.resume();
+                }, 1000);
 
-                // iOS特有のバグ：SpeechSynthesisの前に短い物理音声を鳴らすとBluetoothに乗りやすい
-                const audio = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFRm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAAD//w==");
-                audio.play().catch(e => console.log("Silent play blocked"));
-
-                // キューを空にして音声エンジンを叩き起こす
-                synth.cancel();
-                const dummy = new SpeechSynthesisUtterance(" ");
-                dummy.volume = 0;
-                synth.speak(dummy);
+                isAudioInitialized = true;
             } catch (e) {
-                console.error("Audio init error", e);
+                console.error("Audio Context failed", e);
             }
         }
 
+        // 読み上げ直前にチャンネルを強制確保する
+        function kickAudioSession() {
+            initAudioKeepAlive();
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            
+            // HTML5 Audioによる物理再生（これがBluetooth出力を奪い取る最も強力な方法）
+            const kick = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFRm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAAD//w==");
+            kick.volume = 0.01;
+            kick.play().catch(() => {});
+            
+            // SpeechSynthesisエンジンのクリア
+            synth.cancel();
+            const wakeup = new SpeechSynthesisUtterance("");
+            wakeup.volume = 0;
+            synth.speak(wakeup);
+        }
+
+        // ユーザーが初めて画面に触れた時に初期化（iOS制限解除）
+        document.addEventListener('touchstart', initAudioKeepAlive, { once: true });
+        document.addEventListener('mousedown', initAudioKeepAlive, { once: true });
+
+        // ---------------------------------------------------------
+        //  UI LOGIC
+        // ---------------------------------------------------------
         apiKeyInput.value = geminiApiKey;
 
         document.getElementById('openSettingsBtn').onclick = () => settingsModal.classList.remove('hidden');
@@ -341,7 +365,7 @@
             const raw = textInput.value.trim();
             if (!raw) return showToast("INPUT TEXT FIRST");
             
-            forceAudioRouting(); // 開始時にオーディオを外部デバイスへ誘導
+            kickAudioSession(); // セッション確保
             
             segments = splitIntoSegments(raw);
             currentIndex = 0;
@@ -354,9 +378,9 @@
         function renderReader() {
             readerDisplay.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
             readerDisplay.querySelectorAll('.segment').forEach(el => {
-                el.onclick = () => {
+                el.onclick = (e) => {
                     if (window.getSelection().toString().trim()) return;
-                    forceAudioRouting();
+                    kickAudioSession();
                     stopSpeech();
                     currentIndex = parseInt(el.dataset.idx);
                     isPlaying = true;
@@ -403,8 +427,7 @@
                 }
             };
 
-            utterance.onerror = (e) => {
-                console.error('Speech Error', e);
+            utterance.onerror = () => {
                 isPlaying = false;
                 updateIcons();
             };
@@ -418,7 +441,7 @@
                 synth.cancel(); 
                 updateIcons(); 
             } else { 
-                forceAudioRouting();
+                kickAudioSession();
                 isPlaying = true; 
                 if (currentIndex >= segments.length) currentIndex = 0; 
                 speak(); 
@@ -445,7 +468,9 @@
             }
         }
 
-        // Timer Logic
+        // ---------------------------------------------------------
+        //  TIMER LOGIC
+        // ---------------------------------------------------------
         let startTime, timerInterval;
         function startTimer() {
             startTime = Date.now();
@@ -479,7 +504,9 @@
             document.getElementById('resultCard').classList.remove('hidden');
         }
 
-        // Dictionary & Selection
+        // ---------------------------------------------------------
+        //  DICTIONARY & SELECTION
+        // ---------------------------------------------------------
         document.addEventListener('selectionchange', () => {
             const sel = window.getSelection().toString().trim();
             if (!sel) { selectionMenu.classList.add('hidden'); return; }
