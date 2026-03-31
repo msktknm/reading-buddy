@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v11</title>
+    <title>Chinese Reading Buddy Pro v12</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -60,7 +60,7 @@
         <div class="max-w-5xl mx-auto flex items-center justify-between">
             <h1 class="text-xl font-black text-indigo-600 tracking-tight flex items-center gap-1">
                 <span style="font-family: 'Syne', sans-serif;">READING BUDDY</span>
-                <span class="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded ml-1">PRO v11</span>
+                <span class="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded ml-1">PRO v12</span>
             </h1>
             <button id="openSettingsBtn" class="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -171,7 +171,7 @@
         </section>
     </main>
 
-    <!-- Modals (Settings, Dictionary) -->
+    <!-- Modals -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[110] flex items-center justify-center p-4">
         <div class="bg-white rounded-[40px] w-full max-w-sm p-8 space-y-6 shadow-2xl relative">
             <h3 class="text-2xl font-black text-slate-800 tracking-tight">Settings</h3>
@@ -254,41 +254,48 @@
         const clearTextBtn = document.getElementById('clearTextBtn');
 
         let synth = window.speechSynthesis;
-        let utterance = null; 
         let isPlaying = false; 
         let currentIndex = 0;
         let segments = [];
         let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v5') || '[]');
         let geminiApiKey = localStorage.getItem('crb_gemini_key') || apiKey;
 
-        // Bluetooth接続維持のためのWeb Audio API
+        // --- 強力な外部デバイス出力対策 (iOS FIX) ---
         let audioCtx = null;
-        let silentBufferSource = null;
+        let silentSource = null;
 
-        // iOS用のオーディオルーティング強制初期化
-        function initAudioContext() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            
-            // 常に無音をストリーミングしてオーディオセッションを維持
-            if (!silentBufferSource) {
-                const buffer = audioCtx.createBuffer(1, 1, 22050);
-                silentBufferSource = audioCtx.createBufferSource();
-                silentBufferSource.buffer = buffer;
-                silentBufferSource.loop = true;
-                silentBufferSource.connect(audioCtx.destination);
-                silentBufferSource.start();
-            }
+        // オーディオセッションを強固に初期化する関数
+        function forceAudioRouting() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                
+                // 無音を生成し続ける（バックグラウンド維持）
+                if (!silentSource) {
+                    const buffer = audioCtx.createBuffer(1, 1, 22050);
+                    silentSource = audioCtx.createBufferSource();
+                    silentSource.buffer = buffer;
+                    silentSource.loop = true;
+                    silentSource.connect(audioCtx.destination);
+                    silentSource.start();
+                }
 
-            // SpeechSynthesisのキューを完全にリセット（iOSの出力先バグを防止）
-            synth.cancel();
-            const dummy = new SpeechSynthesisUtterance("");
-            dummy.volume = 0;
-            synth.speak(dummy);
+                // iOS特有のバグ：SpeechSynthesisの前に短い物理音声を鳴らすとBluetoothに乗りやすい
+                const audio = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFRm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAAD//w==");
+                audio.play().catch(e => console.log("Silent play blocked"));
+
+                // キューを空にして音声エンジンを叩き起こす
+                synth.cancel();
+                const dummy = new SpeechSynthesisUtterance(" ");
+                dummy.volume = 0;
+                synth.speak(dummy);
+            } catch (e) {
+                console.error("Audio init error", e);
+            }
         }
 
         apiKeyInput.value = geminiApiKey;
@@ -334,8 +341,7 @@
             const raw = textInput.value.trim();
             if (!raw) return showToast("INPUT TEXT FIRST");
             
-            // ユーザーアクションのタイミングでオーディオを初期化
-            initAudioContext();
+            forceAudioRouting(); // 開始時にオーディオを外部デバイスへ誘導
             
             segments = splitIntoSegments(raw);
             currentIndex = 0;
@@ -350,7 +356,7 @@
             readerDisplay.querySelectorAll('.segment').forEach(el => {
                 el.onclick = () => {
                     if (window.getSelection().toString().trim()) return;
-                    initAudioContext();
+                    forceAudioRouting();
                     stopSpeech();
                     currentIndex = parseInt(el.dataset.idx);
                     isPlaying = true;
@@ -375,16 +381,14 @@
                 return;
             }
 
-            // 都度キャンセルして確実にBluetoothに出力を向ける
             synth.cancel(); 
             updateIcons();
 
             const textToRead = segments[currentIndex];
-            utterance = new SpeechSynthesisUtterance(textToRead);
+            const utterance = new SpeechSynthesisUtterance(textToRead);
             utterance.lang = 'zh-CN';
             utterance.rate = parseFloat(rateRange.value);
             
-            // ハイライト更新
             updateHighlight(currentIndex);
 
             utterance.onend = () => { 
@@ -399,8 +403,8 @@
                 }
             };
 
-            utterance.onerror = (event) => {
-                console.error('SpeechSynthesis error:', event);
+            utterance.onerror = (e) => {
+                console.error('Speech Error', e);
                 isPlaying = false;
                 updateIcons();
             };
@@ -414,7 +418,7 @@
                 synth.cancel(); 
                 updateIcons(); 
             } else { 
-                initAudioContext();
+                forceAudioRouting();
                 isPlaying = true; 
                 if (currentIndex >= segments.length) currentIndex = 0; 
                 speak(); 
@@ -441,14 +445,15 @@
             }
         }
 
-        // Timer
+        // Timer Logic
         let startTime, timerInterval;
         function startTimer() {
             startTime = Date.now();
             document.getElementById('timerStartBtn').disabled = true;
-            document.getElementById('timerStopBtn').disabled = false;
-            document.getElementById('timerStopBtn').classList.remove('bg-slate-200', 'text-slate-400');
-            document.getElementById('timerStopBtn').classList.add('bg-red-500', 'text-white');
+            const stopBtn = document.getElementById('timerStopBtn');
+            stopBtn.disabled = false;
+            stopBtn.classList.remove('bg-slate-200', 'text-slate-400');
+            stopBtn.classList.add('bg-red-500', 'text-white');
             document.getElementById('resultCard').classList.add('hidden');
             timerInterval = setInterval(() => {
                 const ms = Date.now() - startTime;
@@ -468,12 +473,13 @@
             document.getElementById('finalTime').innerText = (ms / 1000).toFixed(1) + 's';
             document.getElementById('cpmResult').innerText = isFinite(cpm) ? cpm : '-';
             document.getElementById('timerStartBtn').disabled = false;
-            document.getElementById('timerStopBtn').disabled = true;
-            document.getElementById('timerStopBtn').classList.add('bg-slate-200', 'text-slate-400');
+            const stopBtn = document.getElementById('timerStopBtn');
+            stopBtn.disabled = true;
+            stopBtn.classList.add('bg-slate-200', 'text-slate-400');
             document.getElementById('resultCard').classList.remove('hidden');
         }
 
-        // Selection / Dictionary
+        // Dictionary & Selection
         document.addEventListener('selectionchange', () => {
             const sel = window.getSelection().toString().trim();
             if (!sel) { selectionMenu.classList.add('hidden'); return; }
@@ -500,8 +506,7 @@
                     const response = await fetch(url, options);
                     if (response.status === 429) {
                         await new Promise(res => setTimeout(res, delay));
-                        delay *= 2;
-                        continue;
+                        delay *= 2; continue;
                     }
                     return response;
                 } catch (err) {
@@ -535,11 +540,7 @@
                     })
                 });
 
-                if (!response.ok) {
-                    const errData = await response.json().catch(() => ({}));
-                    showToast(`API ERROR ${response.status}`);
-                    throw new Error("API Error");
-                }
+                if (!response.ok) throw new Error("API Error");
 
                 const data = await response.json();
                 const res = JSON.parse(data.candidates[0].content.parts[0].text);
