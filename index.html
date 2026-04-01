@@ -43,27 +43,24 @@
         input:checked + .slider { background-color: #4f46e5; }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        /* Audio & AI Log Monitor */
+        /* Log Panel */
         #logPanel {
             position: fixed;
             bottom: 5px;
             right: 5px;
-            width: 180px;
-            max-height: 150px;
-            font-size: 8px;
-            background: rgba(0,0,0,0.85);
+            width: 200px;
+            max-height: 180px;
+            font-size: 9px;
+            background: rgba(0,0,0,0.9);
             color: #0f0;
             padding: 8px;
             border-radius: 12px;
             z-index: 4000;
             font-family: monospace;
             overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
-        #logPanel div { border-bottom: 1px solid rgba(0,255,0,0.1); padding-bottom: 2px; }
+        #logContent div { border-bottom: 1px solid rgba(0,255,0,0.1); padding: 2px 0; word-break: break-all; }
 
         .spinner {
             border: 3px solid rgba(79, 70, 229, 0.1);
@@ -78,11 +75,10 @@
 </head>
 <body class="min-h-screen pb-20">
 
-    <!-- Debug Log Panel -->
     <div id="logPanel">
-        <div style="color: #fff; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
-            <span>SYSTEM LOG v16</span>
-            <button onclick="copyLogs()" style="background:#444; padding:2px 4px; border-radius:4px; font-size:7px;">COPY</button>
+        <div style="color: #fff; font-weight: bold; display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>v16 LOG</span>
+            <button onclick="copyLogs()" style="background:#444; padding:2px 6px; border-radius:4px; font-size:8px;">COPY ALL</button>
         </div>
         <div id="logContent"></div>
     </div>
@@ -100,7 +96,6 @@
     </nav>
 
     <main class="max-w-4xl mx-auto p-4 space-y-12">
-        <!-- Main Text Input/Reader -->
         <section id="sectionMain" class="space-y-6">
             <div id="textContainer" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[350px] flex flex-col relative">
                 <div class="flex justify-between items-center mb-3">
@@ -136,7 +131,7 @@
                 読み上げを開始する
             </button>
 
-            <div id="playerControls" class="hidden space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div id="playerControls" class="hidden space-y-6">
                 <div class="flex items-center justify-center gap-6">
                     <button id="prevBtn" class="w-14 h-14 flex items-center justify-center bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" /></svg>
@@ -157,7 +152,6 @@
             </div>
         </section>
 
-        <!-- Speed Timer -->
         <section id="sectionTimer" class="space-y-6 text-center">
             <h2 class="text-xs font-black text-slate-300 uppercase tracking-widest">Speed Timer</h2>
             <div class="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100 max-w-md mx-auto">
@@ -167,7 +161,7 @@
                     <button id="timerStopBtn" onclick="stopTimer()" disabled class="bg-slate-200 text-slate-400 px-8 py-3 rounded-2xl font-black cursor-not-allowed transition-all">STOP</button>
                 </div>
             </div>
-            <div id="resultCard" class="hidden bg-indigo-600 rounded-3xl p-6 text-white animate-in slide-in-from-bottom-4 duration-500 max-w-md mx-auto">
+            <div id="resultCard" class="hidden bg-indigo-600 rounded-3xl p-6 text-white max-w-md mx-auto">
                 <div class="grid grid-cols-3 gap-4">
                     <div><div class="text-[10px] font-black opacity-60 uppercase">Chars</div><div id="charCount" class="text-xl font-black">0</div></div>
                     <div><div class="text-[10px] font-black opacity-60 uppercase">Time</div><div id="finalTime" class="text-xl font-black">0s</div></div>
@@ -176,7 +170,6 @@
             </div>
         </section>
 
-        <!-- Vocab List -->
         <section id="sectionVocab" class="space-y-6">
             <div class="flex items-center justify-between">
                 <h2 class="text-2xl font-black tracking-tight">MY LIST</h2>
@@ -185,7 +178,6 @@
                     <button id="clearAllVocab" class="text-xs font-black bg-red-50 text-red-400 px-4 py-2 rounded-xl hover:bg-red-100 transition-colors">CLEAR ALL</button>
                 </div>
             </div>
-
             <div class="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm overflow-x-auto">
                 <table class="w-full text-left min-w-[700px]">
                     <thead class="bg-slate-50 border-b border-slate-100">
@@ -221,13 +213,13 @@
     </div>
 
     <div id="dictModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[40px] w-full max-w-lg p-8 space-y-6 shadow-2xl relative transition-all">
+        <div class="bg-white rounded-[40px] w-full max-w-lg p-8 space-y-6 shadow-2xl relative">
             <button id="closeDictBtn" class="absolute top-6 right-6 text-slate-300 hover:text-slate-600">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             <div id="dictLoading" class="hidden flex flex-col items-center py-10 space-y-4">
                 <div class="spinner"></div>
-                <p class="text-xs font-black text-slate-400 tracking-widest uppercase">Analyzing with AI...</p>
+                <p class="text-xs font-black text-slate-400 tracking-widest uppercase">Analyzing...</p>
             </div>
             <div id="dictContent" class="space-y-6">
                 <div class="flex items-baseline justify-between pt-4 gap-4">
@@ -241,25 +233,16 @@
                     </div>
                 </div>
                 <div class="space-y-4">
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Meaning</label>
-                        <div id="dictMean" class="text-lg font-bold leading-tight text-slate-700">...</div>
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Example Sentence (CN)</label>
-                        <div id="dictExCn" class="text-sm font-bold leading-relaxed text-slate-800 bg-slate-50 p-3 rounded-2xl chinese-text">...</div>
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Translation (JP)</label>
-                        <div id="dictExJp" class="text-xs font-bold leading-relaxed text-slate-400 px-3 italic">...</div>
-                    </div>
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Meaning</label><div id="dictMean" class="text-lg font-bold leading-tight text-slate-700">...</div></div>
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Example (CN)</label><div id="dictExCn" class="text-sm font-bold leading-relaxed text-slate-800 bg-slate-50 p-3 rounded-2xl chinese-text">...</div></div>
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-300 uppercase tracking-widest">JP Translation</label><div id="dictExJp" class="text-xs font-bold leading-relaxed text-slate-400 px-3 italic">...</div></div>
                 </div>
-                <button id="addToListBtn" class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black shadow-xl btn-shadow active:scale-95 transition-all">単語帳に追加</button>
+                <button id="addToListBtn" class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black shadow-xl btn-shadow transition-all">単語帳に追加</button>
             </div>
         </div>
     </div>
 
-    <div id="selectionMenu" class="fixed hidden glass-panel border border-indigo-200 px-6 py-3 rounded-full shadow-2xl z-50 animate-in fade-in zoom-in duration-200">
+    <div id="selectionMenu" class="fixed hidden glass-panel border border-indigo-200 px-6 py-3 rounded-full shadow-2xl z-50">
         <button id="lookUpBtn" class="text-sm font-black text-indigo-600 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
             単語を調べる
@@ -270,72 +253,94 @@
 
     <script>
         // ---------------------------------------------------------
-        //  LOG MONITORING & DEBUGGING
+        //  LOGGING (Pro v16)
         // ---------------------------------------------------------
         function addLog(msg, type = 'info') {
-            const logContent = document.getElementById('logContent');
+            const container = document.getElementById('logContent');
             const entry = document.createElement('div');
             const time = new Date().toLocaleTimeString().split(' ')[0];
-            entry.innerHTML = `<span style="opacity:0.5">[${time}]</span> <span style="color:${type === 'error' ? '#f87171' : '#4ade80'}">${msg}</span>`;
-            logContent.prepend(entry);
-            if (logContent.children.length > 20) logContent.removeChild(logContent.lastChild);
-            console.log(`[${time}] ${msg}`);
+            entry.innerHTML = `<span style="opacity:0.5">[${time}]</span> <span style="color:${type==='error'?'#f87171':'#4ade80'}">${msg}</span>`;
+            container.prepend(entry);
+            if (container.children.length > 30) container.removeChild(container.lastChild);
         }
 
         function copyLogs() {
-            const logs = Array.from(document.getElementById('logContent').children).map(c => c.innerText).join('\n');
+            const text = Array.from(document.getElementById('logContent').children).map(c=>c.innerText).join('\n');
             const el = document.createElement('textarea');
-            el.value = logs; document.body.appendChild(el); el.select();
+            el.value = text; document.body.appendChild(el); el.select();
             document.execCommand('copy'); document.body.removeChild(el);
             showToast("LOGS COPIED");
         }
 
         // ---------------------------------------------------------
-        //  AUDIO & SPEECH ENGINE (Pro v16)
+        //  SPEECH ENGINE (ULTRA STABLE)
         // ---------------------------------------------------------
-        let synth = window.speechSynthesis;
-        let audioContext = null;
-        let isEngineActive = false;
-        let heartbeatInterval = null;
+        const synth = window.speechSynthesis;
+        let isPlaying = false;
+        let currentIndex = 0;
+        let segments = [];
+        let audioCtx = null;
 
-        function initAudioEngine() {
-            if (isEngineActive) return;
-            try {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                // 常時バックグラウンドで微量な音を出し続けてセッションを維持
-                setInterval(() => {
-                    if (audioContext.state === 'suspended') audioContext.resume();
-                    const osc = audioContext.createOscillator();
-                    const gain = audioContext.createGain();
-                    gain.gain.value = 0.00001;
-                    osc.connect(gain);
-                    gain.connect(audioContext.destination);
-                    osc.start(); osc.stop(audioContext.currentTime + 0.01);
-                }, 1000);
-                isEngineActive = true;
-                addLog("Audio Engine Initialized");
-            } catch(e) { addLog("Engine Init Failed: " + e.message, "error"); }
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            addLog("Engine Active");
+        }
+        document.addEventListener('touchstart', initAudio, { once: true });
+
+        function speak() {
+            if (!isPlaying || currentIndex >= segments.length) {
+                isPlaying = false;
+                updateIcons();
+                return;
+            }
+
+            // 重要な変更: 以前の発話を完全にキャンセルしてから一瞬置く
+            synth.cancel();
+            
+            setTimeout(() => {
+                const text = segments[currentIndex];
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-CN';
+                utterance.rate = parseFloat(rateRange.value);
+
+                updateHighlight(currentIndex);
+                addLog(`Start: [${currentIndex}]`);
+
+                utterance.onend = () => {
+                    if (isPlaying) {
+                        currentIndex++;
+                        if (autoModeToggle.checked && currentIndex < segments.length) {
+                            speak();
+                        } else {
+                            isPlaying = false;
+                            updateIcons();
+                        }
+                    }
+                };
+
+                utterance.onerror = (e) => {
+                    // 'interrupted' や 'canceled' は次に進むトリガーにしない（手動停止のため）
+                    addLog(`Error: ${e.error}`, "error");
+                    if (e.error !== 'interrupted' && e.error !== 'canceled') {
+                        isPlaying = false;
+                        updateIcons();
+                    }
+                };
+
+                synth.speak(utterance);
+            }, 50); // キャンセル後の短いバッファ
         }
 
-        // 読み上げが止まらないようにするハートビート
-        function startSpeechHeartbeat() {
-            if (heartbeatInterval) clearInterval(heartbeatInterval);
-            heartbeatInterval = setInterval(() => {
-                if (synth.speaking) {
-                    synth.pause();
-                    synth.resume();
-                }
-            }, 10000); // 10秒ごとにパルスを送る
+        function stopSpeech() {
+            isPlaying = false;
+            synth.cancel();
+            updateIcons();
+            addLog("Stop Requested");
         }
-
-        function stopSpeechHeartbeat() {
-            if (heartbeatInterval) clearInterval(heartbeatInterval);
-        }
-
-        document.addEventListener('touchstart', initAudioEngine, { once: true });
 
         // ---------------------------------------------------------
-        //  GLOBAL STATE
+        //  UI HANDLERS
         // ---------------------------------------------------------
         const textInput = document.getElementById('textInput');
         const readerDisplay = document.getElementById('readerDisplay');
@@ -343,55 +348,21 @@
         const playerControls = document.getElementById('playerControls');
         const playbackOptions = document.getElementById('playbackOptions');
         const autoModeToggle = document.getElementById('autoModeToggle');
-        const modeLabel = document.getElementById('modeLabel');
-        const playBtn = document.getElementById('playBtn');
         const rateRange = document.getElementById('rateRange');
         const vocabTableBody = document.getElementById('vocabTableBody');
         const dictModal = document.getElementById('dictModal');
         const settingsModal = document.getElementById('settingsModal');
         const apiKeyInput = document.getElementById('apiKeyInput');
         const selectionMenu = document.getElementById('selectionMenu');
-        const editHint = document.getElementById('editHint');
-        const clearTextBtn = document.getElementById('clearTextBtn');
 
-        let isPlaying = false; 
-        let currentIndex = 0;
-        let segments = [];
         let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v5') || '[]');
         let geminiApiKey = localStorage.getItem('crb_gemini_key') || "";
-
         apiKeyInput.value = geminiApiKey;
-
-        // ---------------------------------------------------------
-        //  READER LOGIC
-        // ---------------------------------------------------------
-        function setMode(mode) {
-            if (mode === 'reading') {
-                textInput.classList.add('hidden');
-                readerDisplay.classList.remove('hidden');
-                startReadBtn.classList.add('hidden');
-                playerControls.classList.remove('hidden');
-                playbackOptions.classList.remove('hidden');
-                modeLabel.innerText = "Reading Mode";
-                editHint.classList.remove('hidden');
-                clearTextBtn.classList.add('hidden');
-            } else {
-                stopSpeech();
-                textInput.classList.remove('hidden');
-                readerDisplay.classList.add('hidden');
-                startReadBtn.classList.remove('hidden');
-                playerControls.classList.add('hidden');
-                playbackOptions.classList.add('hidden');
-                modeLabel.innerText = "Input Mode";
-                editHint.classList.add('hidden');
-                clearTextBtn.classList.remove('hidden');
-            }
-        }
 
         startReadBtn.onclick = () => {
             const raw = textInput.value.trim();
-            if (!raw) return showToast("INPUT TEXT FIRST");
-            initAudioEngine();
+            if (!raw) return showToast("INPUT TEXT");
+            initAudio();
             segments = raw.match(/([^，。！？；：\n]+[，。！？；：\n]*)/g) || [raw];
             currentIndex = 0;
             renderReader();
@@ -399,6 +370,29 @@
             isPlaying = true;
             speak();
         };
+
+        function setMode(mode) {
+            if (mode === 'reading') {
+                textInput.classList.add('hidden');
+                readerDisplay.classList.remove('hidden');
+                startReadBtn.classList.add('hidden');
+                playerControls.classList.remove('hidden');
+                playbackOptions.classList.remove('hidden');
+                document.getElementById('modeLabel').innerText = "Reading Mode";
+                document.getElementById('editHint').classList.remove('hidden');
+                document.getElementById('clearTextBtn').classList.add('hidden');
+            } else {
+                stopSpeech();
+                textInput.classList.remove('hidden');
+                readerDisplay.classList.add('hidden');
+                startReadBtn.classList.remove('hidden');
+                playerControls.classList.add('hidden');
+                playbackOptions.classList.add('hidden');
+                document.getElementById('modeLabel').innerText = "Input Mode";
+                document.getElementById('editHint').classList.add('hidden');
+                document.getElementById('clearTextBtn').classList.remove('hidden');
+            }
+        }
 
         function renderReader() {
             readerDisplay.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
@@ -413,58 +407,10 @@
             });
         }
 
-        function speak() {
-            if (!isPlaying || currentIndex >= segments.length) {
-                isPlaying = false;
-                updateIcons();
-                stopSpeechHeartbeat();
-                return;
-            }
-
-            synth.cancel();
-            updateIcons();
-
-            const utterance = new SpeechSynthesisUtterance(segments[currentIndex]);
-            utterance.lang = 'zh-CN';
-            utterance.rate = parseFloat(rateRange.value);
-            
-            updateHighlight(currentIndex);
-            startSpeechHeartbeat();
-
-            utterance.onstart = () => addLog(`Speak: [${currentIndex}]`);
-            utterance.onend = () => {
-                if (isPlaying) {
-                    currentIndex++;
-                    if (autoModeToggle.checked && currentIndex < segments.length) {
-                        speak();
-                    } else {
-                        isPlaying = false;
-                        updateIcons();
-                        stopSpeechHeartbeat();
-                    }
-                }
-            };
-            utterance.onerror = (e) => {
-                addLog(`Speech Error: ${e.error}`, "error");
-                isPlaying = false;
-                updateIcons();
-                stopSpeechHeartbeat();
-            };
-
-            synth.speak(utterance);
-        }
-
         playBtn.onclick = () => {
             if (isPlaying) { stopSpeech(); }
             else { isPlaying = true; if (currentIndex >= segments.length) currentIndex = 0; speak(); }
         };
-
-        function stopSpeech() {
-            isPlaying = false;
-            synth.cancel();
-            updateIcons();
-            stopSpeechHeartbeat();
-        }
 
         function updateIcons() {
             document.getElementById('playIcon').classList.toggle('hidden', isPlaying);
@@ -481,7 +427,7 @@
         }
 
         // ---------------------------------------------------------
-        //  DICTIONARY & AI (RELIABILITY FIX)
+        //  DICTIONARY (RELIABILITY UPDATE)
         // ---------------------------------------------------------
         document.addEventListener('selectionchange', () => {
             const sel = window.getSelection().toString().trim();
@@ -503,7 +449,7 @@
         };
 
         async function openDictionary(word) {
-            if (!geminiApiKey) return showToast("SET API KEY FIRST");
+            if (!geminiApiKey) return showToast("API KEY REQUIRED");
             dictModal.classList.remove('hidden');
             const loading = document.getElementById('dictLoading');
             const content = document.getElementById('dictContent');
@@ -518,55 +464,60 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Word analysis for "${word}". Must return JSON.` }] }],
-                        systemInstruction: { parts: [{ text: "JSON ONLY. {pinyin, meaning(JP), english(synonym), exampleCn, exampleJp}" }] },
+                        contents: [{ parts: [{ text: `Analyze Chinese word: "${word}". Output JSON.` }] }],
+                        systemInstruction: { parts: [{ text: "Return JSON ONLY: {pinyin, meaning, english, exampleCn, exampleJp}" }] },
                         generationConfig: { responseMimeType: "application/json" }
                     })
                 });
 
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    addLog(`API HTTP Error: ${response.status}`, "error");
+                    throw new Error(`API ${response.status}`);
+                }
+
                 const data = await response.json();
-                const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                addLog(`AI RAW: ${rawText.substring(0, 50)}...`);
+                const rawResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (!rawResult) {
+                    addLog("Empty API response", "error");
+                    throw new Error("Empty Response");
+                }
 
-                // サニタイズパース: 念のため余分な文字を消す
-                const cleanJson = rawText.replace(/```json|```/g, "").trim();
-                const res = JSON.parse(cleanJson);
-
+                const res = JSON.parse(rawResult);
                 document.getElementById('dictWord').innerText = word;
-                document.getElementById('dictPinyin').innerText = res.pinyin || "";
-                document.getElementById('dictEng').innerText = res.english || "";
-                document.getElementById('dictMean').innerText = res.meaning || "";
-                document.getElementById('dictExCn').innerText = res.exampleCn || "";
-                document.getElementById('dictExJp').innerText = res.exampleJp || "";
+                document.getElementById('dictPinyin').innerText = res.pinyin || "-";
+                document.getElementById('dictEng').innerText = res.english || "-";
+                document.getElementById('dictMean').innerText = res.meaning || "-";
+                document.getElementById('dictExCn').innerText = res.exampleCn || "-";
+                document.getElementById('dictExJp').innerText = res.exampleJp || "-";
                 
                 loading.classList.add('hidden');
                 content.classList.remove('hidden');
-                addLog("AI Parse: Success");
+                addLog(`AI Success: ${word}`);
             } catch (err) {
-                addLog(`AI Error: ${err.message}`, "error");
+                addLog(`Dict Error: ${err.message}`, "error");
                 dictModal.classList.add('hidden');
-                showToast("DICTIONARY FAILED");
+                showToast("FAILED: Check Logs");
             }
         }
 
         document.getElementById('addToListBtn').onclick = () => {
-            const newItem = {
+            vocabList.unshift({
                 word: document.getElementById('dictWord').innerText,
                 pinyin: document.getElementById('dictPinyin').innerText,
                 english: document.getElementById('dictEng').innerText,
                 meaning: document.getElementById('dictMean').innerText,
                 exampleCn: document.getElementById('dictExCn').innerText,
                 exampleJp: document.getElementById('dictExJp').innerText
-            };
-            vocabList.unshift(newItem);
+            });
             saveVocab();
             dictModal.classList.add('hidden');
-            showToast("ADDED TO LIST");
-            addLog(`Vocab Add: ${newItem.word}`);
+            showToast("SAVED");
         };
 
         // ---------------------------------------------------------
-        //  OTHER FUNCTIONS (UI & Storage)
+        //  SUPPORTING FUNCTIONS
         // ---------------------------------------------------------
         function saveVocab() {
             localStorage.setItem('crb_pro_vocab_v5', JSON.stringify(vocabList));
@@ -580,17 +531,15 @@
             } else {
                 document.getElementById('emptyState').classList.add('hidden');
                 vocabTableBody.innerHTML = vocabList.map((item, i) => `
-                    <tr class="border-b border-slate-50 hover:bg-slate-50/50">
+                    <tr class="border-b border-slate-50">
                         <td class="p-4">
                             <div class="font-black text-indigo-600 text-lg cursor-pointer" onclick="openDictionary('${item.word}')">${item.word}</div>
                             <div class="text-[10px] font-bold text-slate-400 italic">${item.pinyin}</div>
                         </td>
                         <td class="p-4 font-bold text-xs text-slate-600">${item.meaning}</td>
                         <td class="p-4">
-                            <div class="space-y-1">
-                                <div class="text-sm text-slate-800 chinese-text">${item.exampleCn}</div>
-                                <div class="text-[10px] text-slate-400">JP: ${item.exampleJp} | EN: ${item.english}</div>
-                            </div>
+                            <div class="text-sm text-slate-800 chinese-text">${item.exampleCn}</div>
+                            <div class="text-[10px] text-slate-400">JP: ${item.exampleJp}</div>
                         </td>
                         <td class="p-4 text-right"><button onclick="deleteItem(${i})" class="text-slate-300 hover:text-red-500 text-xl">×</button></td>
                     </tr>
@@ -600,20 +549,19 @@
 
         window.deleteItem = (i) => { vocabList.splice(i, 1); saveVocab(); };
         document.getElementById('clearAllVocab').onclick = () => { if(confirm("CLEAR ALL?")) { vocabList = []; saveVocab(); } };
-        document.getElementById('closeDictBtn').onclick = () => dictModal.classList.add('hidden');
         document.getElementById('clearTextBtn').onclick = () => { textInput.value = ''; showToast("CLEARED"); };
         document.getElementById('stopBtn').onclick = () => setMode('input');
-
+        document.getElementById('closeDictBtn').onclick = () => dictModal.classList.add('hidden');
+        document.getElementById('prevBtn').onclick = () => { if(currentIndex > 0) { currentIndex--; speak(); } };
+        document.getElementById('openSettingsBtn').onclick = () => settingsModal.classList.remove('hidden');
+        document.getElementById('closeSettingsBtn').onclick = () => settingsModal.classList.add('hidden');
         document.getElementById('saveSettingsBtn').onclick = () => {
             geminiApiKey = apiKeyInput.value.trim();
             localStorage.setItem('crb_gemini_key', geminiApiKey);
             settingsModal.classList.add('hidden');
-            showToast("SETTINGS SAVED");
+            showToast("SAVED");
         };
-        document.getElementById('openSettingsBtn').onclick = () => settingsModal.classList.remove('hidden');
-        document.getElementById('closeSettingsBtn').onclick = () => settingsModal.classList.add('hidden');
 
-        // Export CSV
         document.getElementById('exportCSV').onclick = () => {
             if (vocabList.length === 0) return showToast("EMPTY");
             const csv = vocabList.map(v => `"${v.word}(${v.pinyin})","${v.meaning}","${v.exampleCn} / ${v.exampleJp}"`).join('\n');
@@ -629,7 +577,7 @@
             startTime = Date.now();
             document.getElementById('timerStartBtn').disabled = true;
             document.getElementById('timerStopBtn').disabled = false;
-            document.getElementById('timerStopBtn').className = "bg-red-500 text-white px-8 py-3 rounded-2xl font-black shadow-lg";
+            document.getElementById('timerStopBtn').className = "bg-red-500 text-white px-8 py-3 rounded-2xl font-black";
             document.getElementById('resultCard').classList.add('hidden');
             timerInterval = setInterval(() => {
                 const ms = Date.now() - startTime;
@@ -653,7 +601,7 @@
         function showToast(msg) {
             const t = document.getElementById('toast');
             t.innerText = msg; t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2500);
+            setTimeout(() => t.classList.remove('show'), 2000);
         }
 
         window.onload = renderVocabTable;
