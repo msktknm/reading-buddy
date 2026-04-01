@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v16.8</title>
+    <title>Chinese Reading Buddy Pro v16.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -85,7 +85,7 @@
     <!-- Debug Log Panel -->
     <div id="logPanel" class="minimized" onclick="if(event.target.tagName !== 'BUTTON') this.classList.toggle('minimized')">
         <div class="flex justify-between items-center cursor-pointer">
-            <span class="text-[10px] font-bold text-white uppercase tracking-tighter">System Log v16.8</span>
+            <span class="text-[10px] font-bold text-white uppercase tracking-tighter">System Log v16.9</span>
             <div class="flex gap-2">
                 <button onclick="copyLogs(); event.stopPropagation()" class="bg-slate-700 text-white px-2 py-0.5 rounded text-[9px] hover:bg-slate-600">COPY</button>
             </div>
@@ -96,11 +96,13 @@
     <!-- Header -->
     <nav class="sticky top-0 z-[100] glass-panel border-b border-slate-100 px-6 py-4">
         <div class="max-w-5xl mx-auto flex items-center justify-between">
-            <h1 class="text-xl font-black text-indigo-600 tracking-tight flex items-center gap-3">
-                <span style="font-family: 'Syne', sans-serif;">READING BUDDY</span>
-                <span class="text-[10px] bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full font-bold">PRO v16.8</span>
+            <h1 class="text-xl font-black text-indigo-600 tracking-tight flex items-center gap-2 overflow-hidden">
+                <span style="font-family: 'Syne', sans-serif;" class="whitespace-nowrap">READING BUDDY</span>
+                <!-- バージョンアイコンを旧来のデザインに戻す -->
+                <span class="text-[11px] bg-indigo-600 text-white px-2 py-0.5 rounded font-black flex-shrink-0">PRO v16.9</span>
             </h1>
-            <button id="openSettingsBtn" class="p-3 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full mr-2">
+            <!-- 歯車アイコンの右マージンと縮小防止を強化 -->
+            <button id="openSettingsBtn" class="p-3 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full mr-4 flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </button>
         </div>
@@ -276,7 +278,6 @@
             entry.innerHTML = `<span style="opacity:0.4">[${time}]</span> <span style="color:${type==='error'?'#f87171':(type==='warn'?'#fbbf24':'#4ade80')}">${msg}</span>`;
             container.prepend(entry);
             if (container.children.length > 50) container.removeChild(container.lastChild);
-            console.log(`[${type}] ${msg}`);
         }
 
         function copyLogs() {
@@ -424,13 +425,11 @@
             const range = selection.getRangeAt(0);
             const rect = range.getBoundingClientRect();
             
-            // ポジション計算の安定化
             const menuWidth = 140;
             const menuHeight = 44;
             let left = rect.left + (rect.width / 2) - (menuWidth / 2);
             let top = rect.top + window.scrollY - menuHeight - 15;
 
-            // 画面端のガード
             left = Math.max(10, Math.min(window.innerWidth - menuWidth - 10, left));
             if (top < window.scrollY + 10) top = rect.bottom + window.scrollY + 15;
 
@@ -461,8 +460,8 @@
             addLog(`DICT QUERY: "${word}"`);
 
             try {
-                // モデル指定を gemini-1.5-flash に固定して404を回避
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+                // gemini-2.0-flash を使用
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -472,9 +471,14 @@
                     })
                 });
 
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`HTTP ${response.status}: ${errorData.error?.message || 'Unknown'}`);
+                }
+                
                 const data = await response.json();
-                const res = JSON.parse(data.candidates[0].content.parts[0].text);
+                const resText = data.candidates[0].content.parts[0].text;
+                const res = JSON.parse(resText);
                 
                 document.getElementById('dictWord').innerText = word;
                 document.getElementById('dictPinyin').innerText = res.pinyin;
@@ -489,7 +493,7 @@
             } catch (err) {
                 addLog(`DICT ERROR: ${err.message}`, 'error');
                 modal.classList.add('hidden');
-                showToast("解析失敗。ログを確認してください。");
+                showToast("解析失敗。APIキーまたはネットワークを確認してください。");
             }
         }
 
@@ -599,7 +603,7 @@
 
         window.onload = () => {
             renderVocabTable();
-            addLog("SYSTEM READY v16.8");
+            addLog("SYSTEM READY v16.9");
         };
     </script>
 </body>
