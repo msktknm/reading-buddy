@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v16</title>
+    <title>Chinese Reading Buddy Pro v16.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -43,24 +43,28 @@
         input:checked + .slider { background-color: #4f46e5; }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        /* Log Panel */
+        /* Log Panel (Draggable/Minimizable) */
         #logPanel {
             position: fixed;
-            bottom: 5px;
-            right: 5px;
-            width: 200px;
-            max-height: 180px;
-            font-size: 9px;
+            bottom: 10px;
+            right: 10px;
+            width: 220px;
             background: rgba(0,0,0,0.9);
             color: #0f0;
             padding: 8px;
             border-radius: 12px;
             z-index: 4000;
             font-family: monospace;
-            overflow-y: auto;
             box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            transition: height 0.3s;
+        }
+        #logContent {
+            height: 150px;
+            overflow-y: auto;
+            font-size: 9px;
         }
         #logContent div { border-bottom: 1px solid rgba(0,255,0,0.1); padding: 2px 0; word-break: break-all; }
+        .minimized #logContent { height: 0; overflow: hidden; }
 
         .spinner {
             border: 3px solid rgba(79, 70, 229, 0.1);
@@ -76,9 +80,12 @@
 <body class="min-h-screen pb-20">
 
     <div id="logPanel">
-        <div style="color: #fff; font-weight: bold; display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span>v16 LOG</span>
-            <button onclick="copyLogs()" style="background:#444; padding:2px 6px; border-radius:4px; font-size:8px;">COPY ALL</button>
+        <div style="color: #fff; font-weight: bold; display: flex; justify-content: space-between; margin-bottom: 4px; cursor: pointer;" onclick="document.getElementById('logPanel').classList.toggle('minimized')">
+            <span class="text-[10px]">v16.1 DEBUG LOG</span>
+            <div class="flex gap-2">
+                <button onclick="copyLogs(); event.stopPropagation()" class="bg-[#444] px-1.5 rounded text-[8px]">COPY</button>
+                <span class="text-[8px]">▼</span>
+            </div>
         </div>
         <div id="logContent"></div>
     </div>
@@ -87,7 +94,7 @@
         <div class="max-w-5xl mx-auto flex items-center justify-between">
             <h1 class="text-xl font-black text-indigo-600 tracking-tight flex items-center gap-1">
                 <span style="font-family: 'Syne', sans-serif;">READING BUDDY</span>
-                <span class="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded ml-1">PRO v16</span>
+                <span class="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded ml-1">PRO v16.1</span>
             </h1>
             <button id="openSettingsBtn" class="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -253,7 +260,7 @@
 
     <script>
         // ---------------------------------------------------------
-        //  LOGGING (Pro v16)
+        //  LOGGING & DEBUGGING
         // ---------------------------------------------------------
         function addLog(msg, type = 'info') {
             const container = document.getElementById('logContent');
@@ -261,7 +268,7 @@
             const time = new Date().toLocaleTimeString().split(' ')[0];
             entry.innerHTML = `<span style="opacity:0.5">[${time}]</span> <span style="color:${type==='error'?'#f87171':'#4ade80'}">${msg}</span>`;
             container.prepend(entry);
-            if (container.children.length > 30) container.removeChild(container.lastChild);
+            if (container.children.length > 50) container.removeChild(container.lastChild);
         }
 
         function copyLogs() {
@@ -273,20 +280,13 @@
         }
 
         // ---------------------------------------------------------
-        //  SPEECH ENGINE (ULTRA STABLE)
+        //  SPEECH ENGINE (v16.1 ULTRA RECOVERY)
         // ---------------------------------------------------------
         const synth = window.speechSynthesis;
         let isPlaying = false;
         let currentIndex = 0;
         let segments = [];
-        let audioCtx = null;
-
-        function initAudio() {
-            if (audioCtx) return;
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            addLog("Engine Active");
-        }
-        document.addEventListener('touchstart', initAudio, { once: true });
+        let currentUtterance = null;
 
         function speak() {
             if (!isPlaying || currentIndex >= segments.length) {
@@ -295,48 +295,62 @@
                 return;
             }
 
-            // 重要な変更: 以前の発話を完全にキャンセルしてから一瞬置く
-            synth.cancel();
-            
-            setTimeout(() => {
-                const text = segments[currentIndex];
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'zh-CN';
-                utterance.rate = parseFloat(rateRange.value);
+            // iOS等でキューが詰まるのを防ぐため、一度キャンセルするが、
+            // その後のspeak呼び出しを確実に行うためのフラグ管理を徹底
+            if (synth.speaking) {
+                synth.cancel();
+                // cancel後に少し待たないと次のspeakが無視される場合がある
+                setTimeout(initUtterance, 100);
+                return;
+            }
+            initUtterance();
+        }
 
-                updateHighlight(currentIndex);
-                addLog(`Start: [${currentIndex}]`);
+        function initUtterance() {
+            const text = segments[currentIndex];
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN';
+            utterance.rate = parseFloat(rateRange.value);
+            currentUtterance = utterance;
 
-                utterance.onend = () => {
-                    if (isPlaying) {
-                        currentIndex++;
-                        if (autoModeToggle.checked && currentIndex < segments.length) {
-                            speak();
-                        } else {
-                            isPlaying = false;
-                            updateIcons();
-                        }
-                    }
-                };
+            updateHighlight(currentIndex);
+            addLog(`Start: [${currentIndex}]`);
 
-                utterance.onerror = (e) => {
-                    // 'interrupted' や 'canceled' は次に進むトリガーにしない（手動停止のため）
-                    addLog(`Error: ${e.error}`, "error");
-                    if (e.error !== 'interrupted' && e.error !== 'canceled') {
+            utterance.onstart = () => {
+                // 発話が実際に始まったことを記録
+            };
+
+            utterance.onend = () => {
+                if (isPlaying) {
+                    currentIndex++;
+                    if (autoModeToggle.checked && currentIndex < segments.length) {
+                        speak();
+                    } else {
                         isPlaying = false;
                         updateIcons();
                     }
-                };
+                }
+            };
 
-                synth.speak(utterance);
-            }, 50); // キャンセル後の短いバッファ
+            utterance.onerror = (e) => {
+                // 手動キャンセルの場合は無視
+                if (e.error === 'interrupted' || e.error === 'canceled') {
+                    addLog(`Speech interrupted: [${currentIndex}]`);
+                    return;
+                }
+                addLog(`Error: ${e.error}`, "error");
+                isPlaying = false;
+                updateIcons();
+            };
+
+            synth.speak(utterance);
         }
 
         function stopSpeech() {
+            addLog("Stop Requested");
             isPlaying = false;
             synth.cancel();
             updateIcons();
-            addLog("Stop Requested");
         }
 
         // ---------------------------------------------------------
@@ -362,7 +376,6 @@
         startReadBtn.onclick = () => {
             const raw = textInput.value.trim();
             if (!raw) return showToast("INPUT TEXT");
-            initAudio();
             segments = raw.match(/([^，。！？；：\n]+[，。！？；：\n]*)/g) || [raw];
             currentIndex = 0;
             renderReader();
@@ -402,7 +415,8 @@
                     stopSpeech();
                     currentIndex = parseInt(el.dataset.idx);
                     isPlaying = true;
-                    speak();
+                    // 少し遅延させて確実に前の発話を終わらせる
+                    setTimeout(speak, 50);
                 };
             });
         }
@@ -427,7 +441,7 @@
         }
 
         // ---------------------------------------------------------
-        //  DICTIONARY (RELIABILITY UPDATE)
+        //  DICTIONARY (v16.1 API FIX)
         // ---------------------------------------------------------
         document.addEventListener('selectionchange', () => {
             const sel = window.getSelection().toString().trim();
@@ -457,7 +471,8 @@
             content.classList.add('hidden');
 
             addLog(`AI Query: ${word}`);
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`;
+            // 404対策としてモデル名をより汎用的なものに変更
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
 
             try {
                 const response = await fetch(url, {
@@ -471,7 +486,6 @@
                 });
 
                 if (!response.ok) {
-                    const errorBody = await response.text();
                     addLog(`API HTTP Error: ${response.status}`, "error");
                     throw new Error(`API ${response.status}`);
                 }
@@ -479,10 +493,7 @@
                 const data = await response.json();
                 const rawResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
                 
-                if (!rawResult) {
-                    addLog("Empty API response", "error");
-                    throw new Error("Empty Response");
-                }
+                if (!rawResult) throw new Error("Empty Response");
 
                 const res = JSON.parse(rawResult);
                 document.getElementById('dictWord').innerText = word;
@@ -571,7 +582,6 @@
             showToast("CSV COPIED");
         };
 
-        // Timer
         let startTime, timerInterval;
         function startTimer() {
             startTime = Date.now();
