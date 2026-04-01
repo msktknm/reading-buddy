@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v13</title>
+    <title>Chinese Reading Buddy Pro v14</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -43,6 +43,26 @@
         input:checked + .slider { background-color: #4f46e5; }
         input:checked + .slider:before { transform: translateX(20px); }
 
+        /* Audio Log Panel */
+        #audioMonitor {
+            position: fixed;
+            bottom: 5px;
+            right: 5px;
+            width: 150px;
+            max-height: 100px;
+            font-size: 8px;
+            background: rgba(0,0,0,0.7);
+            color: #0f0;
+            padding: 5px;
+            border-radius: 8px;
+            z-index: 2000;
+            font-family: monospace;
+            pointer-events: none;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
         .spinner {
             border: 3px solid rgba(79, 70, 229, 0.1);
             border-left-color: #4f46e5;
@@ -56,11 +76,13 @@
 </head>
 <body class="min-h-screen pb-20">
 
+    <div id="audioMonitor"></div>
+
     <nav class="sticky top-0 z-50 glass-panel border-b border-slate-100 px-4 py-3 mb-8">
         <div class="max-w-5xl mx-auto flex items-center justify-between">
             <h1 class="text-xl font-black text-indigo-600 tracking-tight flex items-center gap-1">
                 <span style="font-family: 'Syne', sans-serif;">READING BUDDY</span>
-                <span class="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded ml-1">PRO v13</span>
+                <span class="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded ml-1">PRO v14</span>
             </h1>
             <button id="openSettingsBtn" class="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -236,6 +258,70 @@
 
     <script>
         // ---------------------------------------------------------
+        //  DEBUG LOGGER
+        // ---------------------------------------------------------
+        function audioLog(msg) {
+            const m = document.getElementById('audioMonitor');
+            const entry = document.createElement('div');
+            entry.textContent = `[${new Date().toLocaleTimeString().split(' ')[0]}] ${msg}`;
+            m.appendChild(entry);
+            if (m.children.length > 8) m.removeChild(m.firstChild);
+        }
+
+        // ---------------------------------------------------------
+        //  TRIPLE-ACTION AUDIO ENGINE (Pro v14)
+        // ---------------------------------------------------------
+        let audioContext = null;
+        let isAudioEngineStarted = false;
+
+        // 1. 常時セッション維持 (Keep-Alive Loop)
+        function startConstantKeepAlive() {
+            if (isAudioEngineStarted) return;
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // 1秒ごとに無音に近いサイン波を微量流すことでBluetoothの切断を防ぐ
+                setInterval(() => {
+                    if (!audioContext) return;
+                    if (audioContext.state === 'suspended') audioContext.resume();
+                    
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    gain.gain.value = 0.0001;
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    osc.start();
+                    osc.stop(audioContext.currentTime + 0.01); // 10msだけ鳴らす
+                }, 1000);
+
+                isAudioEngineStarted = true;
+                audioLog("Constant Keep-Alive: OK");
+            } catch (e) {
+                audioLog("Keep-Alive Failed: " + e.message);
+            }
+        }
+
+        // 2. 物理オーディオ・キック (Force Route to Headphones)
+        function forceAudioRoute() {
+            // SpeechSynthesis開始の瞬間にHTML5 Audioでホワイトノイズを微量流す
+            // これがiOS SafariでBluetoothデバイスへ音声を送る一番確実なトリガー
+            const kick = new Audio();
+            kick.src = "data:audio/wav;base64,UklGRigAAABXQVZFRm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAAD//w==";
+            kick.volume = 0.05;
+            kick.play().then(() => audioLog("Audio Kick: SUCCESS")).catch(e => audioLog("Audio Kick: BLOCKED"));
+        }
+
+        // 3. エンジンの完全クリア
+        function clearSpeechEngine() {
+            window.speechSynthesis.cancel();
+            audioLog("Engine Cancelled");
+        }
+
+        // 画面のどこかを触った瞬間にエンジン起動
+        document.addEventListener('touchstart', startConstantKeepAlive, { once: true });
+        document.addEventListener('mousedown', startConstantKeepAlive, { once: true });
+
+        // ---------------------------------------------------------
         //  GLOBAL STATE & CONFIG
         // ---------------------------------------------------------
         const apiKey = ""; 
@@ -263,65 +349,6 @@
         let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v5') || '[]');
         let geminiApiKey = localStorage.getItem('crb_gemini_key') || apiKey;
 
-        // ---------------------------------------------------------
-        //  iOS BLUETOOTH / AUDIO ENGINE FIX (Pro v13)
-        // ---------------------------------------------------------
-        let audioContext = null;
-        let keepAliveOscillator = null;
-        let isAudioInitialized = false;
-
-        // 常に無音を再生し続けるための初期化（Bluetooth切断防止）
-        function initAudioKeepAlive() {
-            if (isAudioInitialized) return;
-            try {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // 無音のオシレーターを作成
-                const gainNode = audioContext.createGain();
-                gainNode.gain.value = 0.0001; // ほぼ無音
-                
-                keepAliveOscillator = audioContext.createOscillator();
-                keepAliveOscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                keepAliveOscillator.start();
-                
-                // iOS Safariは定期的に再開しないとサスペンドされる場合がある
-                setInterval(() => {
-                    if (audioContext.state === 'suspended') audioContext.resume();
-                }, 1000);
-
-                isAudioInitialized = true;
-            } catch (e) {
-                console.error("Audio Context failed", e);
-            }
-        }
-
-        // 読み上げ直前にチャンネルを強制確保する
-        function kickAudioSession() {
-            initAudioKeepAlive();
-            if (audioContext && audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-            
-            // HTML5 Audioによる物理再生（これがBluetooth出力を奪い取る最も強力な方法）
-            const kick = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFRm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAAD//w==");
-            kick.volume = 0.01;
-            kick.play().catch(() => {});
-            
-            // SpeechSynthesisエンジンのクリア
-            synth.cancel();
-            const wakeup = new SpeechSynthesisUtterance("");
-            wakeup.volume = 0;
-            synth.speak(wakeup);
-        }
-
-        // ユーザーが初めて画面に触れた時に初期化（iOS制限解除）
-        document.addEventListener('touchstart', initAudioKeepAlive, { once: true });
-        document.addEventListener('mousedown', initAudioKeepAlive, { once: true });
-
-        // ---------------------------------------------------------
-        //  UI LOGIC
-        // ---------------------------------------------------------
         apiKeyInput.value = geminiApiKey;
 
         document.getElementById('openSettingsBtn').onclick = () => settingsModal.classList.remove('hidden');
@@ -365,7 +392,8 @@
             const raw = textInput.value.trim();
             if (!raw) return showToast("INPUT TEXT FIRST");
             
-            kickAudioSession(); // セッション確保
+            startConstantKeepAlive();
+            forceAudioRoute();
             
             segments = splitIntoSegments(raw);
             currentIndex = 0;
@@ -378,9 +406,9 @@
         function renderReader() {
             readerDisplay.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
             readerDisplay.querySelectorAll('.segment').forEach(el => {
-                el.onclick = (e) => {
+                el.onclick = () => {
                     if (window.getSelection().toString().trim()) return;
-                    kickAudioSession();
+                    forceAudioRoute();
                     stopSpeech();
                     currentIndex = parseInt(el.dataset.idx);
                     isPlaying = true;
@@ -405,7 +433,7 @@
                 return;
             }
 
-            synth.cancel(); 
+            clearSpeechEngine();
             updateIcons();
 
             const textToRead = segments[currentIndex];
@@ -415,6 +443,8 @@
             
             updateHighlight(currentIndex);
 
+            utterance.onstart = () => audioLog(`Speaking: [${currentIndex}]`);
+            
             utterance.onend = () => { 
                 if (isPlaying) {
                     currentIndex++;
@@ -427,7 +457,8 @@
                 }
             };
 
-            utterance.onerror = () => {
+            utterance.onerror = (e) => {
+                audioLog("Speech Error: " + e.error);
                 isPlaying = false;
                 updateIcons();
             };
@@ -441,7 +472,7 @@
                 synth.cancel(); 
                 updateIcons(); 
             } else { 
-                kickAudioSession();
+                forceAudioRoute();
                 isPlaying = true; 
                 if (currentIndex >= segments.length) currentIndex = 0; 
                 speak(); 
@@ -468,9 +499,7 @@
             }
         }
 
-        // ---------------------------------------------------------
-        //  TIMER LOGIC
-        // ---------------------------------------------------------
+        // --- Timer Logic ---
         let startTime, timerInterval;
         function startTimer() {
             startTime = Date.now();
@@ -504,9 +533,7 @@
             document.getElementById('resultCard').classList.remove('hidden');
         }
 
-        // ---------------------------------------------------------
-        //  DICTIONARY & SELECTION
-        // ---------------------------------------------------------
+        // --- Dictionary & AI Logic ---
         document.addEventListener('selectionchange', () => {
             const sel = window.getSelection().toString().trim();
             if (!sel) { selectionMenu.classList.add('hidden'); return; }
