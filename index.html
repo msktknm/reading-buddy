@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v17.0</title>
+    <title>Chinese Reading Buddy Pro v18.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -88,28 +88,28 @@
     <!-- Debug Log Panel -->
     <div id="logPanel" class="minimized" onclick="if(event.target.tagName !== 'BUTTON') this.classList.toggle('minimized')">
         <div class="flex justify-between items-center cursor-pointer mb-1">
-            <span class="text-[9px] font-bold text-white uppercase">Log v17.0</span>
+            <span class="text-[9px] font-bold text-white uppercase">Log v18.0</span>
             <button onclick="copyLogs(); event.stopPropagation()" class="bg-slate-700 text-white px-1.5 py-0.5 rounded text-[8px]">COPY</button>
         </div>
         <div id="logContent"></div>
     </div>
 
-    <!-- Header: 横幅いっぱいに広がるよう調整 -->
-    <nav class="sticky top-0 z-[100] glass-panel px-4 py-3 w-full">
-        <div class="flex items-center justify-between w-full">
-            <div class="flex items-center gap-2 overflow-hidden flex-nowrap">
-                <h1 class="text-lg font-black text-indigo-600 tracking-tighter whitespace-nowrap" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[10px] bg-indigo-600 text-white px-1.5 py-0.5 rounded font-black flex-shrink-0">PRO v17.0</span>
+    <!-- Header: 歯車を確実に隠さないための縦レイアウト -->
+    <nav class="sticky top-0 z-[100] glass-panel px-4 py-2 w-full">
+        <div class="flex items-center justify-between w-full max-w-full">
+            <div class="flex flex-col items-start leading-none gap-0.5">
+                <h1 class="text-base sm:text-lg font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
+                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v18.0</span>
             </div>
-            <!-- 歯車を右端に。paddingとmarginで重なりを回避 -->
-            <button id="openSettingsBtn" class="p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full flex-shrink-0 z-[101]">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            <!-- 歯車ボタン: 確実に右端に表示 -->
+            <button id="openSettingsBtn" class="p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </button>
         </div>
     </nav>
 
-    <!-- Main Content: w-full で幅を最大化 -->
-    <main class="w-full px-4 py-4 space-y-8 mt-2">
+    <!-- Main Content -->
+    <main class="w-full px-4 py-4 space-y-8 mt-2 max-w-full">
         <!-- Main Panel -->
         <section id="sectionMain" class="space-y-4">
             <div id="textContainer" class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 min-h-[350px] flex flex-col relative w-full">
@@ -185,7 +185,7 @@
             </div>
         </section>
 
-        <!-- Vocab List: テーブルをレスポンシブに -->
+        <!-- Vocab List -->
         <section id="sectionVocab" class="space-y-4 w-full">
             <div class="flex items-center justify-between px-1">
                 <h2 class="text-xl font-black tracking-tight">MY LIST</h2>
@@ -356,7 +356,7 @@
         const playbackOptions = document.getElementById('playbackOptions');
         const selectionMenu = document.getElementById('selectionMenu');
 
-        let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v17') || '[]');
+        let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v18') || '[]');
         let geminiApiKey = localStorage.getItem('crb_gemini_key') || "";
         document.getElementById('apiKeyInput').value = geminiApiKey;
 
@@ -418,7 +418,7 @@
             }
         }
 
-        // --- 4. SELECTION & DICTIONARY (WITH EXPONENTIAL BACKOFF) ---
+        // --- 4. SELECTION & DICTIONARY (WITH STABLE MODEL) ---
         function handleSelection() {
             const selection = window.getSelection();
             const selStr = selection.toString().trim();
@@ -450,12 +450,15 @@
             openDictionary(word);
         };
 
-        async function fetchGeminiWithRetry(word, apiKey, retries = 5, delay = 1000) {
-            // クォータ対策として最新のプレビューモデルを使用
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        async function fetchGeminiWithRetry(word, apiKey, retries = 3, delay = 1000) {
+            // 最も互換性が高く、v1betaで確実に動く gemini-1.5-flash を採用
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
             const payload = {
-                contents: [{ parts: [{ text: `中国語単語"${word}"を解説して。以下のJSON形式でのみ返答して。他の文字は一切含めないこと。{"pinyin":"ピンイン","meaning":"主な意味","english":"English","exampleCn":"例文(中国語)","exampleJp":"例文の和訳"}` }] }],
-                generationConfig: { responseMimeType: "application/json" }
+                contents: [{ parts: [{ text: `中国語単語"${word}"を日本語で解説してください。必ず以下のJSON形式でのみ返答してください。JSON以外の説明文は含めないでください。\n{"pinyin":"ピンイン","meaning":"主な意味","english":"English","exampleCn":"例文(中国語)","exampleJp":"例文の和訳"}` }] }],
+                generationConfig: { 
+                    responseMimeType: "application/json",
+                    temperature: 0.1
+                }
             };
 
             for (let i = 0; i < retries; i++) {
@@ -467,9 +470,9 @@
                     });
 
                     if (response.status === 429) {
-                        addLog(`RATE LIMIT (429): RETRYING IN ${delay}ms...`, 'warn');
+                        addLog(`RATE LIMIT (429): RETRY IN ${delay}ms`, 'warn');
                         await new Promise(r => setTimeout(r, delay));
-                        delay *= 2; // Exponential backoff
+                        delay *= 2;
                         continue;
                     }
 
@@ -500,15 +503,18 @@
 
             try {
                 const data = await fetchGeminiWithRetry(word, geminiApiKey);
+                if (!data.candidates || !data.candidates[0].content.parts[0].text) {
+                    throw new Error("No data received from AI");
+                }
                 const resText = data.candidates[0].content.parts[0].text;
-                const res = JSON.parse(resText);
+                const res = JSON.parse(resText.trim());
                 
                 document.getElementById('dictWord').innerText = word;
-                document.getElementById('dictPinyin').innerText = res.pinyin;
-                document.getElementById('dictEng').innerText = res.english;
-                document.getElementById('dictMean').innerText = res.meaning;
-                document.getElementById('dictExCn').innerText = res.exampleCn;
-                document.getElementById('dictExJp').innerText = res.exampleJp;
+                document.getElementById('dictPinyin').innerText = res.pinyin || '-';
+                document.getElementById('dictEng').innerText = res.english || '-';
+                document.getElementById('dictMean').innerText = res.meaning || '-';
+                document.getElementById('dictExCn').innerText = res.exampleCn || '-';
+                document.getElementById('dictExJp').innerText = res.exampleJp || '-';
                 
                 loading.classList.add('hidden');
                 content.classList.remove('hidden');
@@ -516,13 +522,13 @@
             } catch (err) {
                 addLog(`FAIL: ${err.message}`, 'error');
                 modal.classList.add('hidden');
-                showToast("解析失敗。別の単語で試すか時間を置いてください。");
+                showToast("解析失敗。API設定または接続を確認してください。");
             }
         }
 
         // --- 5. DATA MANAGEMENT & TIMER ---
         function saveVocab() {
-            localStorage.setItem('crb_pro_vocab_v17', JSON.stringify(vocabList));
+            localStorage.setItem('crb_pro_vocab_v18', JSON.stringify(vocabList));
             renderVocabTable();
         }
 
@@ -624,7 +630,7 @@
 
         window.onload = () => {
             renderVocabTable();
-            addLog("SYSTEM READY v17.0");
+            addLog("SYSTEM READY v18.0");
         };
     </script>
 </body>
