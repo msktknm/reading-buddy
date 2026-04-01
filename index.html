@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v16.7</title>
+    <title>Chinese Reading Buddy Pro v16.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
         :root { --indigo: #4f46e5; --indigo-dark: #3730a3; }
         * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
         body { font-family: 'Noto Sans JP', sans-serif; background: #fdfdfd; color: #1e293b; overflow-x: hidden; }
-        .chinese-text { font-family: 'Noto Sans SC', serif; line-height: 2; }
+        .chinese-text { font-family: 'Noto Sans SC', serif; line-height: 2.2; }
         
         .segment { 
             transition: all 0.2s ease; 
@@ -22,7 +22,6 @@
             border-bottom: 2px solid transparent;
         }
         .segment:hover { background: rgba(79, 70, 229, 0.05); }
-        
         .highlight-active { 
             background: #fde047 !important; 
             border-bottom: 2px solid #eab308; 
@@ -30,10 +29,10 @@
             box-shadow: 0 2px 8px rgba(234, 179, 8, 0.3); 
         }
 
-        .glass-panel { background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+        .glass-panel { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
         .btn-shadow { box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.3); }
         
-        #toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 5000; }
+        #toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 9999; }
         #toast.show { transform: translateX(-50%) translateY(0); }
 
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
@@ -46,28 +45,29 @@
         /* Log Panel */
         #logPanel {
             position: fixed;
-            bottom: 10px;
-            right: 10px;
-            width: 260px;
-            background: rgba(0,0,0,0.92);
-            color: #0f0;
-            padding: 8px;
-            border-radius: 12px;
-            z-index: 4000;
+            bottom: 20px;
+            right: 20px;
+            width: 280px;
+            background: rgba(15, 23, 42, 0.95);
+            color: #4ade80;
+            padding: 12px;
+            border-radius: 16px;
+            z-index: 5000;
             font-family: monospace;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
         }
         #logContent {
-            height: 140px;
+            height: 120px;
             overflow-y: auto;
-            font-size: 9px;
+            font-size: 10px;
             display: flex;
             flex-direction: column-reverse;
+            margin-top: 8px;
         }
-        #logContent div { border-bottom: 1px solid rgba(0,255,0,0.1); padding: 2px 0; word-break: break-all; }
-        .minimized#logPanel { width: 120px; }
-        .minimized #logContent { height: 0; overflow: hidden; padding: 0; }
+        #logContent div { border-bottom: 1px solid rgba(74, 222, 128, 0.1); padding: 4px 0; }
+        .minimized#logPanel { width: 120px; height: 40px; overflow: hidden; }
+        .minimized #logContent { display: none; }
 
         .spinner {
             border: 3px solid rgba(79, 70, 229, 0.1);
@@ -78,50 +78,42 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Floating Selection Menu */
-        #selectionMenu {
-            pointer-events: auto;
-            animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes popIn {
-            from { opacity: 0; transform: scale(0.8) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
     </style>
 </head>
-<body class="min-h-screen pb-20">
+<body class="min-h-screen pb-32">
 
-    <div id="logPanel" class="minimized">
-        <div style="color: #fff; font-weight: bold; display: flex; justify-content: space-between; margin-bottom: 4px; cursor: pointer;" onclick="document.getElementById('logPanel').classList.toggle('minimized')">
-            <span class="text-[10px]">DEBUG v16.7</span>
+    <!-- Debug Log Panel -->
+    <div id="logPanel" class="minimized" onclick="if(event.target.tagName !== 'BUTTON') this.classList.toggle('minimized')">
+        <div class="flex justify-between items-center cursor-pointer">
+            <span class="text-[10px] font-bold text-white uppercase tracking-tighter">System Log v16.8</span>
             <div class="flex gap-2">
-                <button onclick="copyLogs(); event.stopPropagation()" class="bg-[#444] px-1.5 rounded text-[8px]">COPY</button>
-                <span class="text-[8px]">LOG</span>
+                <button onclick="copyLogs(); event.stopPropagation()" class="bg-slate-700 text-white px-2 py-0.5 rounded text-[9px] hover:bg-slate-600">COPY</button>
             </div>
         </div>
         <div id="logContent"></div>
     </div>
 
-    <nav class="sticky top-0 z-[100] glass-panel border-b border-slate-100 px-6 py-3 mb-8">
-        <div class="max-w-5xl mx-auto flex items-center justify-between gap-4">
-            <h1 class="text-lg md:text-xl font-black text-indigo-600 tracking-tight flex items-center flex-wrap gap-2">
+    <!-- Header -->
+    <nav class="sticky top-0 z-[100] glass-panel border-b border-slate-100 px-6 py-4">
+        <div class="max-w-5xl mx-auto flex items-center justify-between">
+            <h1 class="text-xl font-black text-indigo-600 tracking-tight flex items-center gap-3">
                 <span style="font-family: 'Syne', sans-serif;">READING BUDDY</span>
-                <span class="text-[10px] whitespace-nowrap bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">PRO v16.7</span>
+                <span class="text-[10px] bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full font-bold">PRO v16.8</span>
             </h1>
-            <button id="openSettingsBtn" class="flex-shrink-0 p-2.5 text-slate-500 hover:text-indigo-600 transition-colors bg-white shadow-sm border border-slate-100 rounded-full">
+            <button id="openSettingsBtn" class="p-3 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full mr-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </button>
         </div>
     </nav>
 
-    <main class="max-w-4xl mx-auto p-4 space-y-12">
+    <main class="max-w-4xl mx-auto p-4 space-y-12 mt-4">
+        <!-- Main Panel -->
         <section id="sectionMain" class="space-y-6">
-            <div id="textContainer" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[350px] flex flex-col relative">
-                <div class="flex justify-between items-center mb-3">
+            <div id="textContainer" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 min-h-[400px] flex flex-col relative">
+                <div class="flex justify-between items-center mb-4">
                     <label id="modeLabel" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Input Mode</label>
                     <div id="playbackOptions" class="hidden flex items-center gap-3">
-                        <span class="text-[10px] font-bold text-slate-400">一区切りずつ停止</span>
+                        <span class="text-[10px] font-bold text-slate-400">一区切りずつ</span>
                         <label class="switch">
                             <input type="checkbox" id="autoModeToggle" checked>
                             <span class="slider"></span>
@@ -136,154 +128,155 @@
                 </div>
                 
                 <div id="inputFooter" class="flex justify-between mt-4 pt-4 border-t border-slate-50">
-                    <div id="editHint" class="hidden text-[10px] font-bold text-slate-400 self-center">
-                        クリックで再生開始 / なぞって単語検索
+                    <div id="editHint" class="hidden text-[10px] font-bold text-slate-400 self-center uppercase tracking-wider">
+                        クリックで再生 / なぞって検索
                     </div>
                     <div class="flex-1"></div>
-                    <button id="clearTextBtn" class="flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-600 transition-colors py-2 px-3 rounded-xl hover:bg-red-50">
+                    <button id="clearTextBtn" class="flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-600 transition-colors py-2 px-3 rounded-xl">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        テキストを消去
+                        消去
                     </button>
                 </div>
             </div>
 
-            <button id="startReadBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-5 rounded-2xl shadow-xl btn-shadow transition-all active:scale-95 text-lg">
+            <button id="startReadBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-6 rounded-3xl shadow-xl btn-shadow transition-all active:scale-[0.98] text-lg">
                 読み上げを開始する
             </button>
 
+            <!-- Player Controls -->
             <div id="playerControls" class="hidden space-y-6">
-                <div class="flex items-center justify-center gap-6">
-                    <button id="prevBtn" class="w-14 h-14 flex items-center justify-center bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" /></svg>
+                <div class="flex items-center justify-center gap-8">
+                    <button id="prevBtn" class="w-16 h-16 flex items-center justify-center bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" /></svg>
                     </button>
-                    <button id="playBtn" class="w-20 h-20 flex items-center justify-center bg-indigo-600 text-white rounded-full shadow-2xl btn-shadow hover:scale-105 transition-all">
-                        <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        <svg id="pauseIcon" xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    <button id="playBtn" class="w-24 h-24 flex items-center justify-center bg-indigo-600 text-white rounded-full shadow-2xl btn-shadow hover:scale-105 transition-all">
+                        <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <svg id="pauseIcon" xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                     </button>
-                    <button id="stopBtn" class="w-14 h-14 flex items-center justify-center bg-slate-800 text-white rounded-full hover:bg-black transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                    <button id="stopBtn" class="w-16 h-16 flex items-center justify-center bg-slate-800 text-white rounded-full hover:bg-black transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
-
-                <div class="bg-white rounded-2xl p-4 border border-slate-100 flex items-center gap-4 max-w-sm mx-auto">
+                <div class="bg-white rounded-2xl p-5 border border-slate-100 flex items-center gap-6 max-w-md mx-auto">
                     <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Speed</span>
-                    <input type="range" id="rateRange" min="0.4" max="1.4" step="0.1" value="0.7" class="flex-1 h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                    <input type="range" id="rateRange" min="0.4" max="1.4" step="0.1" value="0.7" class="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600">
                 </div>
             </div>
         </section>
 
+        <!-- Timer Panel -->
         <section id="sectionTimer" class="space-y-6 text-center">
             <h2 class="text-xs font-black text-slate-300 uppercase tracking-widest">Speed Timer</h2>
-            <div class="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100 max-w-md mx-auto">
-                <div id="currentTime" class="text-6xl font-black tracking-tighter tabular-nums text-slate-800 mb-6" style="font-family: 'Syne', sans-serif;">00:00.0</div>
+            <div class="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100 max-w-md mx-auto">
+                <div id="currentTime" class="text-7xl font-black tracking-tighter tabular-nums text-slate-800 mb-8" style="font-family: 'Syne', sans-serif;">00:00.0</div>
                 <div class="flex justify-center gap-4">
-                    <button id="timerStartBtn" onclick="startTimer()" class="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black shadow-lg btn-shadow active:scale-95 transition-all">START</button>
-                    <button id="timerStopBtn" onclick="stopTimer()" disabled class="bg-slate-200 text-slate-400 px-8 py-3 rounded-2xl font-black cursor-not-allowed transition-all">STOP</button>
+                    <button id="timerStartBtn" onclick="startTimer()" class="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black shadow-lg btn-shadow active:scale-95 transition-all">START</button>
+                    <button id="timerStopBtn" onclick="stopTimer()" disabled class="bg-slate-200 text-slate-400 px-10 py-4 rounded-2xl font-black cursor-not-allowed">STOP</button>
                 </div>
             </div>
-            <div id="resultCard" class="hidden bg-indigo-600 rounded-3xl p-6 text-white max-w-md mx-auto">
-                <div class="grid grid-cols-3 gap-4">
-                    <div><div class="text-[10px] font-black opacity-60 uppercase">Chars</div><div id="charCount" class="text-xl font-black">0</div></div>
-                    <div><div class="text-[10px] font-black opacity-60 uppercase">Time</div><div id="finalTime" class="text-xl font-black">0s</div></div>
-                    <div><div class="text-[10px] font-black opacity-60 uppercase">CPM</div><div id="cpmResult" class="text-xl font-black">0</div></div>
+            <div id="resultCard" class="hidden bg-indigo-600 rounded-3xl p-8 text-white max-w-md mx-auto shadow-2xl btn-shadow">
+                <div class="grid grid-cols-3 gap-6">
+                    <div><div class="text-[10px] font-black opacity-60 uppercase mb-1">Chars</div><div id="charCount" class="text-2xl font-black">0</div></div>
+                    <div><div class="text-[10px] font-black opacity-60 uppercase mb-1">Time</div><div id="finalTime" class="text-2xl font-black">0s</div></div>
+                    <div><div class="text-[10px] font-black opacity-60 uppercase mb-1">CPM</div><div id="cpmResult" class="text-2xl font-black">0</div></div>
                 </div>
             </div>
         </section>
 
+        <!-- Vocab List -->
         <section id="sectionVocab" class="space-y-6">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between px-2">
                 <h2 class="text-2xl font-black tracking-tight">MY LIST</h2>
                 <div class="flex gap-2">
-                    <button id="exportCSV" class="text-xs font-black bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl hover:bg-indigo-100 transition-colors">CSV COPY</button>
-                    <button id="clearAllVocab" class="text-xs font-black bg-red-50 text-red-400 px-4 py-2 rounded-xl hover:bg-red-100 transition-colors">CLEAR ALL</button>
+                    <button id="exportCSV" class="text-xs font-black bg-indigo-50 text-indigo-600 px-5 py-2.5 rounded-xl hover:bg-indigo-100">CSV COPY</button>
+                    <button id="clearAllVocab" class="text-xs font-black bg-red-50 text-red-400 px-5 py-2.5 rounded-xl hover:bg-red-100">CLEAR ALL</button>
                 </div>
             </div>
             <div class="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm overflow-x-auto">
                 <table class="w-full text-left min-w-[700px]">
                     <thead class="bg-slate-50 border-b border-slate-100">
                         <tr>
-                            <th class="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Word (Pinyin)</th>
-                            <th class="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Meaning (JP)</th>
-                            <th class="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Details (Example & EN)</th>
-                            <th class="p-4 w-10"></th>
+                            <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Word</th>
+                            <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Meaning</th>
+                            <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Details</th>
+                            <th class="p-5 w-12"></th>
                         </tr>
                     </thead>
                     <tbody id="vocabTableBody"></tbody>
                 </table>
-                <div id="emptyState" class="p-16 text-center">
-                    <p class="text-slate-300 font-bold uppercase tracking-widest text-xs">リストは空です</p>
+                <div id="emptyState" class="p-20 text-center">
+                    <p class="text-slate-300 font-bold uppercase tracking-widest text-xs">単語帳は空です</p>
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- Modals -->
-    <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[1000] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[40px] w-full max-w-sm p-8 space-y-6 shadow-2xl relative">
-            <h3 class="text-2xl font-black text-slate-800 tracking-tight">Settings</h3>
-            <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gemini API Key</label>
-                <input type="password" id="apiKeyInput" class="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="Enter API Key...">
-            </div>
-            <div class="flex gap-3 pt-2">
-                <button id="saveSettingsBtn" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black btn-shadow">SAVE</button>
-                <button id="closeSettingsBtn" class="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black">CLOSE</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="dictModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[2000] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[40px] w-full max-w-lg p-8 space-y-6 shadow-2xl relative">
-            <button id="closeDictBtn" class="absolute top-6 right-6 text-slate-300 hover:text-slate-600">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <div id="dictLoading" class="hidden flex flex-col items-center py-10 space-y-4">
-                <div class="spinner"></div>
-                <p class="text-xs font-black text-slate-400 tracking-widest uppercase">Analyzing...</p>
-            </div>
-            <div id="dictContent" class="space-y-6">
-                <div class="flex items-baseline justify-between pt-4 gap-4">
-                    <div class="space-y-1">
-                        <h3 id="dictWord" class="text-5xl font-black text-indigo-600 tracking-tighter">...</h3>
-                        <p id="dictPinyin" class="text-lg font-bold text-slate-400 italic">...</p>
-                    </div>
-                    <div class="text-right">
-                        <label class="text-[10px] font-black text-slate-300 uppercase tracking-widest block">English</label>
-                        <p id="dictEng" class="text-xl font-black text-slate-800 tracking-tight">...</p>
-                    </div>
-                </div>
-                <div class="space-y-4">
-                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Meaning</label><div id="dictMean" class="text-lg font-bold leading-tight text-slate-700">...</div></div>
-                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Example (CN)</label><div id="dictExCn" class="text-sm font-bold leading-relaxed text-slate-800 bg-slate-50 p-3 rounded-2xl chinese-text">...</div></div>
-                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-300 uppercase tracking-widest">JP Translation</label><div id="dictExJp" class="text-xs font-bold leading-relaxed text-slate-400 px-3 italic">...</div></div>
-                </div>
-                <button id="addToListBtn" class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black shadow-xl btn-shadow transition-all">単語帳に追加</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 単語選択フローティングメニュー -->
-    <div id="selectionMenu" class="fixed hidden glass-panel border border-indigo-200 px-6 py-3 rounded-full shadow-2xl z-[3000] cursor-pointer">
+    <!-- Selection Menu -->
+    <div id="selectionMenu" class="fixed hidden glass-panel border border-indigo-200 px-6 py-3 rounded-full shadow-2xl z-[9000] cursor-pointer" style="white-space: nowrap;">
         <button id="lookUpBtn" class="text-sm font-black text-indigo-600 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
             単語を調べる
         </button>
     </div>
 
-    <div id="toast" class="bg-slate-900 text-white px-8 py-4 rounded-3xl text-[10px] font-black shadow-2xl tracking-widest uppercase">Message</div>
+    <!-- Modals -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden z-[10000] flex items-center justify-center p-6">
+        <div class="bg-white rounded-[40px] w-full max-w-md p-8 space-y-6 shadow-2xl relative">
+            <h3 class="text-2xl font-black text-slate-800 tracking-tight">Settings</h3>
+            <div class="space-y-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gemini API Key</label>
+                <input type="password" id="apiKeyInput" class="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="Enter API Key...">
+            </div>
+            <div class="flex gap-4 pt-2">
+                <button id="saveSettingsBtn" class="flex-1 bg-indigo-600 text-white py-5 rounded-2xl font-black shadow-xl btn-shadow">SAVE</button>
+                <button id="closeSettingsBtn" class="flex-1 bg-slate-100 text-slate-600 py-5 rounded-2xl font-black">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dictModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden z-[11000] flex items-center justify-center p-6">
+        <div class="bg-white rounded-[40px] w-full max-w-lg p-10 space-y-6 shadow-2xl relative">
+            <button id="closeDictBtn" class="absolute top-8 right-8 text-slate-300 hover:text-slate-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <div id="dictLoading" class="hidden flex flex-col items-center py-16 space-y-6">
+                <div class="spinner w-12 h-12"></div>
+                <p class="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase">AI Analyzing...</p>
+            </div>
+            <div id="dictContent" class="space-y-8">
+                <div class="flex items-baseline justify-between pt-4">
+                    <div class="space-y-2">
+                        <h3 id="dictWord" class="text-6xl font-black text-indigo-600 tracking-tighter">...</h3>
+                        <p id="dictPinyin" class="text-xl font-bold text-slate-400 italic">...</p>
+                    </div>
+                    <div class="text-right">
+                        <label class="text-[10px] font-black text-slate-300 uppercase tracking-widest block mb-1">English</label>
+                        <p id="dictEng" class="text-2xl font-black text-slate-800">...</p>
+                    </div>
+                </div>
+                <div class="grid gap-6">
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Meaning</label><div id="dictMean" class="text-xl font-bold text-slate-700 leading-tight">...</div></div>
+                    <div class="space-y-2"><label class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Example (CN)</label><div id="dictExCn" class="text-lg font-bold text-slate-800 bg-slate-50 p-4 rounded-2xl chinese-text border border-slate-100">...</div></div>
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-300 uppercase tracking-widest">JP Translation</label><div id="dictExJp" class="text-sm font-bold text-slate-400 italic px-2">...</div></div>
+                </div>
+                <button id="addToListBtn" class="w-full bg-indigo-600 text-white py-6 rounded-2xl font-black shadow-2xl btn-shadow transition-all active:scale-95 text-lg">単語帳に追加する</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="bg-slate-900 text-white px-10 py-5 rounded-3xl text-[10px] font-black shadow-2xl tracking-widest uppercase">Message</div>
 
     <script>
-        // ---------------------------------------------------------
-        //  LOGGING & DEBUGGING
-        // ---------------------------------------------------------
+        // --- 1. SYSTEM LOG ENGINE ---
         function addLog(msg, type = 'info') {
             const container = document.getElementById('logContent');
             if (!container) return;
             const entry = document.createElement('div');
             const time = new Date().toLocaleTimeString('ja-JP', { hour12: false });
-            entry.innerHTML = `<span style="opacity:0.5">[${time}]</span> <span style="color:${type==='error'?'#f87171':(type==='warn'?'#fbbf24':'#4ade80')}">${msg}</span>`;
-            container.appendChild(entry); // Column-reverseなので下に足すと上に表示される
-            if (container.children.length > 100) container.removeChild(container.firstChild);
+            entry.innerHTML = `<span style="opacity:0.4">[${time}]</span> <span style="color:${type==='error'?'#f87171':(type==='warn'?'#fbbf24':'#4ade80')}">${msg}</span>`;
+            container.prepend(entry);
+            if (container.children.length > 50) container.removeChild(container.lastChild);
+            console.log(`[${type}] ${msg}`);
         }
 
         function copyLogs() {
@@ -294,9 +287,7 @@
             showToast("LOGS COPIED");
         }
 
-        // ---------------------------------------------------------
-        //  SPEECH ENGINE (v16.7 STABLE)
-        // ---------------------------------------------------------
+        // --- 2. SPEECH ENGINE ---
         const synth = window.speechSynthesis;
         let isPlaying = false;
         let currentIndex = 0;
@@ -309,86 +300,62 @@
                 updateIcons();
                 return;
             }
-
-            // 既存の音声を確実に止める
             synth.cancel();
-            
-            // 短い猶予を持たせてから開始（ブラウザの排他制御対策）
             setTimeout(() => {
-                startSpeech();
-            }, 100);
-        }
+                const text = segments[currentIndex].trim();
+                if (!text) { currentIndex++; speak(); return; }
 
-        function startSpeech() {
-            const text = segments[currentIndex].trim();
-            if (!text) {
-                addLog(`Skip empty: [${currentIndex}]`, "warn");
-                currentIndex++;
-                speak();
-                return;
-            }
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-CN';
+                utterance.rate = parseFloat(document.getElementById('rateRange').value);
+                activeUtterance = utterance;
 
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'zh-CN';
-            utterance.rate = parseFloat(rateRange.value);
-            activeUtterance = utterance;
-
-            updateHighlight(currentIndex);
-            addLog(`Play start: [${currentIndex}] "${text.substring(0,5)}..."`);
-
-            utterance.onend = () => {
-                addLog(`Finished: [${currentIndex}]`);
-                if (isPlaying) {
-                    currentIndex++;
-                    if (autoModeToggle.checked && currentIndex < segments.length) {
-                        speak();
-                    } else {
-                        isPlaying = false;
-                        updateIcons();
-                    }
-                }
-            };
-
-            utterance.onerror = (e) => {
-                if (e.error === 'interrupted' || e.error === 'canceled') {
-                    addLog(`Speech Interrupted: [${currentIndex}]`, "warn");
-                    return;
-                }
-                addLog(`Speech API Error: ${e.error}`, "error");
-                isPlaying = false;
+                updateHighlight(currentIndex);
                 updateIcons();
-            };
+                addLog(`PLAYING: [${currentIndex}] "${text.substring(0,8)}..."`);
 
-            synth.speak(utterance);
+                utterance.onend = () => {
+                    if (isPlaying) {
+                        currentIndex++;
+                        if (document.getElementById('autoModeToggle').checked && currentIndex < segments.length) {
+                            speak();
+                        } else {
+                            isPlaying = false;
+                            updateIcons();
+                        }
+                    }
+                };
+                utterance.onerror = (e) => {
+                    if (e.error !== 'interrupted') addLog(`SPEECH ERROR: ${e.error}`, 'error');
+                };
+                synth.speak(utterance);
+            }, 50);
         }
 
         function stopSpeech() {
-            addLog("Stop Requested");
             isPlaying = false;
             synth.cancel();
             activeUtterance = null;
             updateIcons();
+            addLog("STOPPED");
         }
 
-        // ---------------------------------------------------------
-        //  UI HANDLERS
-        // ---------------------------------------------------------
+        function updateIcons() {
+            document.getElementById('playIcon').classList.toggle('hidden', isPlaying);
+            document.getElementById('pauseIcon').classList.toggle('hidden', !isPlaying);
+        }
+
+        // --- 3. UI HANDLERS ---
         const textInput = document.getElementById('textInput');
         const readerDisplay = document.getElementById('readerDisplay');
         const startReadBtn = document.getElementById('startReadBtn');
         const playerControls = document.getElementById('playerControls');
         const playbackOptions = document.getElementById('playbackOptions');
-        const autoModeToggle = document.getElementById('autoModeToggle');
-        const rateRange = document.getElementById('rateRange');
-        const vocabTableBody = document.getElementById('vocabTableBody');
-        const dictModal = document.getElementById('dictModal');
-        const settingsModal = document.getElementById('settingsModal');
-        const apiKeyInput = document.getElementById('apiKeyInput');
         const selectionMenu = document.getElementById('selectionMenu');
 
         let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v5') || '[]');
         let geminiApiKey = localStorage.getItem('crb_gemini_key') || "";
-        apiKeyInput.value = geminiApiKey;
+        document.getElementById('apiKeyInput').value = geminiApiKey;
 
         startReadBtn.onclick = () => {
             const raw = textInput.value.trim();
@@ -410,7 +377,6 @@
                 playbackOptions.classList.remove('hidden');
                 document.getElementById('modeLabel').innerText = "Reading Mode";
                 document.getElementById('editHint').classList.remove('hidden');
-                document.getElementById('clearTextBtn').classList.add('hidden');
             } else {
                 stopSpeech();
                 textInput.classList.remove('hidden');
@@ -420,7 +386,6 @@
                 playbackOptions.classList.add('hidden');
                 document.getElementById('modeLabel').innerText = "Input Mode";
                 document.getElementById('editHint').classList.add('hidden');
-                document.getElementById('clearTextBtn').classList.remove('hidden');
             }
         }
 
@@ -436,15 +401,10 @@
             });
         }
 
-        playBtn.onclick = () => {
-            if (isPlaying) { stopSpeech(); }
+        document.getElementById('playBtn').onclick = () => {
+            if (isPlaying) { isPlaying = false; synth.cancel(); updateIcons(); }
             else { isPlaying = true; if (currentIndex >= segments.length) currentIndex = 0; speak(); }
         };
-
-        function updateIcons() {
-            document.getElementById('playIcon').classList.toggle('hidden', isPlaying);
-            document.getElementById('pauseIcon').classList.toggle('hidden', !isPlaying);
-        }
 
         function updateHighlight(idx) {
             readerDisplay.querySelectorAll('.segment').forEach(el => el.classList.remove('highlight-active'));
@@ -455,42 +415,29 @@
             }
         }
 
-        // ---------------------------------------------------------
-        //  SELECTION MENU (FIXED)
-        // ---------------------------------------------------------
+        // --- 4. SELECTION & DICTIONARY ---
         function handleSelection() {
-            const sel = window.getSelection().toString().trim();
-            if (!sel || sel.length > 30) { 
-                selectionMenu.classList.add('hidden'); 
-                return; 
-            }
-
             const selection = window.getSelection();
-            if (selection.rangeCount === 0) return;
+            const selStr = selection.toString().trim();
+            if (!selStr || selStr.length > 20) { selectionMenu.classList.add('hidden'); return; }
 
             const range = selection.getRangeAt(0);
             const rect = range.getBoundingClientRect();
-            const parent = range.commonAncestorContainer.parentElement;
+            
+            // ポジション計算の安定化
+            const menuWidth = 140;
+            const menuHeight = 44;
+            let left = rect.left + (rect.width / 2) - (menuWidth / 2);
+            let top = rect.top + window.scrollY - menuHeight - 15;
 
-            if (readerDisplay.contains(parent) || textInput.contains(parent) || parent === readerDisplay) {
-                const menuWidth = 140;
-                const menuHeight = 44;
-                
-                let left = rect.left + (rect.width / 2) - (menuWidth / 2);
-                let top = rect.top + window.scrollY - menuHeight - 12;
+            // 画面端のガード
+            left = Math.max(10, Math.min(window.innerWidth - menuWidth - 10, left));
+            if (top < window.scrollY + 10) top = rect.bottom + window.scrollY + 15;
 
-                left = Math.max(12, Math.min(window.innerWidth - menuWidth - 12, left));
-                if (top < window.scrollY + 12) {
-                    top = rect.bottom + window.scrollY + 12;
-                }
-
-                selectionMenu.style.left = `${left}px`;
-                selectionMenu.style.top = `${top}px`;
-                selectionMenu.classList.remove('hidden');
-                selectionMenu.dataset.word = sel;
-            } else {
-                selectionMenu.classList.add('hidden');
-            }
+            selectionMenu.style.left = `${left}px`;
+            selectionMenu.style.top = `${top}px`;
+            selectionMenu.classList.remove('hidden');
+            selectionMenu.dataset.word = selStr;
         }
 
         document.addEventListener('mouseup', () => setTimeout(handleSelection, 50));
@@ -502,108 +449,82 @@
             openDictionary(word);
         };
 
-        // ---------------------------------------------------------
-        //  AI DICTIONARY (v16.7 404 FIX)
-        // ---------------------------------------------------------
         async function openDictionary(word) {
-            if (!geminiApiKey) {
-                settingsModal.classList.remove('hidden');
-                return showToast("API KEY REQUIRED");
-            }
-            dictModal.classList.remove('hidden');
+            if (!geminiApiKey) { document.getElementById('settingsModal').classList.remove('hidden'); return; }
+            const modal = document.getElementById('dictModal');
             const loading = document.getElementById('dictLoading');
             const content = document.getElementById('dictContent');
+            
+            modal.classList.remove('hidden');
             loading.classList.remove('hidden');
             content.classList.add('hidden');
-
-            addLog(`AI Query: "${word}"`);
-            
-            // モデル名を指定せず最新を模索するか、previewを使用
-            const model = "gemini-2.5-flash-preview-09-2025";
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
+            addLog(`DICT QUERY: "${word}"`);
 
             try {
+                // モデル指定を gemini-1.5-flash に固定して404を回避
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ 
-                            parts: [{ 
-                                text: `中国語の単語 "${word}" を解析してください。以下のJSONフォーマットで返してください。
-                                {
-                                  "pinyin": "ピンイン",
-                                  "meaning": "日本語での主要な意味",
-                                  "english": "English equivalent",
-                                  "exampleCn": "この単語を使った短い例文(中国語)",
-                                  "exampleJp": "例文の日本語訳"
-                                }
-                                返答はJSONのみにしてください。マークダウン等も不要です。` 
-                            }] 
-                        }],
-                        generationConfig: { 
-                            responseMimeType: "application/json"
-                        }
-                    })
-                });
-
-                if (!response.ok) {
-                    const errBody = await response.json().catch(() => ({}));
-                    addLog(`API Error ${response.status}: ${JSON.stringify(errBody).substring(0, 50)}`, "error");
-                    
-                    // 404の場合、フォールバックモデルを試す
-                    if (response.status === 404) {
-                        addLog("404 Error: Retrying with gemini-1.5-flash...", "warn");
-                        return retryWithFlash(word); 
-                    }
-                    throw new Error(errBody.error?.message || `HTTP ${response.status}`);
-                }
-
-                const data = await response.json();
-                processAiResponse(data, word);
-                
-            } catch (err) {
-                addLog(`Dict Fatal: ${err.message}`, "error");
-                dictModal.classList.add('hidden');
-                showToast("解析エラーが発生しました。ログを確認してください。");
-            }
-        }
-
-        async function retryWithFlash(word) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Provide JSON analysis for Chinese word "${word}" with keys: pinyin, meaning, english, exampleCn, exampleJp.` }] }],
+                        contents: [{ parts: [{ text: `中国語単語"${word}"を解説して。以下のJSON形式でのみ返答して。他の文字は一切含めないこと。{"pinyin":"ピンイン","meaning":"主な意味","english":"English","exampleCn":"例文(中国語)","exampleJp":"例文の和訳"}` }] }],
                         generationConfig: { responseMimeType: "application/json" }
                     })
                 });
-                if (!response.ok) throw new Error(`Retry failed: ${response.status}`);
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
-                processAiResponse(data, word);
+                const res = JSON.parse(data.candidates[0].content.parts[0].text);
+                
+                document.getElementById('dictWord').innerText = word;
+                document.getElementById('dictPinyin').innerText = res.pinyin;
+                document.getElementById('dictEng').innerText = res.english;
+                document.getElementById('dictMean').innerText = res.meaning;
+                document.getElementById('dictExCn').innerText = res.exampleCn;
+                document.getElementById('dictExJp').innerText = res.exampleJp;
+                
+                loading.classList.add('hidden');
+                content.classList.remove('hidden');
+                addLog(`DICT SUCCESS: ${word}`);
             } catch (err) {
-                addLog(`Retry Error: ${err.message}`, "error");
-                dictModal.classList.add('hidden');
+                addLog(`DICT ERROR: ${err.message}`, 'error');
+                modal.classList.add('hidden');
+                showToast("解析失敗。ログを確認してください。");
             }
         }
 
-        function processAiResponse(data, word) {
-            const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            const res = JSON.parse(resultText);
-            
-            document.getElementById('dictWord').innerText = word;
-            document.getElementById('dictPinyin').innerText = res.pinyin || "N/A";
-            document.getElementById('dictEng').innerText = res.english || "N/A";
-            document.getElementById('dictMean').innerText = res.meaning || "解析失敗";
-            document.getElementById('dictExCn').innerText = res.exampleCn || "";
-            document.getElementById('dictExJp').innerText = res.exampleJp || "";
-            
-            document.getElementById('dictLoading').classList.add('hidden');
-            document.getElementById('dictContent').classList.remove('hidden');
-            addLog(`AI Success: ${word}`);
+        // --- 5. DATA MANAGEMENT & TIMER ---
+        function saveVocab() {
+            localStorage.setItem('crb_pro_vocab_v5', JSON.stringify(vocabList));
+            renderVocabTable();
         }
 
+        function renderVocabTable() {
+            const body = document.getElementById('vocabTableBody');
+            const empty = document.getElementById('emptyState');
+            if (vocabList.length === 0) {
+                empty.classList.remove('hidden');
+                body.innerHTML = '';
+            } else {
+                empty.classList.add('hidden');
+                body.innerHTML = vocabList.map((v, i) => `
+                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-all">
+                        <td class="p-5">
+                            <div class="font-black text-indigo-600 text-xl cursor-pointer" onclick="openDictionary('${v.word}')">${v.word}</div>
+                            <div class="text-[10px] font-bold text-slate-400 italic">${v.pinyin}</div>
+                        </td>
+                        <td class="p-5 font-bold text-slate-600">${v.meaning}</td>
+                        <td class="p-5">
+                            <div class="text-sm text-slate-800 chinese-text">${v.exampleCn}</div>
+                            <div class="text-[10px] text-slate-400 mt-1 italic">${v.exampleJp}</div>
+                        </td>
+                        <td class="p-5 text-right"><button onclick="deleteItem(${i})" class="text-slate-300 hover:text-red-500 text-2xl">×</button></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        window.deleteItem = (i) => { vocabList.splice(i, 1); saveVocab(); };
         document.getElementById('addToListBtn').onclick = () => {
             vocabList.unshift({
                 word: document.getElementById('dictWord').innerText,
@@ -614,55 +535,8 @@
                 exampleJp: document.getElementById('dictExJp').innerText
             });
             saveVocab();
-            dictModal.classList.add('hidden');
-            showToast("LIST UPDATED");
-        };
-
-        // ---------------------------------------------------------
-        //  UTILITIES
-        // ---------------------------------------------------------
-        function saveVocab() {
-            localStorage.setItem('crb_pro_vocab_v5', JSON.stringify(vocabList));
-            renderVocabTable();
-        }
-
-        function renderVocabTable() {
-            if (vocabList.length === 0) {
-                document.getElementById('emptyState').classList.remove('hidden');
-                vocabTableBody.innerHTML = '';
-            } else {
-                document.getElementById('emptyState').classList.add('hidden');
-                vocabTableBody.innerHTML = vocabList.map((item, i) => `
-                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                        <td class="p-4">
-                            <div class="font-black text-indigo-600 text-lg cursor-pointer" onclick="openDictionary('${item.word}')">${item.word}</div>
-                            <div class="text-[10px] font-bold text-slate-400 italic">${item.pinyin}</div>
-                        </td>
-                        <td class="p-4 font-bold text-xs text-slate-600">${item.meaning}</td>
-                        <td class="p-4">
-                            <div class="text-sm text-slate-800 chinese-text">${item.exampleCn}</div>
-                            <div class="text-[10px] text-slate-400 mt-1">和訳: ${item.exampleJp}</div>
-                        </td>
-                        <td class="p-4 text-right"><button onclick="deleteItem(${i})" class="text-slate-300 hover:text-red-500 text-xl">×</button></td>
-                    </tr>
-                `).join('');
-            }
-        }
-
-        window.deleteItem = (i) => { vocabList.splice(i, 1); saveVocab(); };
-        document.getElementById('clearAllVocab').onclick = () => { if(confirm("リストをすべて削除しますか？")) { vocabList = []; saveVocab(); } };
-        document.getElementById('clearTextBtn').onclick = () => { textInput.value = ''; showToast("CLEARED"); };
-        document.getElementById('stopBtn').onclick = () => setMode('input');
-        document.getElementById('closeDictBtn').onclick = () => dictModal.classList.add('hidden');
-        document.getElementById('prevBtn').onclick = () => { if(currentIndex > 0) { currentIndex--; speak(); } };
-        document.getElementById('openSettingsBtn').onclick = () => settingsModal.classList.remove('hidden');
-        document.getElementById('closeSettingsBtn').onclick = () => settingsModal.classList.add('hidden');
-        document.getElementById('saveSettingsBtn').onclick = () => {
-            geminiApiKey = apiKeyInput.value.trim();
-            localStorage.setItem('crb_gemini_key', geminiApiKey);
-            settingsModal.classList.add('hidden');
-            showToast("SETTING SAVED");
-            addLog("API Key Updated");
+            document.getElementById('dictModal').classList.add('hidden');
+            showToast("ADDED TO LIST");
         };
 
         document.getElementById('exportCSV').onclick = () => {
@@ -674,19 +548,35 @@
             showToast("CSV COPIED");
         };
 
+        document.getElementById('clearAllVocab').onclick = () => { if(confirm("リストをすべて削除しますか？")) { vocabList=[]; saveVocab(); } };
+        document.getElementById('clearTextBtn').onclick = () => { textInput.value = ''; showToast("CLEARED"); };
+        document.getElementById('stopBtn').onclick = () => setMode('input');
+        document.getElementById('closeSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('hidden');
+        document.getElementById('openSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
+        document.getElementById('closeDictBtn').onclick = () => document.getElementById('dictModal').classList.add('hidden');
+        document.getElementById('prevBtn').onclick = () => { if(currentIndex > 0) { currentIndex--; speak(); } };
+        
+        document.getElementById('saveSettingsBtn').onclick = () => {
+            geminiApiKey = document.getElementById('apiKeyInput').value.trim();
+            localStorage.setItem('crb_gemini_key', geminiApiKey);
+            document.getElementById('settingsModal').classList.add('hidden');
+            showToast("SAVED");
+        };
+
         let startTime, timerInterval;
-        function startTimer() {
+        window.startTimer = () => {
             startTime = Date.now();
             document.getElementById('timerStartBtn').disabled = true;
             document.getElementById('timerStopBtn').disabled = false;
-            document.getElementById('timerStopBtn').className = "bg-red-500 text-white px-8 py-3 rounded-2xl font-black";
+            document.getElementById('timerStopBtn').classList.remove('bg-slate-200', 'text-slate-400');
+            document.getElementById('timerStopBtn').classList.add('bg-red-500', 'text-white');
             document.getElementById('resultCard').classList.add('hidden');
             timerInterval = setInterval(() => {
                 const ms = Date.now() - startTime;
                 document.getElementById('currentTime').innerText = `00:${Math.floor(ms/1000).toString().padStart(2,'0')}.${Math.floor((ms%1000)/100)}`;
             }, 100);
-        }
-        function stopTimer() {
+        };
+        window.stopTimer = () => {
             clearInterval(timerInterval);
             const ms = Date.now() - startTime;
             const charCount = (textInput.value.match(/[\u4e00-\u9fa5]/g) || []).length;
@@ -696,9 +586,10 @@
             document.getElementById('cpmResult').innerText = isFinite(cpm) ? cpm : '-';
             document.getElementById('timerStartBtn').disabled = false;
             document.getElementById('timerStopBtn').disabled = true;
-            document.getElementById('timerStopBtn').className = "bg-slate-200 text-slate-400 px-8 py-3 rounded-2xl font-black";
+            document.getElementById('timerStopBtn').classList.add('bg-slate-200', 'text-slate-400');
+            document.getElementById('timerStopBtn').classList.remove('bg-red-500', 'text-white');
             document.getElementById('resultCard').classList.remove('hidden');
-        }
+        };
 
         function showToast(msg) {
             const t = document.getElementById('toast');
@@ -708,7 +599,7 @@
 
         window.onload = () => {
             renderVocabTable();
-            addLog("System Ready v16.7");
+            addLog("SYSTEM READY v16.8");
         };
     </script>
 </body>
