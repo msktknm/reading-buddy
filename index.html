@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v16.1</title>
+    <title>Chinese Reading Buddy Pro v16.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -33,7 +33,7 @@
         .glass-panel { background: rgba(255,255,255,0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
         .btn-shadow { box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.3); }
         
-        #toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 3000; }
+        #toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 5000; }
         #toast.show { transform: translateX(-50%) translateY(0); }
 
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
@@ -43,7 +43,7 @@
         input:checked + .slider { background-color: #4f46e5; }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        /* Log Panel (Draggable/Minimizable) */
+        /* Log Panel */
         #logPanel {
             position: fixed;
             bottom: 10px;
@@ -81,7 +81,7 @@
 
     <div id="logPanel">
         <div style="color: #fff; font-weight: bold; display: flex; justify-content: space-between; margin-bottom: 4px; cursor: pointer;" onclick="document.getElementById('logPanel').classList.toggle('minimized')">
-            <span class="text-[10px]">v16.1 DEBUG LOG</span>
+            <span class="text-[10px]">v16.5 DEBUG LOG</span>
             <div class="flex gap-2">
                 <button onclick="copyLogs(); event.stopPropagation()" class="bg-[#444] px-1.5 rounded text-[8px]">COPY</button>
                 <span class="text-[8px]">▼</span>
@@ -94,7 +94,7 @@
         <div class="max-w-5xl mx-auto flex items-center justify-between">
             <h1 class="text-xl font-black text-indigo-600 tracking-tight flex items-center gap-1">
                 <span style="font-family: 'Syne', sans-serif;">READING BUDDY</span>
-                <span class="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded ml-1">PRO v16.1</span>
+                <span class="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded ml-1">PRO v16.5</span>
             </h1>
             <button id="openSettingsBtn" class="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -249,7 +249,8 @@
         </div>
     </div>
 
-    <div id="selectionMenu" class="fixed hidden glass-panel border border-indigo-200 px-6 py-3 rounded-full shadow-2xl z-50">
+    <!-- 単語選択フローティングメニュー -->
+    <div id="selectionMenu" class="fixed hidden glass-panel border border-indigo-200 px-6 py-3 rounded-full shadow-2xl z-[2000]">
         <button id="lookUpBtn" class="text-sm font-black text-indigo-600 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
             単語を調べる
@@ -280,13 +281,14 @@
         }
 
         // ---------------------------------------------------------
-        //  SPEECH ENGINE (v16.1 ULTRA RECOVERY)
+        //  SPEECH ENGINE (v16.5 STABLE RECOVERY)
         // ---------------------------------------------------------
         const synth = window.speechSynthesis;
         let isPlaying = false;
         let currentIndex = 0;
         let segments = [];
         let currentUtterance = null;
+        let isSpeechLocked = false; // 二重発動防止
 
         function speak() {
             if (!isPlaying || currentIndex >= segments.length) {
@@ -295,19 +297,27 @@
                 return;
             }
 
-            // iOS等でキューが詰まるのを防ぐため、一度キャンセルするが、
-            // その後のspeak呼び出しを確実に行うためのフラグ管理を徹底
-            if (synth.speaking) {
-                synth.cancel();
-                // cancel後に少し待たないと次のspeakが無視される場合がある
-                setTimeout(initUtterance, 100);
-                return;
-            }
-            initUtterance();
+            if (isSpeechLocked) return;
+            isSpeechLocked = true;
+
+            // iOS/Safari対策: 一度キャンセルしてから少し待機
+            synth.cancel();
+            
+            setTimeout(() => {
+                initUtterance();
+                isSpeechLocked = false;
+            }, 250); // キャンセルの伝播を待つ十分な時間
         }
 
         function initUtterance() {
-            const text = segments[currentIndex];
+            const text = segments[currentIndex].trim();
+            if (!text) {
+                // 空白セグメントの場合はスキップ
+                currentIndex++;
+                speak();
+                return;
+            }
+
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'zh-CN';
             utterance.rate = parseFloat(rateRange.value);
@@ -315,10 +325,6 @@
 
             updateHighlight(currentIndex);
             addLog(`Start: [${currentIndex}]`);
-
-            utterance.onstart = () => {
-                // 発話が実際に始まったことを記録
-            };
 
             utterance.onend = () => {
                 if (isPlaying) {
@@ -333,9 +339,9 @@
             };
 
             utterance.onerror = (e) => {
-                // 手動キャンセルの場合は無視
+                // キャンセルによるエラーは正常動作
                 if (e.error === 'interrupted' || e.error === 'canceled') {
-                    addLog(`Speech interrupted: [${currentIndex}]`);
+                    addLog(`Speech skip: [${currentIndex}]`);
                     return;
                 }
                 addLog(`Error: ${e.error}`, "error");
@@ -376,6 +382,7 @@
         startReadBtn.onclick = () => {
             const raw = textInput.value.trim();
             if (!raw) return showToast("INPUT TEXT");
+            // 区切り文字を保持しつつ分割
             segments = raw.match(/([^，。！？；：\n]+[，。！？；：\n]*)/g) || [raw];
             currentIndex = 0;
             renderReader();
@@ -412,11 +419,9 @@
             readerDisplay.querySelectorAll('.segment').forEach(el => {
                 el.onclick = () => {
                     if (window.getSelection().toString().trim()) return;
-                    stopSpeech();
                     currentIndex = parseInt(el.dataset.idx);
                     isPlaying = true;
-                    // 少し遅延させて確実に前の発話を終わらせる
-                    setTimeout(speak, 50);
+                    speak();
                 };
             });
         }
@@ -441,16 +446,37 @@
         }
 
         // ---------------------------------------------------------
-        //  DICTIONARY (v16.1 API FIX)
+        //  DICTIONARY (v16.5 FIX)
         // ---------------------------------------------------------
         document.addEventListener('selectionchange', () => {
             const sel = window.getSelection().toString().trim();
-            if (!sel || sel.length > 20) { selectionMenu.classList.add('hidden'); return; }
-            const range = window.getSelection().getRangeAt(0);
-            if (readerDisplay.contains(range.commonAncestorContainer) || textInput.contains(range.commonAncestorContainer)) {
-                const rect = range.getBoundingClientRect();
-                selectionMenu.style.left = `${Math.min(window.innerWidth - 160, rect.left + window.scrollX)}px`;
-                selectionMenu.style.top = `${rect.top + window.scrollY - 50}px`;
+            if (!sel || sel.length > 20) { 
+                selectionMenu.classList.add('hidden'); 
+                return; 
+            }
+
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) return;
+
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            
+            // ReaderかInput内での選択かチェック
+            if (readerDisplay.contains(range.commonAncestorContainer) || 
+                textInput.contains(range.commonAncestorContainer) || 
+                range.commonAncestorContainer.parentNode === readerDisplay) {
+                
+                // ボタンの表示位置を計算（中央寄り・確実に視認可能に）
+                const menuWidth = 140;
+                let leftPos = rect.left + (rect.width / 2) - (menuWidth / 2);
+                let topPos = rect.top + window.scrollY - 50;
+
+                // 画面端のガード
+                leftPos = Math.max(20, Math.min(window.innerWidth - menuWidth - 20, leftPos));
+                if (topPos < window.scrollY + 10) topPos = rect.bottom + window.scrollY + 10;
+
+                selectionMenu.style.left = `${leftPos}px`;
+                selectionMenu.style.top = `${topPos}px`;
                 selectionMenu.classList.remove('hidden');
                 selectionMenu.dataset.word = sel;
             }
@@ -471,7 +497,7 @@
             content.classList.add('hidden');
 
             addLog(`AI Query: ${word}`);
-            // 404対策としてモデル名をより汎用的なものに変更
+            // 最新の確実なエンドポイント
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
 
             try {
@@ -479,29 +505,39 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Analyze Chinese word: "${word}". Output JSON.` }] }],
-                        systemInstruction: { parts: [{ text: "Return JSON ONLY: {pinyin, meaning, english, exampleCn, exampleJp}" }] },
-                        generationConfig: { responseMimeType: "application/json" }
+                        contents: [{ parts: [{ text: `Analyze Chinese word: "${word}".` }] }],
+                        generationConfig: { 
+                            responseMimeType: "application/json",
+                            responseSchema: {
+                                type: "OBJECT",
+                                properties: {
+                                    pinyin: { type: "STRING" },
+                                    meaning: { type: "STRING" },
+                                    english: { type: "STRING" },
+                                    exampleCn: { type: "STRING" },
+                                    exampleJp: { type: "STRING" }
+                                },
+                                required: ["pinyin", "meaning", "english", "exampleCn", "exampleJp"]
+                            }
+                        }
                     })
                 });
 
                 if (!response.ok) {
-                    addLog(`API HTTP Error: ${response.status}`, "error");
-                    throw new Error(`API ${response.status}`);
+                    const errorText = await response.text();
+                    addLog(`API Error ${response.status}: ${errorText.substring(0,50)}`, "error");
+                    throw new Error(`HTTP ${response.status}`);
                 }
 
                 const data = await response.json();
-                const rawResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                const res = JSON.parse(data.candidates[0].content.parts[0].text);
                 
-                if (!rawResult) throw new Error("Empty Response");
-
-                const res = JSON.parse(rawResult);
                 document.getElementById('dictWord').innerText = word;
-                document.getElementById('dictPinyin').innerText = res.pinyin || "-";
-                document.getElementById('dictEng').innerText = res.english || "-";
-                document.getElementById('dictMean').innerText = res.meaning || "-";
-                document.getElementById('dictExCn').innerText = res.exampleCn || "-";
-                document.getElementById('dictExJp').innerText = res.exampleJp || "-";
+                document.getElementById('dictPinyin').innerText = res.pinyin;
+                document.getElementById('dictEng').innerText = res.english;
+                document.getElementById('dictMean').innerText = res.meaning;
+                document.getElementById('dictExCn').innerText = res.exampleCn;
+                document.getElementById('dictExJp').innerText = res.exampleJp;
                 
                 loading.classList.add('hidden');
                 content.classList.remove('hidden');
@@ -509,7 +545,7 @@
             } catch (err) {
                 addLog(`Dict Error: ${err.message}`, "error");
                 dictModal.classList.add('hidden');
-                showToast("FAILED: Check Logs");
+                showToast("FAILED: Check Key or Logs");
             }
         }
 
@@ -524,7 +560,7 @@
             });
             saveVocab();
             dictModal.classList.add('hidden');
-            showToast("SAVED");
+            showToast("SAVED TO LIST");
         };
 
         // ---------------------------------------------------------
@@ -570,7 +606,7 @@
             geminiApiKey = apiKeyInput.value.trim();
             localStorage.setItem('crb_gemini_key', geminiApiKey);
             settingsModal.classList.add('hidden');
-            showToast("SAVED");
+            showToast("API KEY SAVED");
         };
 
         document.getElementById('exportCSV').onclick = () => {
