@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v30.0</title>
+    <title>Chinese Reading Buddy Pro v31.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -66,56 +66,44 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* フローティング検索ボタン - サイズアップ */
+        /* フローティング検索ボタン - さらに強調 */
         #searchTrigger {
             position: absolute;
             z-index: 1000;
             display: none;
             background: #4f46e5;
             color: white;
-            padding: 8px 16px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 800;
-            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+            padding: 12px 24px;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 900;
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.5);
             cursor: pointer;
             pointer-events: auto;
             white-space: nowrap;
-            border: 2px solid rgba(255,255,255,0.2);
+            border: 3px solid rgba(255,255,255,0.3);
             transition: transform 0.1s active;
         }
         #searchTrigger:active { transform: scale(0.95); }
-        #searchTrigger::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-top: 8px solid #4f46e5;
-        }
     </style>
 </head>
 <body class="min-h-screen pb-32 w-full">
 
-    <!-- デバッグログパネル -->
     <div id="logPanel" class="minimized" onclick="if(event.target.tagName !== 'BUTTON') this.classList.toggle('minimized')">
         <div class="flex justify-between items-center cursor-pointer mb-1">
-            <span class="text-[10px] font-bold text-white uppercase tracking-wider">Debug Log v30.0</span>
+            <span class="text-[10px] font-bold text-white uppercase tracking-wider">Debug Log v31.0</span>
             <button id="copyLogBtn" class="bg-slate-700 text-white px-2 py-0.5 rounded text-[10px] font-bold">COPY</button>
         </div>
         <div id="logContent"></div>
     </div>
 
-    <!-- 検索開始ポップアップボタン -->
-    <div id="searchTrigger">意味を調べる</div>
+    <div id="searchTrigger">意味を調べる 🔍</div>
 
     <nav class="sticky top-0 z-[100] glass-panel px-4 py-2 w-full">
         <div class="flex items-center justify-between w-full max-w-full">
             <div class="flex flex-col items-start leading-none gap-0.5">
                 <h1 class="text-base sm:text-lg font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v30.0</span>
+                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v31.0</span>
             </div>
             <button id="openSettingsBtn" class="p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -168,7 +156,6 @@
             </div>
         </section>
 
-        <!-- Speed Timer セクション -->
         <section id="sectionTimer" class="space-y-4 text-center w-full">
             <h2 class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Speed Timer</h2>
             <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 w-full mx-auto">
@@ -209,7 +196,6 @@
             <div class="space-y-1.5">
                 <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Gemini API Key</label>
                 <input type="password" id="apiKeyInput" class="w-full bg-slate-50 border-none rounded-xl p-4 text-xs focus:ring-2 focus:ring-indigo-500" placeholder="Enter API Key...">
-                <p class="text-[8px] text-slate-400">※APIキーが必要です。設定しないと辞書機能は動きません。</p>
             </div>
             <div class="flex gap-3"><button id="saveSettingsBtn" class="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-black shadow-lg">SAVE</button><button id="closeSettingsBtn" class="flex-1 bg-slate-100 text-slate-600 py-4 rounded-xl font-black">CLOSE</button></div>
         </div>
@@ -247,7 +233,6 @@
             if(type === 'error') color = '#f87171';
             if(type === 'warn') color = '#fbbf24';
             if(type === 'debug') color = '#60a5fa';
-
             entry.innerHTML = `<span style="opacity:0.4">[${time}]</span> <span style="color:${color}">${msg}</span>`;
             container.prepend(entry);
         }
@@ -312,7 +297,6 @@
                     }
                 };
             });
-            
             setMode('reading'); isPlaying = true; speak();
         };
 
@@ -321,16 +305,13 @@
                 const sel = window.getSelection();
                 const word = sel.toString().trim();
                 const trigger = document.getElementById('searchTrigger');
-
                 if (word && word.length > 0 && /[\u4e00-\u9fa5]/.test(word)) {
                     selectedTextForSearch = word;
                     const range = sel.getRangeAt(0);
                     const rect = range.getBoundingClientRect();
-                    
                     trigger.innerText = `意味を調べる: "${word.substring(0,8)}${word.length>8?'..':''}"`;
                     trigger.style.display = 'block';
-                    // 少し上に、中央寄せで表示
-                    trigger.style.top = `${window.scrollY + rect.top - 60}px`;
+                    trigger.style.top = `${window.scrollY + rect.top - 80}px`;
                     trigger.style.left = `${window.scrollX + rect.left + (rect.width/2) - (trigger.offsetWidth/2)}px`;
                 } else {
                     trigger.style.display = 'none';
@@ -347,16 +328,9 @@
             }
         };
 
-        function updateHighlight(idx) {
-            const display = document.getElementById('readerDisplay');
-            display.querySelectorAll('.segment').forEach(el => el.classList.remove('highlight-active'));
-            const target = display.querySelector(`.segment[data-idx="${idx}"]`);
-            if (target) target.classList.add('highlight-active');
-        }
-
         async function openDictionary(word) {
             if (!geminiApiKey) { 
-                addLog("API KEY MISSING. Please set it in settings.", "error");
+                addLog("API KEY MISSING", "error");
                 document.getElementById('settingsModal').classList.remove('hidden'); 
                 return; 
             }
@@ -366,45 +340,30 @@
             addLog(`DICT SEARCH: "${word}"`, 'debug');
 
             try {
-                // v1beta のフルパス。末尾の :generateContent が重要
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`;
+                // gemini-1.5-flash は安定して稼働するモデル名です
+                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
                 const prompt = `Explain the Chinese word "${word}" in Japanese. 
                 Output as a single JSON object with these keys: 
                 "pinyin" (with tone marks), "meaning" (short JP), "english" (short EN), "exampleCn" (simple example sentence), "exampleJp" (translation of the example). 
                 NO MARKDOWN, NO OTHER TEXT.`;
                 
-                const payload = { 
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { 
-                        responseMimeType: "application/json" 
-                    } 
-                };
-
-                addLog(`POST to: .../models/gemini-2.5-flash-preview-09-2025:generateContent`, 'debug');
-                
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
                 });
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    addLog(`RAW ERROR BODY: ${errorText.substring(0,100)}...`, 'error');
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    addLog(`API ERROR: ${response.status} - ${errorText.substring(0,100)}`, 'error');
+                    throw new Error(`HTTP ${response.status}`);
                 }
                 
                 const data = await response.json();
-                addLog(`RESPONSE RECEIVED`, 'debug');
-
-                let textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                if(!textResponse) {
-                    addLog("API structure mismatch. Check console.", "error");
-                    console.log("Full data:", data);
-                    throw new Error("Invalid API Response Structure");
-                }
-
-                const json = JSON.parse(textResponse);
+                const json = JSON.parse(data.candidates[0].content.parts[0].text);
                 
                 document.getElementById('dictWord').innerText = word;
                 document.getElementById('dictPinyin').innerText = json.pinyin || "-";
@@ -416,10 +375,17 @@
                 loading.classList.add('hidden'); content.classList.remove('hidden');
                 addLog(`DICT SUCCESS: "${word}"`);
             } catch (e) { 
-                addLog(`DICT ERROR: ${e.message}`, 'error'); 
+                addLog(`DICT FAILED: ${e.message}`, 'error'); 
                 modal.classList.add('hidden'); 
-                showToast(`エラー: ${e.message}`); 
+                showToast(`エラーが発生しました`); 
             }
+        }
+
+        function updateHighlight(idx) {
+            const display = document.getElementById('readerDisplay');
+            display.querySelectorAll('.segment').forEach(el => el.classList.remove('highlight-active'));
+            const target = display.querySelector(`.segment[data-idx="${idx}"]`);
+            if (target) target.classList.add('highlight-active');
         }
 
         function saveVocab() { localStorage.setItem('crb_pro_vocab_v20', JSON.stringify(vocabList)); renderVocabTable(); }
@@ -448,7 +414,6 @@
                 const ms = Date.now() - startTime;
                 document.getElementById('currentTime').innerText = `00:${Math.floor(ms/1000).toString().padStart(2,'0')}.${Math.floor((ms%1000)/100)}`;
             }, 100);
-            addLog("TIMER STARTED");
         };
         window.stopTimer = () => {
             clearInterval(timerInterval);
@@ -463,7 +428,6 @@
             document.getElementById('timerStopBtn').disabled = true;
             document.getElementById('timerStopBtn').className = "flex-1 bg-slate-200 text-slate-400 py-3.5 rounded-xl font-black";
             document.getElementById('resultCard').classList.remove('hidden');
-            addLog(`TIMER STOPPED. CPM: ${cpm}`);
         };
 
         document.getElementById('playBtn').onclick = () => { if(isPlaying){isPlaying=false;synth.cancel();updateIcons();}else{isPlaying=true;speak();} };
@@ -473,7 +437,6 @@
             geminiApiKey = document.getElementById('apiKeyInput').value.trim(); 
             localStorage.setItem('crb_gemini_key', geminiApiKey); 
             document.getElementById('settingsModal').classList.add('hidden'); 
-            addLog("API KEY UPDATED"); 
             showToast("SAVED"); 
         };
         document.getElementById('openSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
@@ -506,13 +469,11 @@
         };
 
         document.addEventListener('mousedown', (e) => {
-            if (e.target.id !== 'searchTrigger') {
-                document.getElementById('searchTrigger').style.display = 'none';
-            }
+            if (e.target.id !== 'searchTrigger') document.getElementById('searchTrigger').style.display = 'none';
         });
 
         function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
-        window.onload = () => { renderVocabTable(); if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey; addLog("SYSTEM READY v30.0"); };
+        window.onload = () => { renderVocabTable(); if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey; addLog("SYSTEM READY v31.0"); };
     </script>
 </body>
 </html>
