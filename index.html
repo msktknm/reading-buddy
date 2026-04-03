@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v36.0</title>
+    <title>Chinese Reading Buddy Pro v37.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -39,7 +39,7 @@
         .glass-panel { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
         .btn-shadow { box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.3); }
         
-        #toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 9999; }
+        #toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 20000; }
         #toast.show { transform: translateX(-50%) translateY(0); }
 
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
@@ -66,21 +66,22 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* ポップアップボタンのスタイル修正 */
         #searchTrigger {
             position: absolute;
-            z-index: 1000;
+            z-index: 15000; /* 最前面へ */
             display: none;
             background: #4f46e5;
             color: white;
-            padding: 12px 24px;
-            border-radius: 16px;
-            font-size: 16px;
-            font-weight: 900;
-            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.5);
+            padding: 10px 20px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 800;
+            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.6);
             cursor: pointer;
             pointer-events: auto;
             white-space: nowrap;
-            border: 3px solid rgba(255,255,255,0.3);
+            border: 2px solid rgba(255,255,255,0.3);
             transition: transform 0.1s active;
         }
     </style>
@@ -90,7 +91,7 @@
     <!-- デバッグログ -->
     <div id="logPanel" class="minimized" onclick="if(event.target.tagName !== 'BUTTON') this.classList.toggle('minimized')">
         <div class="flex justify-between items-center cursor-pointer mb-1">
-            <span class="text-[10px] font-bold text-white uppercase tracking-wider">Debug Log v36.0</span>
+            <span class="text-[10px] font-bold text-white uppercase tracking-wider">Debug Log v37.0</span>
             <button id="copyLogBtn" class="bg-slate-700 text-white px-2 py-0.5 rounded text-[10px] font-bold">COPY</button>
         </div>
         <div id="logContent"></div>
@@ -104,7 +105,7 @@
         <div class="flex items-center justify-between w-full max-w-full">
             <div class="flex flex-col items-start leading-none gap-0.5">
                 <h1 class="text-base sm:text-lg font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v36.0</span>
+                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v37.0</span>
             </div>
             <button id="openSettingsBtn" class="p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -194,7 +195,7 @@
     </main>
 
     <!-- 設定モーダル -->
-    <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden z-[10000] flex items-center justify-center p-4">
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden z-[20000] flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl w-full max-w-sm p-6 space-y-5 shadow-2xl">
             <h3 class="text-xl font-black text-slate-800">Settings</h3>
             <div class="space-y-1.5">
@@ -206,7 +207,7 @@
     </div>
 
     <!-- 辞書モーダル -->
-    <div id="dictModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden z-[11000] flex items-center justify-center p-4">
+    <div id="dictModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden z-[21000] flex items-center justify-center p-4">
         <div class="bg-white rounded-[32px] w-full max-w-md p-8 space-y-6 shadow-2xl relative">
             <button id="closeDictBtn" class="absolute top-6 right-6 text-slate-300 hover:text-slate-600"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg></button>
             <div id="dictLoading" class="hidden flex flex-col items-center py-12 space-y-4"><div class="spinner"></div><p class="text-[9px] font-black text-slate-400 tracking-widest uppercase">AI Analyzing...</p></div>
@@ -247,14 +248,16 @@
         let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v20') || '[]');
         let selectedTextForSearch = "";
 
-        // モデル候補リスト
+        // 全8モデルリスト（優先順位順）
         const modelList = [
             "gemini-2.5-flash",
             "gemini-2.5-pro",
             "gemini-2.0-flash",
             "gemini-2.0-flash-001",
             "gemini-2.0-flash-lite-001",
-            "gemini-2.0-flash-lite"
+            "gemini-2.0-flash-lite",
+            "gemini-2.5-flash-preview-tts",
+            "gemini-2.5-pro-preview-tts"
         ];
 
         function speak() {
@@ -297,7 +300,11 @@
             currentIndex = 0;
             const display = document.getElementById('readerDisplay');
             display.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
+            
+            // 選択イベントリスナー追加
             display.addEventListener('mouseup', handleTextSelection);
+            display.addEventListener('touchend', handleTextSelection);
+            
             display.querySelectorAll('.segment').forEach(el => {
                 el.onclick = () => {
                     if (!window.getSelection().toString().trim()) {
@@ -309,32 +316,52 @@
         };
 
         function handleTextSelection() {
+            // 微小な遅延を置いて選択範囲を取得
             setTimeout(() => {
-                const sel = window.getSelection(), word = sel.toString().trim(), trigger = document.getElementById('searchTrigger');
+                const sel = window.getSelection();
+                const word = sel.toString().trim();
+                const trigger = document.getElementById('searchTrigger');
+                
                 if (word && word.length > 0 && /[\u4e00-\u9fa5]/.test(word)) {
                     selectedTextForSearch = word;
-                    const range = sel.getRangeAt(0), rect = range.getBoundingClientRect();
-                    trigger.innerText = `意味を調べる: "${word.substring(0,8)}"`;
+                    const range = sel.getRangeAt(0);
+                    const rect = range.getBoundingClientRect();
+                    
+                    trigger.innerText = `意味を調べる: "${word.substring(0,8)}${word.length > 8 ? '...' : ''}"`;
                     trigger.style.display = 'block';
-                    trigger.style.top = `${window.scrollY + rect.top - 80}px`;
-                    trigger.style.left = `${window.scrollX + rect.left + (rect.width/2) - (trigger.offsetWidth/2)}px`;
-                } else { trigger.style.display = 'none'; }
-            }, 50);
+                    
+                    // スクロール位置を考慮して配置
+                    const topPos = window.scrollY + rect.top - 70;
+                    const leftPos = window.scrollX + rect.left + (rect.width/2) - (trigger.offsetWidth/2);
+                    
+                    trigger.style.top = `${topPos}px`;
+                    trigger.style.left = `${Math.max(10, Math.min(window.innerWidth - trigger.offsetWidth - 10, leftPos))}px`;
+                    addLog(`Selection found: ${word}`, 'debug');
+                } else {
+                    trigger.style.display = 'none';
+                }
+            }, 100);
         }
 
-        document.getElementById('searchTrigger').onclick = (e) => {
-            e.stopPropagation(); document.getElementById('searchTrigger').style.display = 'none';
-            if (selectedTextForSearch) { openDictionary(selectedTextForSearch); window.getSelection().removeAllRanges(); }
+        document.getElementById('searchTrigger').onmousedown = (e) => {
+            // mouseupで消えないようにmousedownで処理
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('searchTrigger').style.display = 'none';
+            if (selectedTextForSearch) {
+                openDictionary(selectedTextForSearch);
+                window.getSelection().removeAllRanges();
+            }
         };
 
-        // フォールバック・リトライ機能付きAPI呼び出し
+        // フォールバック・リトライ機能
         async function fetchGeminiWithFallback(prompt, models, index = 0) {
-            if (index >= models.length) throw new Error("すべてのモデルで試行しましたが失敗しました。");
+            if (index >= models.length) throw new Error("全モデルで試行しましたがエラーとなりました。");
             
             const currentModel = models[index];
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${geminiApiKey}`;
             
-            addLog(`TRYING MODEL [${index+1}/${models.length}]: ${currentModel}`, 'debug');
+            addLog(`MODEL TRY [${index+1}/${models.length}]: ${currentModel}`, 'debug');
 
             try {
                 const response = await fetch(url, {
@@ -344,16 +371,16 @@
                 });
 
                 if (!response.ok) {
-                    const error = await response.json();
-                    addLog(`MODEL FAILED (${currentModel}): ${error.error?.message || response.status}`, 'warn');
+                    const errData = await response.json().catch(() => ({}));
+                    addLog(`FAIL: ${currentModel} (${response.status})`, 'warn');
                     return await fetchGeminiWithFallback(prompt, models, index + 1);
                 }
 
                 const data = await response.json();
-                addLog(`SUCCESS WITH: ${currentModel}`);
+                addLog(`SUCCESS: ${currentModel}`);
                 return data;
             } catch (e) {
-                addLog(`NETWORK/UNEXPECTED ERROR (${currentModel}): ${e.message}`, 'warn');
+                addLog(`NET ERROR: ${currentModel} - ${e.message}`, 'warn');
                 return await fetchGeminiWithFallback(prompt, models, index + 1);
             }
         }
@@ -363,7 +390,7 @@
             const modal = document.getElementById('dictModal'), loading = document.getElementById('dictLoading'), content = document.getElementById('dictContent');
             modal.classList.remove('hidden'); loading.classList.remove('hidden'); content.classList.add('hidden');
             
-            addLog(`DICT SEARCH: "${word}"`, 'debug');
+            addLog(`DICTIONARY SEARCH: "${word}"`, 'debug');
 
             try {
                 const prompt = `Explain the Chinese word "${word}" in Japanese. Return exactly one JSON object. Format: {"pinyin":"...","meaning":"...","english":"...","exampleCn":"...","exampleJp":"..."}`;
@@ -382,7 +409,7 @@
                 
                 loading.classList.add('hidden'); content.classList.remove('hidden');
             } catch (e) { 
-                addLog(`ALL MODELS FAILED: ${e.message}`, 'error'); 
+                addLog(`CRITICAL ERROR: ${e.message}`, 'error'); 
                 modal.classList.add('hidden'); 
                 showToast("全モデルでの解析に失敗しました"); 
             }
@@ -447,9 +474,16 @@
         document.getElementById('copyLogBtn').onclick = (e) => { e.stopPropagation(); const text = Array.from(document.getElementById('logContent').children).map(c=>c.innerText).join('\n'); const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); showToast("LOGS COPIED"); };
         document.getElementById('clearAllVocab').onclick = () => { if(confirm("消去しますか？")){vocabList=[];saveVocab();showToast("CLEARED");} };
         document.getElementById('exportCSV').onclick = () => { const csv = vocabList.map(v => `"${v.word}","${v.pinyin}","${v.meaning}"`).join('\n'); const el = document.createElement('textarea'); el.value = csv; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); showToast("CSV COPIED"); };
-        document.addEventListener('mousedown', (e) => { if (e.target.id !== 'searchTrigger') document.getElementById('searchTrigger').style.display = 'none'; });
+        
+        // トリガー以外をクリックしたら消す
+        document.addEventListener('mousedown', (e) => { 
+            if (e.target.id !== 'searchTrigger') {
+                document.getElementById('searchTrigger').style.display = 'none'; 
+            }
+        });
+
         function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
-        window.onload = () => { renderVocabTable(); if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey; addLog("SYSTEM READY v36.0 (Multi-Model Support)"); };
+        window.onload = () => { renderVocabTable(); if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey; addLog("SYSTEM READY v37.0 (Multi-Model Support)"); };
     </script>
 </body>
 </html>
