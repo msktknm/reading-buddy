@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v32.0</title>
+    <title>Chinese Reading Buddy Pro v33.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -90,7 +90,7 @@
     <!-- デバッグログ -->
     <div id="logPanel" class="minimized" onclick="if(event.target.tagName !== 'BUTTON') this.classList.toggle('minimized')">
         <div class="flex justify-between items-center cursor-pointer mb-1">
-            <span class="text-[10px] font-bold text-white uppercase tracking-wider">Debug Log v32.0</span>
+            <span class="text-[10px] font-bold text-white uppercase tracking-wider">Debug Log v33.0</span>
             <button id="copyLogBtn" class="bg-slate-700 text-white px-2 py-0.5 rounded text-[10px] font-bold">COPY</button>
         </div>
         <div id="logContent"></div>
@@ -104,7 +104,7 @@
         <div class="flex items-center justify-between w-full max-w-full">
             <div class="flex flex-col items-start leading-none gap-0.5">
                 <h1 class="text-base sm:text-lg font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v32.0</span>
+                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v33.0</span>
             </div>
             <button id="openSettingsBtn" class="p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -336,7 +336,7 @@
             }
         };
 
-        // AI辞書機能 (v32.0 修正版)
+        // AI辞書機能 (v33.0 修正版 - 最新モデルリスト対応)
         async function openDictionary(word) {
             if (!geminiApiKey) { 
                 addLog("API KEY MISSING", "error");
@@ -346,38 +346,43 @@
             const modal = document.getElementById('dictModal'), loading = document.getElementById('dictLoading'), content = document.getElementById('dictContent');
             modal.classList.remove('hidden'); loading.classList.remove('hidden'); content.classList.add('hidden');
             
-            addLog(`DICT SEARCH: "${word}"`, 'debug');
+            // APIキーの簡易バリデーションログ
+            const keyPreview = `${geminiApiKey.substring(0, 4)}...${geminiApiKey.substring(geminiApiKey.length - 4)}`;
+            addLog(`DICT SEARCH: "${word}" (Key: ${keyPreview}, Len: ${geminiApiKey.length})`, 'debug');
 
             try {
-                // v1 エンドポイントを使用し、URLパラメータを最小化
-                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+                // ご提示のリストより、最新の2.5プレビューモデルを使用
+                const modelName = "gemini-2.5-flash-preview-09-2025";
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`;
                 
-                // プロンプトを強化し、JSON以外の出力を厳禁。400エラーの原因となるパラメータは排除。
                 const prompt = `Explain the Chinese word "${word}" in Japanese. 
-                Output exactly one JSON object. Do not include any explanation or markdown.
-                Fields: "pinyin", "meaning" (JP), "english" (EN), "exampleCn", "exampleJp".
-                Example structure: {"pinyin":"...","meaning":"...","english":"...","exampleCn":"...","exampleJp":"..."}`;
+                Return exactly one JSON object. No Markdown. No extra text.
+                Format: {"pinyin":"...","meaning":"...","english":"...","exampleCn":"...","exampleJp":"..."}`;
                 
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: prompt }] }]
-                        // 400エラーの原因となった responseMimeType は削除
                     })
                 });
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    addLog(`API ERROR: ${response.status} - ${errorText.substring(0,100)}`, 'error');
-                    throw new Error(`HTTP ${response.status}`);
+                    addLog(`API ERROR: ${response.status} - ${errorText}`, 'error');
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
                 
                 const data = await response.json();
-                let rawText = data.candidates[0].content.parts[0].text;
+                let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
                 
+                if (!rawText) {
+                    addLog("API ERROR: No content in response", "error");
+                    throw new Error("Empty AI response");
+                }
+
                 // AIがMarkdown記法を使ってきた場合のクリーニング処理
-                rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+                rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
                 
                 const json = JSON.parse(rawText);
                 
@@ -393,7 +398,7 @@
             } catch (e) { 
                 addLog(`DICT FAILED: ${e.message}`, 'error'); 
                 modal.classList.add('hidden'); 
-                showToast(`APIエラー: キーまたは通信を確認してください`); 
+                showToast(`エラー: デバッグログを確認してください`); 
             }
         }
 
@@ -456,6 +461,7 @@
             localStorage.setItem('crb_gemini_key', geminiApiKey); 
             document.getElementById('settingsModal').classList.add('hidden'); 
             showToast("SAVED"); 
+            addLog(`API KEY UPDATED (Len: ${geminiApiKey.length})`, 'info');
         };
         document.getElementById('openSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
         document.getElementById('closeSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('hidden');
@@ -491,7 +497,7 @@
         });
 
         function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
-        window.onload = () => { renderVocabTable(); if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey; addLog("SYSTEM READY v32.0"); };
+        window.onload = () => { renderVocabTable(); if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey; addLog("SYSTEM READY v33.0"); };
     </script>
 </body>
 </html>
