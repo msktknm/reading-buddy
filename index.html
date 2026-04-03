@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v18.0</title>
+    <title>Chinese Reading Buddy Pro v19.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -85,32 +85,27 @@
 </head>
 <body class="min-h-screen pb-32 w-full">
 
-    <!-- Debug Log Panel -->
     <div id="logPanel" class="minimized" onclick="if(event.target.tagName !== 'BUTTON') this.classList.toggle('minimized')">
         <div class="flex justify-between items-center cursor-pointer mb-1">
-            <span class="text-[9px] font-bold text-white uppercase">Log v18.0</span>
+            <span class="text-[9px] font-bold text-white uppercase">Log v19.0</span>
             <button onclick="copyLogs(); event.stopPropagation()" class="bg-slate-700 text-white px-1.5 py-0.5 rounded text-[8px]">COPY</button>
         </div>
         <div id="logContent"></div>
     </div>
 
-    <!-- Header: 歯車を確実に隠さないための縦レイアウト -->
     <nav class="sticky top-0 z-[100] glass-panel px-4 py-2 w-full">
         <div class="flex items-center justify-between w-full max-w-full">
             <div class="flex flex-col items-start leading-none gap-0.5">
                 <h1 class="text-base sm:text-lg font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v18.0</span>
+                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v19.0</span>
             </div>
-            <!-- 歯車ボタン: 確実に右端に表示 -->
             <button id="openSettingsBtn" class="p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </button>
         </div>
     </nav>
 
-    <!-- Main Content -->
     <main class="w-full px-4 py-4 space-y-8 mt-2 max-w-full">
-        <!-- Main Panel -->
         <section id="sectionMain" class="space-y-4">
             <div id="textContainer" class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 min-h-[350px] flex flex-col relative w-full">
                 <div class="flex justify-between items-center mb-3">
@@ -145,7 +140,6 @@
                 読み上げを開始する
             </button>
 
-            <!-- Player Controls -->
             <div id="playerControls" class="hidden space-y-4">
                 <div class="flex items-center justify-center gap-6">
                     <button id="prevBtn" class="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-full">
@@ -166,7 +160,6 @@
             </div>
         </section>
 
-        <!-- Timer Panel -->
         <section id="sectionTimer" class="space-y-4 text-center w-full">
             <h2 class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Speed Timer</h2>
             <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 w-full mx-auto">
@@ -185,7 +178,6 @@
             </div>
         </section>
 
-        <!-- Vocab List -->
         <section id="sectionVocab" class="space-y-4 w-full">
             <div class="flex items-center justify-between px-1">
                 <h2 class="text-xl font-black tracking-tight">MY LIST</h2>
@@ -215,7 +207,6 @@
         </section>
     </main>
 
-    <!-- Selection Menu -->
     <div id="selectionMenu" class="fixed hidden glass-panel border border-indigo-200 px-4 py-2.5 rounded-full shadow-2xl z-[9000] cursor-pointer">
         <button id="lookUpBtn" class="text-xs font-black text-indigo-600 flex items-center gap-1.5">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
@@ -223,7 +214,6 @@
         </button>
     </div>
 
-    <!-- Modals -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden z-[10000] flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl w-full max-w-sm p-6 space-y-5 shadow-2xl">
             <h3 class="text-xl font-black text-slate-800">Settings</h3>
@@ -295,52 +285,27 @@
         let isPlaying = false;
         let currentIndex = 0;
         let segments = [];
-        let activeUtterance = null;
 
         function speak() {
-            if (!isPlaying || currentIndex >= segments.length) {
-                isPlaying = false;
-                updateIcons();
-                return;
-            }
+            if (!isPlaying || currentIndex >= segments.length) { isPlaying = false; updateIcons(); return; }
             synth.cancel();
             setTimeout(() => {
                 const text = segments[currentIndex].trim();
                 if (!text) { currentIndex++; speak(); return; }
-
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'zh-CN';
                 utterance.rate = parseFloat(document.getElementById('rateRange').value);
-                activeUtterance = utterance;
-
                 updateHighlight(currentIndex);
                 updateIcons();
-                addLog(`PLAY: [${currentIndex}] "${text.substring(0,8)}..."`);
-
                 utterance.onend = () => {
                     if (isPlaying) {
                         currentIndex++;
-                        if (document.getElementById('autoModeToggle').checked && currentIndex < segments.length) {
-                            speak();
-                        } else {
-                            isPlaying = false;
-                            updateIcons();
-                        }
+                        if (document.getElementById('autoModeToggle').checked && currentIndex < segments.length) speak();
+                        else { isPlaying = false; updateIcons(); }
                     }
-                };
-                utterance.onerror = (e) => {
-                    if (e.error !== 'interrupted') addLog(`SPEECH ERROR: ${e.error}`, 'error');
                 };
                 synth.speak(utterance);
             }, 50);
-        }
-
-        function stopSpeech() {
-            isPlaying = false;
-            synth.cancel();
-            activeUtterance = null;
-            updateIcons();
-            addLog("STOPPED");
         }
 
         function updateIcons() {
@@ -348,147 +313,99 @@
             document.getElementById('pauseIcon').classList.toggle('hidden', !isPlaying);
         }
 
-        // --- 3. UI HANDLERS ---
-        const textInput = document.getElementById('textInput');
-        const readerDisplay = document.getElementById('readerDisplay');
-        const startReadBtn = document.getElementById('startReadBtn');
-        const playerControls = document.getElementById('playerControls');
-        const playbackOptions = document.getElementById('playbackOptions');
-        const selectionMenu = document.getElementById('selectionMenu');
+        function setMode(mode) {
+            const isReading = mode === 'reading';
+            document.getElementById('textInput').classList.toggle('hidden', isReading);
+            document.getElementById('readerDisplay').classList.toggle('hidden', !isReading);
+            document.getElementById('startReadBtn').classList.toggle('hidden', isReading);
+            document.getElementById('playerControls').classList.toggle('hidden', !isReading);
+            document.getElementById('playbackOptions').classList.toggle('hidden', !isReading);
+            document.getElementById('editHint').classList.toggle('hidden', !isReading);
+            document.getElementById('modeLabel').innerText = isReading ? "Reading Mode" : "Input Mode";
+            if (!isReading) synth.cancel();
+        }
 
-        let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v18') || '[]');
-        let geminiApiKey = localStorage.getItem('crb_gemini_key') || "";
-        document.getElementById('apiKeyInput').value = geminiApiKey;
-
-        startReadBtn.onclick = () => {
-            const raw = textInput.value.trim();
-            if (!raw) return showToast("INPUT TEXT");
+        document.getElementById('startReadBtn').onclick = () => {
+            const raw = document.getElementById('textInput').value.trim();
+            if (!raw) return;
             segments = raw.match(/([^，。！？；：\n]+[，。！？；：\n]*)/g) || [raw];
             currentIndex = 0;
-            renderReader();
-            setMode('reading');
-            isPlaying = true;
-            speak();
-        };
-
-        function setMode(mode) {
-            if (mode === 'reading') {
-                textInput.classList.add('hidden');
-                readerDisplay.classList.remove('hidden');
-                startReadBtn.classList.add('hidden');
-                playerControls.classList.remove('hidden');
-                playbackOptions.classList.remove('hidden');
-                document.getElementById('modeLabel').innerText = "Reading Mode";
-                document.getElementById('editHint').classList.remove('hidden');
-            } else {
-                stopSpeech();
-                textInput.classList.remove('hidden');
-                readerDisplay.classList.add('hidden');
-                startReadBtn.classList.remove('hidden');
-                playerControls.classList.add('hidden');
-                playbackOptions.classList.add('hidden');
-                document.getElementById('modeLabel').innerText = "Input Mode";
-                document.getElementById('editHint').classList.add('hidden');
-            }
-        }
-
-        function renderReader() {
-            readerDisplay.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
-            readerDisplay.querySelectorAll('.segment').forEach(el => {
-                el.onclick = () => {
-                    if (window.getSelection().toString().trim()) return;
-                    currentIndex = parseInt(el.dataset.idx);
-                    isPlaying = true;
-                    speak();
-                };
+            const display = document.getElementById('readerDisplay');
+            display.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
+            display.querySelectorAll('.segment').forEach(el => el.onclick = (e) => { 
+                if (window.getSelection().toString().trim()) return; // 選択中は再生しない
+                currentIndex = parseInt(el.dataset.idx); isPlaying = true; speak(); 
             });
-        }
-
-        document.getElementById('playBtn').onclick = () => {
-            if (isPlaying) { isPlaying = false; synth.cancel(); updateIcons(); }
-            else { isPlaying = true; if (currentIndex >= segments.length) currentIndex = 0; speak(); }
+            setMode('reading');
+            isPlaying = true; speak();
         };
 
         function updateHighlight(idx) {
-            readerDisplay.querySelectorAll('.segment').forEach(el => el.classList.remove('highlight-active'));
-            const target = readerDisplay.querySelector(`.segment[data-idx="${idx}"]`);
-            if (target) {
-                target.classList.add('highlight-active');
-                target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
+            const display = document.getElementById('readerDisplay');
+            display.querySelectorAll('.segment').forEach(el => el.classList.remove('highlight-active'));
+            const target = display.querySelector(`.segment[data-idx="${idx}"]`);
+            if (target) { target.classList.add('highlight-active'); target.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
         }
 
-        // --- 4. SELECTION & DICTIONARY (WITH STABLE MODEL) ---
+        // --- 3. SELECTION & IPHONE FIX ---
+        const selectionMenu = document.getElementById('selectionMenu');
+
         function handleSelection() {
             const selection = window.getSelection();
             const selStr = selection.toString().trim();
-            if (!selStr || selStr.length > 20) { selectionMenu.classList.add('hidden'); return; }
-
-            const range = selection.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
             
-            const menuWidth = 120;
-            const menuHeight = 36;
-            let left = rect.left + (rect.width / 2) - (menuWidth / 2);
-            let top = rect.top + window.scrollY - menuHeight - 10;
+            if (!selStr || selStr.length > 20) {
+                selectionMenu.classList.add('hidden');
+                return;
+            }
 
-            left = Math.max(10, Math.min(window.innerWidth - menuWidth - 10, left));
-            if (top < window.scrollY + 10) top = rect.bottom + window.scrollY + 10;
+            // iPhoneでの位置計算をより堅牢に
+            try {
+                const range = selection.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                
+                const menuWidth = 120;
+                const menuHeight = 36;
+                let left = rect.left + (rect.width / 2) - (menuWidth / 2);
+                let top = rect.top + window.scrollY - menuHeight - 12;
 
-            selectionMenu.style.left = `${left}px`;
-            selectionMenu.style.top = `${top}px`;
-            selectionMenu.classList.remove('hidden');
-            selectionMenu.dataset.word = selStr;
-        }
+                // 画面外はみ出し防止
+                left = Math.max(10, Math.min(window.innerWidth - menuWidth - 10, left));
+                if (top < window.scrollY + 10) top = rect.bottom + window.scrollY + 12;
 
-        document.addEventListener('mouseup', () => setTimeout(handleSelection, 50));
-        document.addEventListener('touchend', () => setTimeout(handleSelection, 50));
-
-        document.getElementById('lookUpBtn').onclick = () => {
-            const word = selectionMenu.dataset.word;
-            selectionMenu.classList.add('hidden');
-            openDictionary(word);
-        };
-
-        async function fetchGeminiWithRetry(word, apiKey, retries = 3, delay = 1000) {
-            // 最も互換性が高く、v1betaで確実に動く gemini-1.5-flash を採用
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-            const payload = {
-                contents: [{ parts: [{ text: `中国語単語"${word}"を日本語で解説してください。必ず以下のJSON形式でのみ返答してください。JSON以外の説明文は含めないでください。\n{"pinyin":"ピンイン","meaning":"主な意味","english":"English","exampleCn":"例文(中国語)","exampleJp":"例文の和訳"}` }] }],
-                generationConfig: { 
-                    responseMimeType: "application/json",
-                    temperature: 0.1
-                }
-            };
-
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.status === 429) {
-                        addLog(`RATE LIMIT (429): RETRY IN ${delay}ms`, 'warn');
-                        await new Promise(r => setTimeout(r, delay));
-                        delay *= 2;
-                        continue;
-                    }
-
-                    if (!response.ok) {
-                        const err = await response.json();
-                        throw new Error(err.error?.message || `HTTP ${response.status}`);
-                    }
-
-                    return await response.json();
-                } catch (e) {
-                    if (i === retries - 1) throw e;
-                    await new Promise(r => setTimeout(r, delay));
-                    delay *= 2;
-                }
+                selectionMenu.style.left = `${left}px`;
+                selectionMenu.style.top = `${top}px`;
+                selectionMenu.classList.remove('hidden');
+                selectionMenu.dataset.word = selStr;
+            } catch(e) {
+                selectionMenu.classList.add('hidden');
             }
         }
+
+        // iPhoneの選択イベントを監視
+        document.addEventListener('selectionchange', () => {
+            // 少し遅延させないとiPhoneでは座標が正しく取れない場合がある
+            setTimeout(handleSelection, 100);
+        });
+
+        // どこかをタップしたらメニューを消す（ボタン以外）
+        document.addEventListener('touchstart', (e) => {
+            if (!selectionMenu.contains(e.target) && !e.target.closest('.segment')) {
+                selectionMenu.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('lookUpBtn').onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const word = selectionMenu.dataset.word;
+            selectionMenu.classList.add('hidden');
+            if (word) openDictionary(word);
+        };
+
+        // --- 4. DICTIONARY & API ---
+        let geminiApiKey = localStorage.getItem('crb_gemini_key') || "";
+        let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v19') || '[]');
 
         async function openDictionary(word) {
             if (!geminiApiKey) { document.getElementById('settingsModal').classList.remove('hidden'); return; }
@@ -502,12 +419,15 @@
             addLog(`QUERY: "${word}"`);
 
             try {
-                const data = await fetchGeminiWithRetry(word, geminiApiKey);
-                if (!data.candidates || !data.candidates[0].content.parts[0].text) {
-                    throw new Error("No data received from AI");
-                }
-                const resText = data.candidates[0].content.parts[0].text;
-                const res = JSON.parse(resText.trim());
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+                const payload = {
+                    contents: [{ parts: [{ text: `中国語単語"${word}"を日本語で解説してください。必ず以下のJSON形式でのみ返答してください。\n{"pinyin":"ピンイン","meaning":"主な意味","english":"English","exampleCn":"例文(中国語)","exampleJp":"例文の和訳"}` }] }],
+                    generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
+                };
+
+                const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const data = await response.json();
+                const res = JSON.parse(data.candidates[0].content.parts[0].text.trim());
                 
                 document.getElementById('dictWord').innerText = word;
                 document.getElementById('dictPinyin').innerText = res.pinyin || '-';
@@ -522,13 +442,13 @@
             } catch (err) {
                 addLog(`FAIL: ${err.message}`, 'error');
                 modal.classList.add('hidden');
-                showToast("解析失敗。API設定または接続を確認してください。");
+                showToast("解析失敗。API設定を確認してください。");
             }
         }
 
         // --- 5. DATA MANAGEMENT & TIMER ---
         function saveVocab() {
-            localStorage.setItem('crb_pro_vocab_v18', JSON.stringify(vocabList));
+            localStorage.setItem('crb_pro_vocab_v19', JSON.stringify(vocabList));
             renderVocabTable();
         }
 
@@ -572,23 +492,23 @@
             showToast("ADDED");
         };
 
+        // UI Event Listeners
+        document.getElementById('playBtn').onclick = () => {
+            if (isPlaying) { isPlaying = false; synth.cancel(); updateIcons(); }
+            else { isPlaying = true; if (currentIndex >= segments.length) currentIndex = 0; speak(); }
+        };
+        document.getElementById('stopBtn').onclick = () => { isPlaying = false; setMode('input'); };
+        document.getElementById('prevBtn').onclick = () => { if(currentIndex > 0) { currentIndex--; speak(); } };
+        document.getElementById('clearTextBtn').onclick = () => { document.getElementById('textInput').value = ''; showToast("CLEARED"); };
+        document.getElementById('openSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
+        document.getElementById('closeSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('hidden');
+        document.getElementById('closeDictBtn').onclick = () => document.getElementById('dictModal').classList.add('hidden');
         document.getElementById('exportCSV').onclick = () => {
             if (vocabList.length === 0) return showToast("LIST IS EMPTY");
             const csv = vocabList.map(v => `"${v.word}","${v.pinyin}","${v.meaning}","${v.exampleCn}","${v.exampleJp}"`).join('\n');
-            const el = document.createElement('textarea');
-            el.value = csv; document.body.appendChild(el); el.select();
-            document.execCommand('copy'); document.body.removeChild(el);
-            showToast("CSV COPIED");
+            const el = document.createElement('textarea'); el.value = csv; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); showToast("CSV COPIED");
         };
-
         document.getElementById('clearAllVocab').onclick = () => { if(confirm("リストをすべて削除しますか？")) { vocabList=[]; saveVocab(); } };
-        document.getElementById('clearTextBtn').onclick = () => { textInput.value = ''; showToast("CLEARED"); };
-        document.getElementById('stopBtn').onclick = () => setMode('input');
-        document.getElementById('closeSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('hidden');
-        document.getElementById('openSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
-        document.getElementById('closeDictBtn').onclick = () => document.getElementById('dictModal').classList.add('hidden');
-        document.getElementById('prevBtn').onclick = () => { if(currentIndex > 0) { currentIndex--; speak(); } };
-        
         document.getElementById('saveSettingsBtn').onclick = () => {
             geminiApiKey = document.getElementById('apiKeyInput').value.trim();
             localStorage.setItem('crb_gemini_key', geminiApiKey);
@@ -596,6 +516,7 @@
             showToast("SAVED");
         };
 
+        // Timer Logic
         let startTime, timerInterval;
         window.startTimer = () => {
             startTime = Date.now();
@@ -611,7 +532,7 @@
         window.stopTimer = () => {
             clearInterval(timerInterval);
             const ms = Date.now() - startTime;
-            const charCount = (textInput.value.match(/[\u4e00-\u9fa5]/g) || []).length;
+            const charCount = (document.getElementById('textInput').value.match(/[\u4e00-\u9fa5]/g) || []).length;
             const cpm = Math.round(charCount / (ms / 60000));
             document.getElementById('charCount').innerText = charCount;
             document.getElementById('finalTime').innerText = (ms/1000).toFixed(1)+'s';
@@ -623,14 +544,14 @@
         };
 
         function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.innerText = msg; t.classList.add('show');
+            const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show');
             setTimeout(() => t.classList.remove('show'), 2000);
         }
 
         window.onload = () => {
             renderVocabTable();
-            addLog("SYSTEM READY v18.0");
+            if (geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey;
+            addLog("SYSTEM READY v19.0");
         };
     </script>
 </body>
