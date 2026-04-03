@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v27.0</title>
+    <title>Chinese Reading Buddy Pro v28.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -26,7 +26,7 @@
             display: inline; 
             cursor: pointer;
             border-bottom: 2px solid transparent;
-            user-select: text; /* 選択を確実に許可 */
+            user-select: text;
         }
         .segment:hover { background: rgba(79, 70, 229, 0.05); }
         .highlight-active { 
@@ -70,7 +70,7 @@
 
     <div id="logPanel" class="minimized" onclick="if(event.target.tagName !== 'BUTTON') this.classList.toggle('minimized')">
         <div class="flex justify-between items-center cursor-pointer mb-1">
-            <span class="text-[9px] font-bold text-white uppercase">Log v27.0</span>
+            <span class="text-[9px] font-bold text-white uppercase">Log v28.0</span>
             <button id="copyLogBtn" class="bg-slate-700 text-white px-1.5 py-0.5 rounded text-[8px]">COPY</button>
         </div>
         <div id="logContent"></div>
@@ -80,7 +80,7 @@
         <div class="flex items-center justify-between w-full max-w-full">
             <div class="flex flex-col items-start leading-none gap-0.5">
                 <h1 class="text-base sm:text-lg font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v27.0</span>
+                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v28.0</span>
             </div>
             <button id="openSettingsBtn" class="p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -103,8 +103,8 @@
                     </div>
                 </div>
 
-                <div class="relative flex-1 flex flex-col min-h-[500px]">
-                    <textarea id="textInput" rows="20" class="w-full h-full text-xl leading-relaxed p-0 border-none focus:ring-0 placeholder:text-slate-300 resize-none chinese-text overflow-y-auto" placeholder="ここに中国語を入力してください..."></textarea>
+                <div class="relative flex-1 flex flex-col min-h-[350px]">
+                    <textarea id="textInput" rows="14" class="w-full h-full text-xl leading-relaxed p-0 border-none focus:ring-0 placeholder:text-slate-300 resize-none chinese-text overflow-y-auto" placeholder="ここに中国語を入力してください..."></textarea>
                     <div id="readerDisplay" class="hidden w-full h-full text-xl leading-relaxed p-0 border-none chinese-text overflow-y-auto break-words whitespace-pre-wrap text-slate-800"></div>
                 </div>
                 
@@ -255,32 +255,22 @@
             display.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
             
             display.querySelectorAll('.segment').forEach(el => {
-                // pointerupイベントで選択検知
+                // ポインタが離れたときに選択されているかチェック
                 el.onpointerup = (e) => {
-                    const selection = window.getSelection();
-                    const selectedText = selection.toString().trim();
+                    const sel = window.getSelection();
+                    const word = sel.toString().trim();
                     
-                    if (selectedText && selectedText.length > 0) {
-                        // テキストが選択された場合：辞書を開く
-                        e.preventDefault();
+                    // 選択された文字列が2文字以上の漢字（中国語）である場合のみ辞書を起動
+                    // 1文字でも辞書を引きたい場合は word.length > 0 に変更
+                    if (word && word.length > 0 && /[\u4e00-\u9fa5]/.test(word)) {
                         e.stopPropagation();
-                        openDictionary(selectedText);
-                        // 選択解除（連続ポップアップ防止）
-                        selection.removeAllRanges();
+                        openDictionary(word);
+                        sel.removeAllRanges();
                     } else {
-                        // 選択がない場合（通常のタップ）：再生
+                        // 選択がない、または記号などの場合は通常の再生
                         currentIndex = parseInt(el.dataset.idx); 
                         isPlaying = true; 
                         speak();
-                    }
-                };
-                
-                // 右クリック/長押しメニューを防止して辞書を優先
-                el.oncontextmenu = (e) => {
-                    const selectedText = window.getSelection().toString().trim();
-                    if (selectedText) {
-                        e.preventDefault();
-                        openDictionary(selectedText);
                     }
                 };
             });
@@ -305,25 +295,12 @@
             modal.classList.remove('hidden'); loading.classList.remove('hidden'); content.classList.add('hidden');
             addLog(`DICT SEARCH: "${word}"`);
 
-            const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
-                try {
-                    const response = await fetch(url, options);
-                    if (response.status === 401 || response.status === 403) throw new Error("APIキーが無効です");
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    return await response.json();
-                } catch (error) {
-                    if (retries <= 0 || error.message.includes("APIキー")) throw error;
-                    addLog(`RETRYING (${retries})...`, 'warn');
-                    await new Promise(r => setTimeout(r, backoff));
-                    return fetchWithRetry(url, options, retries - 1, backoff * 2);
-                }
-            };
-
             try {
+                // モデル名を確定版に変更
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`;
                 const prompt = `Chinese Word: "${word}". Explain in Japanese. Output JSON ONLY. NO MARKDOWN. FORMAT: {"pinyin": "...", "meaning": "...", "english": "...", "exampleCn": "...", "exampleJp": "..."}`;
                 
-                const data = await fetchWithRetry(url, {
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ 
@@ -332,8 +309,10 @@
                     })
                 });
 
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
                 let textResponse = data.candidates[0].content.parts[0].text;
-                textResponse = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
                 const json = JSON.parse(textResponse);
                 
                 document.getElementById('dictWord').innerText = word;
@@ -348,7 +327,7 @@
             } catch (e) { 
                 addLog(`DICT ERROR: ${e.message}`, 'error'); 
                 modal.classList.add('hidden'); 
-                showToast("単語の解析に失敗しました。"); 
+                showToast(`エラー: ${e.message}`); 
             }
         }
 
@@ -412,7 +391,7 @@
         };
 
         function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
-        window.onload = () => { renderVocabTable(); if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey; addLog("SYSTEM READY v27.0"); };
+        window.onload = () => { renderVocabTable(); if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey; addLog("SYSTEM READY v28.0"); };
     </script>
 </body>
 </html>
