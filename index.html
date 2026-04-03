@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v24.0</title>
+    <title>Chinese Reading Buddy Pro v25.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -69,7 +69,7 @@
 
     <div id="logPanel" class="minimized" onclick="if(event.target.tagName !== 'BUTTON') this.classList.toggle('minimized')">
         <div class="flex justify-between items-center cursor-pointer mb-1">
-            <span class="text-[9px] font-bold text-white uppercase">Log v24.0</span>
+            <span class="text-[9px] font-bold text-white uppercase">Log v25.0</span>
             <button id="copyLogBtn" class="bg-slate-700 text-white px-1.5 py-0.5 rounded text-[8px]">COPY</button>
         </div>
         <div id="logContent"></div>
@@ -79,7 +79,7 @@
         <div class="flex items-center justify-between w-full max-w-full">
             <div class="flex flex-col items-start leading-none gap-0.5">
                 <h1 class="text-base sm:text-lg font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v24.0</span>
+                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v25.0</span>
             </div>
             <button id="openSettingsBtn" class="p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -267,7 +267,7 @@
             if (target) target.classList.add('highlight-active');
         }
 
-        // 単語調べ機能：指数バックオフと再試行付き
+        // 単語調べ機能：v25.0 強化版
         async function openDictionary(word) {
             if (!geminiApiKey) { 
                 addLog("API KEY MISSING", "error");
@@ -281,43 +281,58 @@
             const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
                 try {
                     const response = await fetch(url, options);
+                    if (response.status === 401 || response.status === 403) {
+                        throw new Error("APIキーが無効です");
+                    }
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     return await response.json();
                 } catch (error) {
-                    if (retries <= 0) throw error;
+                    if (retries <= 0 || error.message.includes("APIキー")) throw error;
+                    addLog(`RETRYING (${retries})...`, 'warn');
                     await new Promise(r => setTimeout(r, backoff));
                     return fetchWithRetry(url, options, retries - 1, backoff * 2);
                 }
             };
 
             try {
+                // モデル指定を確実にし、システム命令を分離
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`;
-                const prompt = `中国語単語"${word}"を日本語で解説してください。以下のJSON形式でのみ出力してください。
+                const prompt = `中国語単語"${word}"を日本語で解説してください。必ず以下のJSON形式でのみ出力してください（Markdownの装飾は不要です）。
                 {"pinyin": "ピンイン", "meaning": "簡潔な日本語訳", "english": "English translation", "exampleCn": "中国語例文", "exampleJp": "例文の日本語訳"}`;
                 
                 const data = await fetchWithRetry(url, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ 
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { responseMimeType: "application/json" } 
+                        contents: [{ 
+                            role: "user",
+                            parts: [{ text: prompt }] 
+                        }],
+                        generationConfig: { 
+                            responseMimeType: "application/json"
+                        } 
                     })
                 });
 
-                const json = JSON.parse(data.candidates[0].content.parts[0].text);
+                let textResponse = data.candidates[0].content.parts[0].text;
+                // AIがJSONブロックの中に回答を閉じ込めた場合のトリミング
+                textResponse = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+                
+                const json = JSON.parse(textResponse);
+                
                 document.getElementById('dictWord').innerText = word;
-                document.getElementById('dictPinyin').innerText = json.pinyin;
-                document.getElementById('dictMean').innerText = json.meaning;
-                document.getElementById('dictEng').innerText = json.english;
-                document.getElementById('dictExCn').innerText = json.exampleCn;
-                document.getElementById('dictExJp').innerText = json.exampleJp;
+                document.getElementById('dictPinyin').innerText = json.pinyin || "-";
+                document.getElementById('dictMean').innerText = json.meaning || "-";
+                document.getElementById('dictEng').innerText = json.english || "-";
+                document.getElementById('dictExCn').innerText = json.exampleCn || "-";
+                document.getElementById('dictExJp').innerText = json.exampleJp || "-";
                 
                 loading.classList.add('hidden'); content.classList.remove('hidden');
                 addLog(`SUCCESS: "${word}"`);
             } catch (e) { 
                 addLog(`ERROR: ${e.message}`, 'error'); 
                 modal.classList.add('hidden'); 
-                showToast("解析に失敗しました。キーや通信を確認してください。"); 
+                showToast("解析に失敗しました。ログを確認してください。"); 
             }
         }
 
@@ -374,9 +389,14 @@
         document.getElementById('closeDictBtn').onclick = () => document.getElementById('dictModal').classList.add('hidden');
         document.getElementById('addToListBtn').onclick = () => { vocabList.unshift({ word: document.getElementById('dictWord').innerText, pinyin: document.getElementById('dictPinyin').innerText, meaning: document.getElementById('dictMean').innerText, english: document.getElementById('dictEng').innerText, exampleCn: document.getElementById('dictExCn').innerText, exampleJp: document.getElementById('dictExJp').innerText }); saveVocab(); document.getElementById('dictModal').classList.add('hidden'); showToast("ADDED"); };
         document.getElementById('copyLogBtn').onclick = (e) => { e.stopPropagation(); const text = Array.from(document.getElementById('logContent').children).map(c=>c.innerText).join('\n'); navigator.clipboard.writeText(text); showToast("LOGS COPIED"); };
+        document.getElementById('clearAllVocab').onclick = () => { if(confirm("単語帳をすべて削除しますか？")){vocabList=[];saveVocab();showToast("CLEARED");} };
+        document.getElementById('exportCSV').onclick = () => { 
+            const csv = vocabList.map(v => `"${v.word}","${v.pinyin}","${v.meaning}","${v.exampleCn}","${v.exampleJp}"`).join('\n');
+            navigator.clipboard.writeText(csv); showToast("CSV COPIED"); 
+        };
 
         function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
-        window.onload = () => { renderVocabTable(); if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey; addLog("SYSTEM READY v24.0"); };
+        window.onload = () => { renderVocabTable(); if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey; addLog("SYSTEM READY v25.0"); };
     </script>
 </body>
 </html>
