@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v19.0</title>
+    <title>Chinese Reading Buddy Pro v20.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -85,19 +85,21 @@
 </head>
 <body class="min-h-screen pb-32 w-full">
 
+    <!-- Debug Log Panel -->
     <div id="logPanel" class="minimized" onclick="if(event.target.tagName !== 'BUTTON') this.classList.toggle('minimized')">
         <div class="flex justify-between items-center cursor-pointer mb-1">
-            <span class="text-[9px] font-bold text-white uppercase">Log v19.0</span>
+            <span class="text-[9px] font-bold text-white uppercase">Log v20.0</span>
             <button onclick="copyLogs(); event.stopPropagation()" class="bg-slate-700 text-white px-1.5 py-0.5 rounded text-[8px]">COPY</button>
         </div>
         <div id="logContent"></div>
     </div>
 
+    <!-- Header -->
     <nav class="sticky top-0 z-[100] glass-panel px-4 py-2 w-full">
         <div class="flex items-center justify-between w-full max-w-full">
             <div class="flex flex-col items-start leading-none gap-0.5">
                 <h1 class="text-base sm:text-lg font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v19.0</span>
+                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v20.0</span>
             </div>
             <button id="openSettingsBtn" class="p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -105,7 +107,9 @@
         </div>
     </nav>
 
+    <!-- Main Content -->
     <main class="w-full px-4 py-4 space-y-8 mt-2 max-w-full">
+        <!-- Main Panel (Input/Reader) -->
         <section id="sectionMain" class="space-y-4">
             <div id="textContainer" class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 min-h-[350px] flex flex-col relative w-full">
                 <div class="flex justify-between items-center mb-3">
@@ -140,6 +144,7 @@
                 読み上げを開始する
             </button>
 
+            <!-- Player Controls -->
             <div id="playerControls" class="hidden space-y-4">
                 <div class="flex items-center justify-center gap-6">
                     <button id="prevBtn" class="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-full">
@@ -160,6 +165,7 @@
             </div>
         </section>
 
+        <!-- Timer Panel -->
         <section id="sectionTimer" class="space-y-4 text-center w-full">
             <h2 class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Speed Timer</h2>
             <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 w-full mx-auto">
@@ -178,6 +184,7 @@
             </div>
         </section>
 
+        <!-- Vocab List -->
         <section id="sectionVocab" class="space-y-4 w-full">
             <div class="flex items-center justify-between px-1">
                 <h2 class="text-xl font-black tracking-tight">MY LIST</h2>
@@ -207,6 +214,7 @@
         </section>
     </main>
 
+    <!-- Selection Menu -->
     <div id="selectionMenu" class="fixed hidden glass-panel border border-indigo-200 px-4 py-2.5 rounded-full shadow-2xl z-[9000] cursor-pointer">
         <button id="lookUpBtn" class="text-xs font-black text-indigo-600 flex items-center gap-1.5">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
@@ -214,6 +222,7 @@
         </button>
     </div>
 
+    <!-- Modals -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden z-[10000] flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl w-full max-w-sm p-6 space-y-5 shadow-2xl">
             <h3 class="text-xl font-black text-slate-800">Settings</h3>
@@ -269,7 +278,7 @@
             entry.className = "py-0.5 border-b border-white/5";
             entry.innerHTML = `<span style="opacity:0.4">[${time}]</span> <span style="color:${type==='error'?'#f87171':(type==='warn'?'#fbbf24':'#4ade80')}">${msg}</span>`;
             container.prepend(entry);
-            if (container.children.length > 50) container.removeChild(container.lastChild);
+            if (container.children.length > 100) container.removeChild(container.lastChild);
         }
 
         function copyLogs() {
@@ -297,6 +306,8 @@
                 utterance.rate = parseFloat(document.getElementById('rateRange').value);
                 updateHighlight(currentIndex);
                 updateIcons();
+                utterance.onstart = () => addLog(`PLAY: [${currentIndex}] "${text.substring(0, 10)}..."`);
+                utterance.onerror = (e) => addLog(`SPEECH ERROR: ${e.error}`, 'error');
                 utterance.onend = () => {
                     if (isPlaying) {
                         currentIndex++;
@@ -333,7 +344,7 @@
             const display = document.getElementById('readerDisplay');
             display.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
             display.querySelectorAll('.segment').forEach(el => el.onclick = (e) => { 
-                if (window.getSelection().toString().trim()) return; // 選択中は再生しない
+                if (window.getSelection().toString().trim()) return;
                 currentIndex = parseInt(el.dataset.idx); isPlaying = true; speak(); 
             });
             setMode('reading');
@@ -359,17 +370,16 @@
                 return;
             }
 
-            // iPhoneでの位置計算をより堅牢に
             try {
                 const range = selection.getRangeAt(0);
                 const rect = range.getBoundingClientRect();
-                
+                if (rect.width === 0) return;
+
                 const menuWidth = 120;
                 const menuHeight = 36;
                 let left = rect.left + (rect.width / 2) - (menuWidth / 2);
                 let top = rect.top + window.scrollY - menuHeight - 12;
 
-                // 画面外はみ出し防止
                 left = Math.max(10, Math.min(window.innerWidth - menuWidth - 10, left));
                 if (top < window.scrollY + 10) top = rect.bottom + window.scrollY + 12;
 
@@ -382,15 +392,12 @@
             }
         }
 
-        // iPhoneの選択イベントを監視
         document.addEventListener('selectionchange', () => {
-            // 少し遅延させないとiPhoneでは座標が正しく取れない場合がある
-            setTimeout(handleSelection, 100);
+            setTimeout(handleSelection, 150);
         });
 
-        // どこかをタップしたらメニューを消す（ボタン以外）
         document.addEventListener('touchstart', (e) => {
-            if (!selectionMenu.contains(e.target) && !e.target.closest('.segment')) {
+            if (!selectionMenu.contains(e.target) && !e.target.closest('.segment') && !e.target.closest('#dictModal')) {
                 selectionMenu.classList.add('hidden');
             }
         });
@@ -403,9 +410,9 @@
             if (word) openDictionary(word);
         };
 
-        // --- 4. DICTIONARY & API ---
+        // --- 4. DICTIONARY & API (v20 FIX) ---
         let geminiApiKey = localStorage.getItem('crb_gemini_key') || "";
-        let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v19') || '[]');
+        let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v20') || '[]');
 
         async function openDictionary(word) {
             if (!geminiApiKey) { document.getElementById('settingsModal').classList.remove('hidden'); return; }
@@ -418,16 +425,61 @@
             content.classList.add('hidden');
             addLog(`QUERY: "${word}"`);
 
+            // exponential backoff
+            const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        const res = await fetch(url, options);
+                        if (res.ok) return res;
+                        if (res.status === 429) { /* rate limit */ }
+                    } catch (e) { if (i === retries - 1) throw e; }
+                    await new Promise(r => setTimeout(r, backoff * Math.pow(2, i)));
+                }
+                throw new Error("API Max retries exceeded");
+            };
+
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+                // v20 FIX: 使用するモデル名をこの環境でサポートされているものに変更
+                const modelName = "gemini-2.5-flash-preview-09-2025";
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`;
+                
+                const prompt = `中国語単語"${word}"を日本語で解説してください。必ず以下のJSON形式でのみ返答してください。プロパティ名は必ず含めてください。
+{
+  "pinyin": "ピンイン",
+  "meaning": "主な日本語の意味",
+  "english": "English meaning",
+  "exampleCn": "中国語の例文",
+  "exampleJp": "例文の日本語訳"
+}`;
+
                 const payload = {
-                    contents: [{ parts: [{ text: `中国語単語"${word}"を日本語で解説してください。必ず以下のJSON形式でのみ返答してください。\n{"pinyin":"ピンイン","meaning":"主な意味","english":"English","exampleCn":"例文(中国語)","exampleJp":"例文の和訳"}` }] }],
-                    generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { 
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                pinyin: { type: "STRING" },
+                                meaning: { type: "STRING" },
+                                english: { type: "STRING" },
+                                exampleCn: { type: "STRING" },
+                                exampleJp: { type: "STRING" }
+                            }
+                        }
+                    }
                 };
 
-                const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const response = await fetchWithRetry(url, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
+
                 const data = await response.json();
-                const res = JSON.parse(data.candidates[0].content.parts[0].text.trim());
+                const resText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!resText) throw new Error("Empty response from AI");
+                
+                const res = JSON.parse(resText);
                 
                 document.getElementById('dictWord').innerText = word;
                 document.getElementById('dictPinyin').innerText = res.pinyin || '-';
@@ -442,13 +494,13 @@
             } catch (err) {
                 addLog(`FAIL: ${err.message}`, 'error');
                 modal.classList.add('hidden');
-                showToast("解析失敗。API設定を確認してください。");
+                showToast("解析失敗。API設定または接続を確認してください。");
             }
         }
 
         // --- 5. DATA MANAGEMENT & TIMER ---
         function saveVocab() {
-            localStorage.setItem('crb_pro_vocab_v19', JSON.stringify(vocabList));
+            localStorage.setItem('crb_pro_vocab_v20', JSON.stringify(vocabList));
             renderVocabTable();
         }
 
@@ -489,15 +541,15 @@
             });
             saveVocab();
             document.getElementById('dictModal').classList.add('hidden');
-            showToast("ADDED");
+            showToast("ADDED TO LIST");
         };
 
         // UI Event Listeners
         document.getElementById('playBtn').onclick = () => {
-            if (isPlaying) { isPlaying = false; synth.cancel(); updateIcons(); }
+            if (isPlaying) { isPlaying = false; synth.cancel(); updateIcons(); addLog("STOPPED"); }
             else { isPlaying = true; if (currentIndex >= segments.length) currentIndex = 0; speak(); }
         };
-        document.getElementById('stopBtn').onclick = () => { isPlaying = false; setMode('input'); };
+        document.getElementById('stopBtn').onclick = () => { isPlaying = false; setMode('input'); addLog("RESET TO INPUT"); };
         document.getElementById('prevBtn').onclick = () => { if(currentIndex > 0) { currentIndex--; speak(); } };
         document.getElementById('clearTextBtn').onclick = () => { document.getElementById('textInput').value = ''; showToast("CLEARED"); };
         document.getElementById('openSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
@@ -514,6 +566,7 @@
             localStorage.setItem('crb_gemini_key', geminiApiKey);
             document.getElementById('settingsModal').classList.add('hidden');
             showToast("SAVED");
+            addLog("API KEY UPDATED");
         };
 
         // Timer Logic
@@ -528,6 +581,7 @@
                 const ms = Date.now() - startTime;
                 document.getElementById('currentTime').innerText = `00:${Math.floor(ms/1000).toString().padStart(2,'0')}.${Math.floor((ms%1000)/100)}`;
             }, 100);
+            addLog("TIMER STARTED");
         };
         window.stopTimer = () => {
             clearInterval(timerInterval);
@@ -541,6 +595,7 @@
             document.getElementById('timerStopBtn').disabled = true;
             document.getElementById('timerStopBtn').className = "flex-1 bg-slate-200 text-slate-400 py-3.5 rounded-xl font-black";
             document.getElementById('resultCard').classList.remove('hidden');
+            addLog(`TIMER STOPPED: CPM ${cpm}`);
         };
 
         function showToast(msg) {
@@ -551,7 +606,7 @@
         window.onload = () => {
             renderVocabTable();
             if (geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey;
-            addLog("SYSTEM READY v19.0");
+            addLog("SYSTEM READY v20.0");
         };
     </script>
 </body>
