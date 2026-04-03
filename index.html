@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v25.0</title>
+    <title>Chinese Reading Buddy Pro v26.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -69,7 +69,7 @@
 
     <div id="logPanel" class="minimized" onclick="if(event.target.tagName !== 'BUTTON') this.classList.toggle('minimized')">
         <div class="flex justify-between items-center cursor-pointer mb-1">
-            <span class="text-[9px] font-bold text-white uppercase">Log v25.0</span>
+            <span class="text-[9px] font-bold text-white uppercase">Log v26.0</span>
             <button id="copyLogBtn" class="bg-slate-700 text-white px-1.5 py-0.5 rounded text-[8px]">COPY</button>
         </div>
         <div id="logContent"></div>
@@ -79,7 +79,7 @@
         <div class="flex items-center justify-between w-full max-w-full">
             <div class="flex flex-col items-start leading-none gap-0.5">
                 <h1 class="text-base sm:text-lg font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v25.0</span>
+                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v26.0</span>
             </div>
             <button id="openSettingsBtn" class="p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -108,7 +108,7 @@
                 </div>
                 
                 <div id="inputFooter" class="flex justify-between mt-3 pt-3 border-t border-slate-50">
-                    <div id="editHint" class="hidden text-[9px] font-bold text-slate-400 self-center uppercase tracking-wider">タップで単語検索 / リーダー再生</div>
+                    <div id="editHint" class="hidden text-[9px] font-bold text-slate-400 self-center uppercase tracking-wider">選択して単語検索 / タップで再生</div>
                     <div class="flex-1"></div>
                     <button id="clearTextBtn" class="flex items-center gap-1 text-[10px] font-bold text-red-400 hover:text-red-600 transition-colors py-1.5 px-2 rounded-xl">消去</button>
                 </div>
@@ -252,10 +252,22 @@
             currentIndex = 0;
             const display = document.getElementById('readerDisplay');
             display.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
-            display.querySelectorAll('.segment').forEach(el => el.onclick = (e) => { 
-                const sel = window.getSelection().toString().trim();
-                if (sel) { openDictionary(sel); return; }
-                currentIndex = parseInt(el.dataset.idx); isPlaying = true; speak(); 
+            
+            // 読み上げと辞書の検知ロジックを統合
+            display.querySelectorAll('.segment').forEach(el => {
+                el.onclick = (e) => {
+                    // テキストが選択されているか確認
+                    const selectedText = window.getSelection().toString().trim();
+                    if (selectedText) {
+                        e.stopPropagation();
+                        openDictionary(selectedText);
+                    } else {
+                        // 選択がない場合のみ再生
+                        currentIndex = parseInt(el.dataset.idx); 
+                        isPlaying = true; 
+                        speak();
+                    }
+                };
             });
             setMode('reading'); isPlaying = true; speak();
         };
@@ -267,7 +279,7 @@
             if (target) target.classList.add('highlight-active');
         }
 
-        // 単語調べ機能：v25.0 強化版
+        // 単語調べ機能：v26.0 更なる強化
         async function openDictionary(word) {
             if (!geminiApiKey) { 
                 addLog("API KEY MISSING", "error");
@@ -276,14 +288,12 @@
             }
             const modal = document.getElementById('dictModal'), loading = document.getElementById('dictLoading'), content = document.getElementById('dictContent');
             modal.classList.remove('hidden'); loading.classList.remove('hidden'); content.classList.add('hidden');
-            addLog(`ANALYZING: "${word}"`);
+            addLog(`DICT SEARCH: "${word}"`);
 
             const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
                 try {
                     const response = await fetch(url, options);
-                    if (response.status === 401 || response.status === 403) {
-                        throw new Error("APIキーが無効です");
-                    }
+                    if (response.status === 401 || response.status === 403) throw new Error("APIキーが無効です");
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     return await response.json();
                 } catch (error) {
@@ -295,27 +305,21 @@
             };
 
             try {
-                // モデル指定を確実にし、システム命令を分離
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`;
-                const prompt = `中国語単語"${word}"を日本語で解説してください。必ず以下のJSON形式でのみ出力してください（Markdownの装飾は不要です）。
-                {"pinyin": "ピンイン", "meaning": "簡潔な日本語訳", "english": "English translation", "exampleCn": "中国語例文", "exampleJp": "例文の日本語訳"}`;
+                // プロンプトを極限までシンプルにし、JSON以外の出力を禁ずる
+                const prompt = `Chinese Word: "${word}". Explain in Japanese. Output JSON ONLY. NO MARKDOWN. FORMAT: {"pinyin": "...", "meaning": "...", "english": "...", "exampleCn": "...", "exampleJp": "..."}`;
                 
                 const data = await fetchWithRetry(url, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ 
-                        contents: [{ 
-                            role: "user",
-                            parts: [{ text: prompt }] 
-                        }],
-                        generationConfig: { 
-                            responseMimeType: "application/json"
-                        } 
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { responseMimeType: "application/json" } 
                     })
                 });
 
                 let textResponse = data.candidates[0].content.parts[0].text;
-                // AIがJSONブロックの中に回答を閉じ込めた場合のトリミング
+                // 万が一のマークダウンタグを除去
                 textResponse = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
                 
                 const json = JSON.parse(textResponse);
@@ -328,11 +332,11 @@
                 document.getElementById('dictExJp').innerText = json.exampleJp || "-";
                 
                 loading.classList.add('hidden'); content.classList.remove('hidden');
-                addLog(`SUCCESS: "${word}"`);
+                addLog(`DICT SUCCESS: "${word}"`);
             } catch (e) { 
-                addLog(`ERROR: ${e.message}`, 'error'); 
+                addLog(`DICT ERROR: ${e.message}`, 'error'); 
                 modal.classList.add('hidden'); 
-                showToast("解析に失敗しました。ログを確認してください。"); 
+                showToast("単語の解析に失敗しました。"); 
             }
         }
 
@@ -377,7 +381,7 @@
             document.getElementById('timerStopBtn').disabled = true;
             document.getElementById('timerStopBtn').className = "flex-1 bg-slate-200 text-slate-400 py-3.5 rounded-xl font-black";
             document.getElementById('resultCard').classList.remove('hidden');
-            addLog(`CPM CALCULATED: ${cpm}`);
+            addLog(`TIMER STOPPED. CPM: ${cpm}`);
         };
 
         document.getElementById('playBtn').onclick = () => { if(isPlaying){isPlaying=false;synth.cancel();updateIcons();}else{isPlaying=true;speak();} };
@@ -396,7 +400,7 @@
         };
 
         function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
-        window.onload = () => { renderVocabTable(); if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey; addLog("SYSTEM READY v25.0"); };
+        window.onload = () => { renderVocabTable(); if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey; addLog("SYSTEM READY v26.0"); };
     </script>
 </body>
 </html>
