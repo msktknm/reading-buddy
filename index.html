@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v41.0</title>
+    <title>Chinese Reading Buddy Pro v42.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -82,14 +82,33 @@
             white-space: nowrap;
             border: 2px solid rgba(255,255,255,0.3);
         }
+
+        /* 読み込み中オーバーレイ */
+        #loadingOverlay {
+            position: fixed; inset: 0; background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(4px); z-index: 30000; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+        }
     </style>
 </head>
 <body class="min-h-screen pb-32 w-full">
 
+    <!-- Loading Overlay for Pre-fetching -->
+    <div id="loadingOverlay">
+        <div class="w-64 space-y-4 text-center">
+            <div class="spinner mx-auto mb-4"></div>
+            <div class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Generating Audio Voice...</div>
+            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                <div id="loadingProgressBar" class="h-full bg-indigo-600 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div id="loadingStatusText" class="text-[9px] font-bold text-slate-400">0 / 0 segments</div>
+        </div>
+    </div>
+
     <!-- Debug Log -->
     <div id="logPanel" class="minimized" onclick="if(event.target.tagName !== 'BUTTON') this.classList.toggle('minimized')">
         <div class="flex justify-between items-center cursor-pointer mb-1">
-            <span class="text-[10px] font-bold text-white uppercase tracking-wider">Debug Log v41.0</span>
+            <span class="text-[10px] font-bold text-white uppercase tracking-wider">Debug Log v42.0</span>
             <button id="copyLogBtn" class="bg-slate-700 text-white px-2 py-0.5 rounded text-[10px] font-bold">COPY</button>
         </div>
         <div id="logContent"></div>
@@ -103,7 +122,7 @@
         <div class="flex items-center justify-between w-full max-w-full">
             <div class="flex flex-col items-start leading-none gap-0.5">
                 <h1 class="text-base sm:text-lg font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v41.0</span>
+                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v42.0</span>
             </div>
             <button id="openSettingsBtn" class="p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -208,7 +227,7 @@
             <div id="dictContent" class="space-y-6">
                 <div class="flex items-baseline justify-between pt-2">
                     <div class="space-y-1"><h3 id="dictWord" class="text-4xl font-black text-indigo-600 tracking-tighter">...</h3><p id="dictPinyin" class="text-base font-bold text-slate-400 italic">...</p></div>
-                    <div class="text-right"><p id="dictEng" class="text-lg font-black text-slate-800">...p></div>
+                    <div class="text-right"><p id="dictEng" class="text-lg font-black text-slate-800">...</p></div>
                 </div>
                 <div class="grid gap-4">
                     <div class="space-y-1"><label class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Meaning</label><div id="dictMean" class="text-base font-bold text-slate-700 leading-tight">...</div></div>
@@ -228,7 +247,8 @@
         let geminiApiKey = localStorage.getItem('crb_gemini_key') || "";
         let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v41') || '[]');
         let currentAudio = null;
-        let useAITTS = true; // フォールバックフラグ
+        let audioCache = {}; // セグメントごとのWAV URLを保存
+        let isAborted = false;
 
         function addLog(msg, type = 'info') {
             const container = document.getElementById('logContent');
@@ -241,48 +261,56 @@
             container.prepend(entry);
         }
 
-        // --- TTS Engine with 429 Protection ---
-        // 429エラーを軽減するため、先読み(Prefetch)機能は削除しました
-        async function speak() {
-            if (!isPlaying || currentIndex >= segments.length) { 
-                isPlaying = false; updateIcons(); return; 
-            }
+        // --- PRE-FETCH AUDIO LOGIC ---
+        async function prefetchAudio() {
+            isAborted = false;
+            const overlay = document.getElementById('loadingOverlay');
+            const progress = document.getElementById('loadingProgressBar');
+            const status = document.getElementById('loadingStatusText');
             
-            stopAnyAudio();
-            const text = segments[currentIndex].trim();
-            updateHighlight(currentIndex);
-            updateIcons();
+            overlay.style.display = 'flex';
+            audioCache = {};
+            
+            for (let i = 0; i < segments.length; i++) {
+                if (isAborted) break;
+                
+                status.innerText = `${i + 1} / ${segments.length} segments processing...`;
+                progress.style.width = `${((i + 1) / segments.length) * 100}%`;
+                
+                const text = segments[i].trim();
+                if (!text) continue;
 
-            if (useAITTS && geminiApiKey) {
                 try {
-                    addLog(`Direct Fetching: Segment ${currentIndex}`, 'debug');
-                    const url = await getGeminiTTSWithRetry(text, 2, 2000); // リトライ回数を抑え、バックオフ時間を増加
-                    if (url) {
-                        playAudioBuffer(url);
-                        return;
+                    // 指数バックオフ付きのリトライ
+                    const wavUrl = await getGeminiTTSWithRetry(text, 5); 
+                    if (wavUrl) {
+                        audioCache[i] = wavUrl;
+                        addLog(`Cached Segment ${i}`, 'debug');
                     }
                 } catch (e) {
-                    addLog(`AI TTS FAILED: ${e.message}. Using Browser Voice.`, 'warn');
-                    if (e.message.includes('429')) {
-                        addLog(`Rate Limit hit. Disabling AI TTS for 60s.`, 'error');
-                        useAITTS = false;
-                        setTimeout(() => { useAITTS = true; addLog("AI TTS Restored.", "info"); }, 60000);
-                    }
+                    addLog(`Failed to fetch segment ${i}: ${e.message}`, 'error');
+                    // 完全に失敗した場合はBrowser TTSに頼るため、nullをセット
+                    audioCache[i] = null;
                 }
+                
+                // APIレート制限(429)対策として、リクエスト間にわずかなラグを置く（一括生成時）
+                await new Promise(r => setTimeout(r, 300));
             }
             
-            speakWithBrowser(text);
+            overlay.style.display = 'none';
         }
 
-        async function getGeminiTTSWithRetry(text, retries = 2, backoff = 2000) {
-            if (!text.trim()) return null;
+        async function getGeminiTTSWithRetry(text, maxRetries = 5) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${geminiApiKey}`;
             const payload = {
-                contents: [{ parts: [{ text: `Say in a clear and natural Chinese (Mandarin) voice: ${text}` }] }],
-                generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } }
+                contents: [{ parts: [{ text: `Say in a clear Chinese (Mandarin) voice: ${text}` }] }],
+                generationConfig: { 
+                    responseModalities: ["AUDIO"], 
+                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } 
+                }
             };
 
-            for (let i = 0; i < retries; i++) {
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
                 try {
                     const response = await fetch(url, {
                         method: 'POST',
@@ -290,30 +318,27 @@
                         body: JSON.stringify(payload)
                     });
 
-                    if (!response.ok) {
-                        if (response.status === 429) throw new Error("Status 429");
-                        throw new Error(`HTTP ${response.status}`);
+                    if (response.ok) {
+                        const result = await response.json();
+                        const base64Data = result.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                        if (base64Data) return pcmToWav(base64Data, 24000);
+                        throw new Error("No audio data in response");
                     }
-                    
-                    const result = await response.json();
-                    const base64Data = result.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-                    if (!base64Data) throw new Error("Empty audio data");
-                    return pcmToWav(base64Data, 24000);
+
+                    if (response.status === 429) {
+                        const wait = Math.pow(2, attempt) * 1000 + (Math.random() * 500);
+                        addLog(`Rate Limit (429). Retrying in ${Math.round(wait)}ms...`, 'warn');
+                        await new Promise(r => setTimeout(r, wait));
+                        continue;
+                    }
+
+                    throw new Error(`HTTP ${response.status}`);
                 } catch (e) {
-                    if (e.message.includes('429')) throw e; // 429の場合は即時フォールバック
-                    if (i === retries - 1) throw e;
-                    await new Promise(r => setTimeout(r, backoff * Math.pow(2, i)));
+                    if (attempt === maxRetries - 1) throw e;
+                    await new Promise(r => setTimeout(r, 1000));
                 }
             }
-        }
-
-        function stopAnyAudio() {
-            if (currentAudio) {
-                currentAudio.onended = null;
-                currentAudio.pause();
-                currentAudio = null;
-            }
-            synth.cancel();
+            return null;
         }
 
         function pcmToWav(base64, sampleRate) {
@@ -329,6 +354,35 @@
             view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
             writeString(view, 36, 'data'); view.setUint32(40, len, true);
             return URL.createObjectURL(new Blob([wavHeader, bytes], { type: 'audio/wav' }));
+        }
+
+        // --- PLAYBACK LOGIC ---
+        function speak() {
+            if (!isPlaying || currentIndex >= segments.length) { 
+                isPlaying = false; updateIcons(); return; 
+            }
+            
+            stopAnyAudio();
+            const text = segments[currentIndex].trim();
+            updateHighlight(currentIndex);
+            updateIcons();
+
+            const cachedUrl = audioCache[currentIndex];
+            if (cachedUrl) {
+                playAudioBuffer(cachedUrl);
+            } else {
+                addLog(`No cache for segment ${currentIndex}. Falling back to Browser TTS.`, 'warn');
+                speakWithBrowser(text);
+            }
+        }
+
+        function stopAnyAudio() {
+            if (currentAudio) {
+                currentAudio.onended = null;
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            synth.cancel();
         }
 
         function playAudioBuffer(url) {
@@ -374,16 +428,20 @@
             document.getElementById('modeLabel').innerText = isReading ? "Reading Mode" : "Input Mode";
         }
 
-        document.getElementById('startReadBtn').onclick = () => {
+        document.getElementById('startReadBtn').onclick = async () => {
             const raw = document.getElementById('textInput').value.trim();
             if (!raw) return;
+            if (!geminiApiKey) { showToast("API Key Required"); document.getElementById('settingsModal').classList.remove('hidden'); return; }
+
             segments = raw.match(/([^，。！？；：\n]+[，。！？；：\n]*)/g) || [raw];
             currentIndex = 0;
+            
+            // 全音声を事前キャッシュ
+            await prefetchAudio();
             
             const display = document.getElementById('readerDisplay');
             display.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
             
-            // ポップアップと読み上げのイベント制御
             display.addEventListener('mouseup', handleTextSelection);
             display.addEventListener('touchend', handleTextSelection);
             
@@ -434,13 +492,7 @@
             if (selectedTextForSearch) openDictionary(selectedTextForSearch);
         };
 
-        document.addEventListener('pointerdown', (e) => { 
-            if (e.target.id !== 'searchTrigger') document.getElementById('searchTrigger').style.display = 'none'; 
-        });
-
-        // --- Dictionary Logic (Rigorous Formatting) ---
         const modelList = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
-        
         async function fetchDictionaryWithFallback(prompt, models, index = 0) {
             if (index >= models.length) throw new Error("全モデルで解析に失敗しました。");
             const model = models[index];
@@ -460,16 +512,7 @@
             const modal = document.getElementById('dictModal'), loading = document.getElementById('dictLoading'), content = document.getElementById('dictContent');
             modal.classList.remove('hidden'); loading.classList.remove('hidden'); content.classList.add('hidden');
             try {
-                // Strict prompt to enforce pure JSON and correct English formatting
-                const prompt = `Analyze the Chinese word "${word}". 
-                Return ONLY a valid JSON object. Do not include markdown tags like \`\`\`json.
-                {
-                  "pinyin": "only the pinyin with tone marks",
-                  "meaning": "short Japanese translation",
-                  "english": "up to 3 English equivalent words, comma separated",
-                  "exampleCn": "one short Chinese example sentence",
-                  "exampleJp": "Japanese translation of the example sentence"
-                }`;
+                const prompt = `Analyze "${word}". Return JSON only: {"pinyin":"","meaning":"","english":"max 3 words","exampleCn":"","exampleJp":""}`;
                 const data = await fetchDictionaryWithFallback(prompt, modelList);
                 let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
                 rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
@@ -482,17 +525,14 @@
                 document.getElementById('dictExCn').innerText = json.exampleCn || "-";
                 document.getElementById('dictExJp').innerText = json.exampleJp || "-";
                 loading.classList.add('hidden'); content.classList.remove('hidden');
-            } catch (e) { modal.classList.add('hidden'); showToast("エラーが発生しました"); }
+            } catch (e) { modal.classList.add('hidden'); showToast("解析エラー"); }
         }
 
-        // --- Vocab List and CSV formatting ---
         function saveVocab() { localStorage.setItem('crb_pro_vocab_v41', JSON.stringify(vocabList)); renderVocabTable(); }
         function renderVocabTable() {
             const body = document.getElementById('vocabTableBody'), empty = document.getElementById('emptyState');
             if (vocabList.length === 0) { empty.classList.remove('hidden'); body.innerHTML = ''; return; }
             empty.classList.add('hidden');
-            
-            // Layout updated to meet specific column requirements
             body.innerHTML = vocabList.map((v, i) => `
                 <tr class="border-b border-slate-50">
                     <td class="p-3"><div class="font-black text-indigo-600 text-lg cursor-pointer" onclick="openDictionary('${v.word}')">${v.word}</div><div class="text-[9px] font-bold text-slate-400">${v.pinyin}</div></td>
@@ -532,7 +572,7 @@
 
         // Handlers
         document.getElementById('playBtn').onclick = () => { if(isPlaying){isPlaying=false; stopAnyAudio(); updateIcons();} else {isPlaying=true; speak();} };
-        document.getElementById('stopBtn').onclick = () => { isPlaying = false; stopAnyAudio(); setMode('input'); };
+        document.getElementById('stopBtn').onclick = () => { isPlaying = false; stopAnyAudio(); isAborted = true; setMode('input'); };
         document.getElementById('clearTextBtn').onclick = () => { document.getElementById('textInput').value = ''; };
         document.getElementById('saveSettingsBtn').onclick = () => { geminiApiKey = document.getElementById('apiKeyInput').value.trim(); localStorage.setItem('crb_gemini_key', geminiApiKey); document.getElementById('settingsModal').classList.add('hidden'); showToast("SAVED"); };
         document.getElementById('openSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
@@ -552,15 +592,10 @@
             showToast("ADDED"); 
         };
         document.getElementById('clearAllVocab').onclick = () => { if(confirm("消去しますか？")){vocabList=[];saveVocab();showToast("CLEARED");} };
-        
-        // Export CSV logic with correct column arrangement
         document.getElementById('exportCSV').onclick = () => { 
-            // 1st col: Chinese (Pinyin), 2nd col: Meaning, 3rd col: ExCn / ExJp / EN
             const csv = vocabList.map(v => `"${v.word} (${v.pinyin})","${v.meaning}","${v.exampleCn} / ${v.exampleJp} / EN: ${v.english}"`).join('\n'); 
             const el = document.createElement('textarea'); el.value = csv; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); showToast("CSV COPIED");
         };
-
-        // COPY LOG logic
         document.getElementById('copyLogBtn').onclick = (e) => { 
             e.stopPropagation(); 
             const text = Array.from(document.getElementById('logContent').children).map(c=>c.innerText).join('\n'); 
@@ -572,7 +607,7 @@
         window.onload = () => { 
             if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey;
             renderVocabTable(); 
-            addLog("System Initialized v41.0"); 
+            addLog("System Initialized v42.0 (Pre-fetch Engine)"); 
         };
     </script>
 </body>
