@@ -250,6 +250,11 @@
 
         // 全8モデルリスト（優先順位順）
         const modelList = [
+            "gemini-3-pro-preview",
+            "gemini-3-flash-preview",
+            "gemini-3.1-pro-preview",
+            "gemini-3.1-flash-lite-preview",
+            "gemini-3.1-flash-live-preview",
             "gemini-2.5-flash",
             "gemini-2.5-pro",
             "gemini-2.0-flash",
@@ -260,22 +265,53 @@
             "gemini-2.5-pro-preview-tts"
         ];
 
-        function speak() {
-            if (!isPlaying || currentIndex >= segments.length) { isPlaying = false; updateIcons(); return; }
-            synth.cancel();
-            const utterance = new SpeechSynthesisUtterance(segments[currentIndex].trim());
-            utterance.lang = 'zh-CN';
-            utterance.rate = parseFloat(document.getElementById('rateRange').value);
-            updateHighlight(currentIndex); updateIcons();
-            utterance.onend = () => {
-                if (isPlaying) {
-                    currentIndex++;
-                    if (document.getElementById('autoModeToggle').checked && currentIndex < segments.length) speak();
-                    else { isPlaying = false; updateIcons(); }
-                }
-            };
-            synth.speak(utterance);
-        }
+        // --- 修正後の speak 関数のイメージ ---
+	async function speak() {
+		if (!isPlaying || currentIndex >= segments.length) { 
+			isPlaying = false; updateIcons(); return; 
+		}
+
+		const textToRead = segments[currentIndex].trim();
+		updateHighlight(currentIndex);
+
+		try {
+			// 1. Gemini API を叩いて音声データを生成
+			// モデルは 'gemini-2.5-flash-native-audio-latest' を使用
+			const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-native-audio-latest:generateContent?key=${geminiApiKey}`;
+
+			const response = await fetch(url, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					contents: [{
+						parts: [
+							{ text: `Please read this Chinese text naturally: "${textToRead}"` }
+						]
+					}],
+					// 音声出力を要求する設定（※API仕様に合わせた指定が必要）
+					generationConfig: { response_mime_type: "audio/wav" } 
+				})
+			});
+
+			const data = await response.json();
+			// 2. 返ってきた Base64 音声データを再生
+			const audioBase64 = data.candidates[0].content.parts.find(p => p.inline_data).inline_data.data;
+			const audio = new Audio(`data:audio/wav;base64,${audioBase64}`);
+
+			audio.onended = () => {
+				if (isPlaying) {
+					currentIndex++;
+					if (document.getElementById('autoModeToggle').checked) speak();
+					else { isPlaying = false; updateIcons(); }
+				}
+			};
+			audio.play();
+
+		} catch (e) {
+			addLog(`TTS Error: ${e.message}`, 'error');
+			// 失敗した時だけ、元のカタコト(Web Speech API)をフォールバックとして使うのもアリ
+		}
+	}
 
         function updateIcons() {
             document.getElementById('playIcon').classList.toggle('hidden', isPlaying);
@@ -487,3 +523,4 @@
     </script>
 </body>
 </html>
+
