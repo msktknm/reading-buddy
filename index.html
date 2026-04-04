@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v40.0</title>
+    <title>Chinese Reading Buddy Pro v41.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -89,7 +89,7 @@
     <!-- Debug Log -->
     <div id="logPanel" class="minimized" onclick="if(event.target.tagName !== 'BUTTON') this.classList.toggle('minimized')">
         <div class="flex justify-between items-center cursor-pointer mb-1">
-            <span class="text-[10px] font-bold text-white uppercase tracking-wider">Debug Log v40.0</span>
+            <span class="text-[10px] font-bold text-white uppercase tracking-wider">Debug Log v41.0</span>
             <button id="copyLogBtn" class="bg-slate-700 text-white px-2 py-0.5 rounded text-[10px] font-bold">COPY</button>
         </div>
         <div id="logContent"></div>
@@ -103,7 +103,7 @@
         <div class="flex items-center justify-between w-full max-w-full">
             <div class="flex flex-col items-start leading-none gap-0.5">
                 <h1 class="text-base sm:text-lg font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v40.0</span>
+                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v41.0</span>
             </div>
             <button id="openSettingsBtn" class="p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -226,10 +226,9 @@
         const synth = window.speechSynthesis;
         let isPlaying = false, currentIndex = 0, segments = [];
         let geminiApiKey = localStorage.getItem('crb_gemini_key') || "";
-        let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v20') || '[]');
+        let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v41') || '[]');
         let currentAudio = null;
-        let prefetchAudio = { index: -1, url: null };
-        let useAITTS = true; // 429エラー時のフォールバックフラグ
+        let useAITTS = true; // フォールバックフラグ
 
         function addLog(msg, type = 'info') {
             const container = document.getElementById('logContent');
@@ -242,7 +241,8 @@
             container.prepend(entry);
         }
 
-        // --- Optimized TTS Engine with 429 Fallback ---
+        // --- TTS Engine with 429 Protection ---
+        // 429エラーを軽減するため、先読み(Prefetch)機能は削除しました
         async function speak() {
             if (!isPlaying || currentIndex >= segments.length) { 
                 isPlaying = false; updateIcons(); return; 
@@ -254,19 +254,11 @@
             updateIcons();
 
             if (useAITTS && geminiApiKey) {
-                if (prefetchAudio.index === currentIndex && prefetchAudio.url) {
-                    addLog(`Using Prefetched: Segment ${currentIndex}`, 'debug');
-                    playAudioBuffer(prefetchAudio.url);
-                    setTimeout(prefetchNext, 800); // 連続リクエストを避けるための遅延
-                    return;
-                }
-
                 try {
                     addLog(`Direct Fetching: Segment ${currentIndex}`, 'debug');
-                    const url = await getGeminiTTSWithRetry(text);
+                    const url = await getGeminiTTSWithRetry(text, 2, 2000); // リトライ回数を抑え、バックオフ時間を増加
                     if (url) {
                         playAudioBuffer(url);
-                        setTimeout(prefetchNext, 800);
                         return;
                     }
                 } catch (e) {
@@ -279,11 +271,10 @@
                 }
             }
             
-            // Browser TTS Fallback (もしAIがダメなら内蔵音声で読む)
             speakWithBrowser(text);
         }
 
-        async function getGeminiTTSWithRetry(text, retries = 3, backoff = 1000) {
+        async function getGeminiTTSWithRetry(text, retries = 2, backoff = 2000) {
             if (!text.trim()) return null;
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${geminiApiKey}`;
             const payload = {
@@ -309,21 +300,11 @@
                     if (!base64Data) throw new Error("Empty audio data");
                     return pcmToWav(base64Data, 24000);
                 } catch (e) {
-                    if (e.message.includes('429')) throw e; // 429の場合は即時中断してフォールバックへ
+                    if (e.message.includes('429')) throw e; // 429の場合は即時フォールバック
                     if (i === retries - 1) throw e;
                     await new Promise(r => setTimeout(r, backoff * Math.pow(2, i)));
                 }
             }
-        }
-
-        async function prefetchNext() {
-            const nextIdx = currentIndex + 1;
-            if (!useAITTS || nextIdx >= segments.length || !geminiApiKey) return;
-            if (prefetchAudio.index === nextIdx) return;
-            try {
-                const url = await getGeminiTTSWithRetry(segments[nextIdx], 1); // プレフェッチのリトライは少なめ
-                if (url) prefetchAudio = { index: nextIdx, url: url };
-            } catch(e) { /* ignore prefetch errors */ }
         }
 
         function stopAnyAudio() {
@@ -398,7 +379,6 @@
             if (!raw) return;
             segments = raw.match(/([^，。！？；：\n]+[，。！？；：\n]*)/g) || [raw];
             currentIndex = 0;
-            prefetchAudio = { index: -1, url: null };
             
             const display = document.getElementById('readerDisplay');
             display.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
@@ -428,6 +408,7 @@
         }
 
         // --- Search Popup Logic ---
+        let selectedTextForSearch = "";
         function handleTextSelection() {
             setTimeout(() => {
                 const sel = window.getSelection();
@@ -457,7 +438,7 @@
             if (e.target.id !== 'searchTrigger') document.getElementById('searchTrigger').style.display = 'none'; 
         });
 
-        // --- Dictionary Models Fallback ---
+        // --- Dictionary Logic (Rigorous Formatting) ---
         const modelList = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
         
         async function fetchDictionaryWithFallback(prompt, models, index = 0) {
@@ -479,11 +460,21 @@
             const modal = document.getElementById('dictModal'), loading = document.getElementById('dictLoading'), content = document.getElementById('dictContent');
             modal.classList.remove('hidden'); loading.classList.remove('hidden'); content.classList.add('hidden');
             try {
-                const prompt = `Explain "${word}" in Japanese. Output exactly one JSON object: {"pinyin":"...","meaning":"...","english":"...","exampleCn":"...","exampleJp":"..."}`;
+                // Strict prompt to enforce pure JSON and correct English formatting
+                const prompt = `Analyze the Chinese word "${word}". 
+                Return ONLY a valid JSON object. Do not include markdown tags like \`\`\`json.
+                {
+                  "pinyin": "only the pinyin with tone marks",
+                  "meaning": "short Japanese translation",
+                  "english": "up to 3 English equivalent words, comma separated",
+                  "exampleCn": "one short Chinese example sentence",
+                  "exampleJp": "Japanese translation of the example sentence"
+                }`;
                 const data = await fetchDictionaryWithFallback(prompt, modelList);
                 let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
                 rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
                 const json = JSON.parse(rawText);
+                
                 document.getElementById('dictWord').innerText = word;
                 document.getElementById('dictPinyin').innerText = json.pinyin || "-";
                 document.getElementById('dictMean').innerText = json.meaning || "-";
@@ -494,20 +485,27 @@
             } catch (e) { modal.classList.add('hidden'); showToast("エラーが発生しました"); }
         }
 
-        // --- System Tools & Data ---
-        function saveVocab() { localStorage.setItem('crb_pro_vocab_v20', JSON.stringify(vocabList)); renderVocabTable(); }
+        // --- Vocab List and CSV formatting ---
+        function saveVocab() { localStorage.setItem('crb_pro_vocab_v41', JSON.stringify(vocabList)); renderVocabTable(); }
         function renderVocabTable() {
-            const body = document.getElementById('vocabTableBody');
-            if (vocabList.length === 0) { document.getElementById('emptyState').classList.remove('hidden'); body.innerHTML = ''; return; }
-            document.getElementById('emptyState').classList.add('hidden');
+            const body = document.getElementById('vocabTableBody'), empty = document.getElementById('emptyState');
+            if (vocabList.length === 0) { empty.classList.remove('hidden'); body.innerHTML = ''; return; }
+            empty.classList.add('hidden');
+            
+            // Layout updated to meet specific column requirements
             body.innerHTML = vocabList.map((v, i) => `
                 <tr class="border-b border-slate-50">
                     <td class="p-3"><div class="font-black text-indigo-600 text-lg cursor-pointer" onclick="openDictionary('${v.word}')">${v.word}</div><div class="text-[9px] font-bold text-slate-400">${v.pinyin}</div></td>
                     <td class="p-3 font-bold text-slate-600 text-sm">${v.meaning}</td>
-                    <td class="p-3"><div class="text-xs text-slate-800 chinese-text">${v.exampleCn}</div></td>
-                    <td class="p-3 text-right"><button onclick="vocabList.splice(${i},1);localStorage.setItem('crb_pro_vocab_v20', JSON.stringify(vocabList));renderVocabTable();" class="text-slate-300 hover:text-red-500">×</button></td>
+                    <td class="p-3">
+                        <div class="text-xs text-slate-800 chinese-text">${v.exampleCn}</div>
+                        <div class="text-[9px] text-slate-400 italic">${v.exampleJp}</div>
+                        <div class="text-[9px] text-slate-500 font-bold mt-1">EN: ${v.english}</div>
+                    </td>
+                    <td class="p-3 text-right"><button onclick="deleteItem(${i})" class="text-slate-300 hover:text-red-500 text-xl">×</button></td>
                 </tr>`).join('');
         }
+        window.deleteItem = (i) => { vocabList.splice(i, 1); saveVocab(); };
 
         let startTime, timerInterval;
         window.startTimer = () => {
@@ -540,30 +538,42 @@
         document.getElementById('openSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
         document.getElementById('closeSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('hidden');
         document.getElementById('closeDictBtn').onclick = () => document.getElementById('dictModal').classList.add('hidden');
-        document.getElementById('addToListBtn').onclick = () => { vocabList.unshift({ word: document.getElementById('dictWord').innerText, pinyin: document.getElementById('dictPinyin').innerText, meaning: document.getElementById('dictMean').innerText, english: document.getElementById('dictEng').innerText, exampleCn: document.getElementById('dictExCn').innerText, exampleJp: document.getElementById('dictExJp').innerText }); saveVocab(); document.getElementById('dictModal').classList.add('hidden'); showToast("ADDED"); };
+        document.getElementById('addToListBtn').onclick = () => { 
+            vocabList.unshift({ 
+                word: document.getElementById('dictWord').innerText, 
+                pinyin: document.getElementById('dictPinyin').innerText, 
+                meaning: document.getElementById('dictMean').innerText, 
+                english: document.getElementById('dictEng').innerText, 
+                exampleCn: document.getElementById('dictExCn').innerText, 
+                exampleJp: document.getElementById('dictExJp').innerText 
+            }); 
+            saveVocab(); 
+            document.getElementById('dictModal').classList.add('hidden'); 
+            showToast("ADDED"); 
+        };
         document.getElementById('clearAllVocab').onclick = () => { if(confirm("消去しますか？")){vocabList=[];saveVocab();showToast("CLEARED");} };
         
-        // COPY Logic Fix
-        document.getElementById('copyLogBtn').onclick = async (e) => { 
+        // Export CSV logic with correct column arrangement
+        document.getElementById('exportCSV').onclick = () => { 
+            // 1st col: Chinese (Pinyin), 2nd col: Meaning, 3rd col: ExCn / ExJp / EN
+            const csv = vocabList.map(v => `"${v.word} (${v.pinyin})","${v.meaning}","${v.exampleCn} / ${v.exampleJp} / EN: ${v.english}"`).join('\n'); 
+            const el = document.createElement('textarea'); el.value = csv; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); showToast("CSV COPIED");
+        };
+
+        // COPY LOG logic
+        document.getElementById('copyLogBtn').onclick = (e) => { 
             e.stopPropagation(); 
             const text = Array.from(document.getElementById('logContent').children).map(c=>c.innerText).join('\n'); 
-            try {
-                const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); showToast("LOGS COPIED");
-            } catch(err) {
-                if(navigator.clipboard) { await navigator.clipboard.writeText(text); showToast("LOGS COPIED"); }
-            }
-        };
-        document.getElementById('exportCSV').onclick = async () => { 
-            const csv = vocabList.map(v => `"${v.word}","${v.pinyin}","${v.meaning}"`).join('\n'); 
-            try {
-                const el = document.createElement('textarea'); el.value = csv; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); showToast("CSV COPIED");
-            } catch(err) {
-                if(navigator.clipboard) { await navigator.clipboard.writeText(csv); showToast("CSV COPIED"); }
-            }
+            const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); showToast("LOGS COPIED");
         };
 
         function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
-        window.onload = () => { renderVocabTable(); if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey; addLog("READY v40.0 (Robust Fallback TTS)"); };
+        
+        window.onload = () => { 
+            if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey;
+            renderVocabTable(); 
+            addLog("System Initialized v41.0"); 
+        };
     </script>
 </body>
 </html>
