@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chinese Reading Buddy Pro v81.0</title>
+    <title>Chinese Reading Buddy Pro v83.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -73,9 +73,10 @@
     <!-- Log Panel -->
     <div id="logPanel" class="minimized">
         <div id="logHeader">
-            <span class="text-[9px] font-black text-white tracking-widest">CONSOLE v81.0</span>
+            <span class="text-[9px] font-black text-white tracking-widest">CONSOLE v83.0</span>
             <div class="flex items-center gap-1">
                 <button id="copyLogBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-0.5 rounded text-[8px] font-black transition-colors">COPY</button>
+                <button id="clearLogBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-2 py-0.5 rounded text-[8px] font-black transition-colors">CLR</button>
                 <button id="toggleLogBtn" class="bg-slate-500 hover:bg-slate-400 text-white px-2 py-0.5 rounded text-[8px] font-black transition-colors">MAX</button>
             </div>
         </div>
@@ -90,7 +91,7 @@
         <div class="flex items-center justify-between max-w-5xl mx-auto">
             <div class="flex flex-col items-start leading-none gap-1">
                 <h1 class="text-lg sm:text-xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black tracking-tighter">PRO v81.0</span>
+                <span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black tracking-tighter">PRO v83.0</span>
             </div>
             <button id="openSettingsBtn" class="p-3 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-2xl active:scale-90">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
@@ -111,7 +112,7 @@
                 </div>
                 <!-- Textbox and Reader Area -->
                 <textarea id="textInput" rows="14" class="w-full text-2xl leading-relaxed p-0 border-none focus:ring-0 placeholder:text-slate-200 resize-none chinese-text flex-1" placeholder="ここに従文を貼り付けてください..."></textarea>
-                <div id="readerDisplay" class="hidden w-full text-2xl leading-relaxed p-0 chinese-text break-words whitespace-pre-wrap text-slate-800 flex-1 relative overflow-y-auto" style="user-select: text; -webkit-user-select: text;"></div>
+                <div id="readerDisplay" class="hidden w-full text-2xl leading-relaxed p-0 chinese-text break-words whitespace-pre-wrap text-slate-800 flex-1 relative overflow-y-auto"></div>
                 
                 <div id="inputFooter" class="flex justify-between mt-4 pt-4 border-t border-slate-50 items-center">
                     <div id="editHint" class="hidden text-[10px] font-black text-indigo-400 uppercase tracking-widest italic animate-pulse">テキスト選択で単語辞書</div>
@@ -151,9 +152,9 @@
             </div>
             <div id="resultCard" class="hidden bg-indigo-600 rounded-3xl p-6 text-white shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-lg mx-auto">
                 <div class="grid grid-cols-3 gap-4">
-                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">Chars</div><div id="charCount" class="text-base font-black">0</div></div>
-                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">Time</div><div id="finalTime" class="text-base font-black">0s</div></div>
-                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">CPM</div><div id="cpmResult" class="text-base font-black italic">0</div></div>
+                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">Chars</div><div id="charCount" class="text-xl font-black">0</div></div>
+                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">Time</div><div id="finalTime" class="text-xl font-black">0s</div></div>
+                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">CPM</div><div id="cpmResult" class="text-xl font-black italic">0</div></div>
                 </div>
             </div>
         </section>
@@ -174,10 +175,10 @@
                 <table class="w-full text-left min-w-[600px] border-collapse">
                     <thead class="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
                         <tr>
-                            <th class="p-5">中国語 (拼音)</th>
-                            <th class="p-5">日本語訳</th>
-                            <th class="p-5">例文 / 英語 (Max 3)</th>
-                            <th class="p-5 w-20"></th>
+                            <th class="p-5 w-1/4">中国語 (拼音)</th>
+                            <th class="p-5 w-1/4">日本語訳</th>
+                            <th class="p-5 w-2/4">例文 / 英語 (Max 3)</th>
+                            <th class="p-5 w-10"></th>
                         </tr>
                     </thead>
                     <tbody id="vocabTableBody"></tbody>
@@ -187,8 +188,8 @@
         </section>
     </main>
 
-    <!-- Modals -->
-    <div id="settingsModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-xl hidden z-[60000] flex items-center justify-center p-6">
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-xl hidden z-[20000] flex items-center justify-center p-6">
         <div class="bg-white rounded-[2.5rem] w-full max-w-md p-8 space-y-6 shadow-2xl">
             <div class="flex justify-between items-center">
                 <h3 class="text-2xl font-black text-slate-800 italic">API ACCESS</h3>
@@ -202,7 +203,8 @@
         </div>
     </div>
 
-    <div id="dictModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-xl hidden z-[70000] flex items-center justify-center p-6">
+    <!-- Dictionary Modal -->
+    <div id="dictModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-xl hidden z-[22000] flex items-center justify-center p-6">
         <div class="bg-white rounded-[3rem] w-full max-w-md p-10 space-y-6 shadow-2xl">
             <div class="flex justify-between items-start">
                 <div class="space-y-1">
@@ -214,69 +216,115 @@
             <div id="dictContent" class="space-y-5">
                 <div class="p-5 bg-indigo-50/50 rounded-3xl border border-indigo-100">
                     <label class="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2">Definition</label>
-                    <div id="dictMean" class="text-lg font-black text-indigo-900">---</div>
+                    <div id="dictMean" class="text-sm font-bold text-indigo-900 leading-relaxed">---</div>
                 </div>
-                <div class="grid grid-cols-1 gap-4">
-                    <div class="p-5 bg-slate-50 rounded-3xl border border-slate-100">
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Usage Example</label>
-                        <div id="dictExCn" class="text-sm text-slate-700 chinese-text leading-relaxed">---</div>
-                    </div>
-                    <div class="p-5 bg-slate-50 rounded-3xl border border-slate-100">
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">English Synonyms</label>
-                        <div id="dictEng" class="text-xs font-bold text-slate-600 tracking-wide">---</div>
-                    </div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <label class="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Example</label>
+                    <div id="dictExCn" class="text-sm text-slate-700 chinese-text">---</div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <label class="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">English</label>
+                    <div id="dictEng" class="text-[10px] font-bold text-slate-600">---</div>
                 </div>
             </div>
-            <div class="flex gap-4 pt-4">
-                <button id="addVocabBtn" class="flex-[2] bg-indigo-600 text-white py-5 rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all">ADD TO LIST</button>
-                <button id="cancelVocabBtn" class="flex-1 bg-slate-100 text-slate-500 py-5 rounded-2xl font-black hover:bg-slate-200 transition-all">CANCEL</button>
+            <div class="flex gap-2 pt-2">
+                <button id="addVocabBtn" class="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-black text-sm">追加</button>
+                <button id="cancelVocabBtn" class="flex-1 bg-slate-100 text-slate-500 py-4 rounded-xl font-black text-sm">キャンセル</button>
             </div>
         </div>
     </div>
 
     <!-- Rate Limit Modal -->
-    <div id="rateLimitModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-2xl hidden z-[80000] flex items-center justify-center p-6 text-center">
+    <div id="rateLimitModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-2xl hidden z-[25000] flex items-center justify-center p-6 text-center">
         <div class="bg-white rounded-[3rem] w-full max-w-sm p-10 space-y-6 shadow-2xl">
             <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-2 text-3xl">⚠️</div>
             <h3 class="text-2xl font-black text-red-600 tracking-tighter">RATE LIMIT REACHED</h3>
             <div class="space-y-4">
-                <div class="p-5 bg-red-50 rounded-2xl border border-red-100">
+                <div class="p-5 bg-red-50 rounded-2xl border border-red-100 text-xs">
                     <p id="rateLimitTime" class="font-black text-red-700 text-lg mb-1 italic">Fetching recovery time...</p>
                     <p id="rateLimitMsg" class="font-mono text-slate-500 text-[10px] leading-tight break-words opacity-60"></p>
                 </div>
-                <p class="text-xs text-slate-400 font-bold px-2">Geminiの利用制限に達しました。<br>WebSpeechAPIモードに切り替えて読み上げを継続しますか？</p>
+                <p class="text-xs text-slate-400 font-bold px-2">モデルの上限に達しました。<br>WebSpeechAPIモードに切り替えて読み上げを継続しますか？</p>
             </div>
             <button id="rateLimitOkBtn" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black shadow-xl hover:bg-black transition-all">OK (SWITCH TO WEBSPEECH)</button>
         </div>
     </div>
 
-    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-10 py-5 rounded-3xl text-[10px] font-black shadow-2xl tracking-[0.3em] uppercase opacity-0 transition-all duration-300 pointer-events-none z-[90000] border border-white/10">Message</div>
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-10 py-5 rounded-3xl text-[10px] font-black shadow-2xl tracking-[0.3em] uppercase opacity-0 transition-all duration-300 pointer-events-none z-[30000] border border-white/10">Message</div>
 
     <script>
-        // --- Configuration ---
-        const VERSION = "v81.0";
+        // --- Configuration & Constants ---
+        const VERSION = "v83.0";
         const MODELS = {
             PRO_TTS: "gemini-2.5-pro-preview-tts",
             FLASH_TTS: "gemini-2.5-flash-preview-tts",
             DICT: "gemini-3-flash-preview"
         };
+        const DB_NAME = 'CRB_AudioCache';
+        const STORE_NAME = 'audioStore';
 
-        // --- State Management ---
-        let userApiKey = localStorage.getItem('crb_gemini_key_v75') || "";
+        // --- Application State ---
+        let userApiKey = localStorage.getItem('crb_gemini_key_v83') || "";
         let isPlaying = false;
         let currentIndex = 0;
         let segments = [];
-        let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v75') || '[]');
+        let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v83') || '[]');
         let audioPlayer = null;
-        let segmentMeta = [];
+        let segmentMeta = []; // {start, end}
         let isWebSpeechMode = false;
+        let wsUtterance = null;
         let activeDictData = null;
         let isAudioReady = false;
-        let isSelecting = false; // Flag to prevent play on selection end
+        let isSelecting = false; 
+        let db;
 
-        // --- Logging System ---
+        // --- IndexedDB Cache Implementation ---
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'text' });
+                    }
+                };
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    resolve();
+                };
+                request.onerror = (event) => reject(event.target.error);
+            });
+        }
+
+        function saveAudioToCache(text, base64Data) {
+            return new Promise((resolve, reject) => {
+                if (!db) { resolve(); return; }
+                const tx = db.transaction([STORE_NAME], 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                store.put({ text: text, audioBase64: base64Data, timestamp: Date.now() });
+                tx.oncomplete = () => resolve();
+                tx.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        function getAudioFromCache(text) {
+            return new Promise((resolve, reject) => {
+                if (!db) { resolve(null); return; }
+                const tx = db.transaction([STORE_NAME], 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                const request = store.get(text);
+                request.onsuccess = () => {
+                    if (request.result) resolve(request.result.audioBase64);
+                    else resolve(null);
+                };
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        // --- Detailed Logging System ---
         function log(msg, type = 'info') {
             const container = document.getElementById('logContent');
+            if (!container) return;
             const entry = document.createElement('div');
             entry.className = "py-1 border-b border-white/5 leading-snug";
             const colorMap = { error: "#f87171", warn: "#fbbf24", success: "#34d399", info: "#60a5fa", api: "#818cf8" };
@@ -319,6 +367,7 @@
 
             header.onmousedown = header.ontouchstart = (e) => {
                 if (panel.classList.contains('minimized')) return;
+                if (e.target.tagName === 'BUTTON') return;
                 isDragging = true;
                 startX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
                 startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
@@ -348,6 +397,17 @@
                 panel.classList.toggle('minimized');
                 document.getElementById('toggleLogBtn').innerText = panel.classList.contains('minimized') ? 'MAX' : 'MIN';
             };
+            
+            // The fix: Make sure clearLogBtn exists and attach to it
+            const clearBtn = document.getElementById('clearLogBtn');
+            if (clearBtn) {
+                clearBtn.onclick = () => { 
+                    const content = document.getElementById('logContent');
+                    if (content) content.innerHTML = ""; 
+                    log("Logs cleared."); 
+                };
+            }
+            
             document.getElementById('copyLogBtn').onclick = () => {
                 const text = Array.from(document.getElementById('logContent').children).map(el => el.innerText).join('\n');
                 copyToClipboard(text).then(() => showToast("LOG COPIED"));
@@ -355,13 +415,22 @@
         }
 
         function copyToClipboard(text) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.select();
-            const success = document.execCommand('copy');
-            document.body.removeChild(textArea);
-            return success ? Promise.resolve() : Promise.reject();
+            return new Promise((resolve, reject) => {
+                try {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    textArea.style.position = "fixed";
+                    textArea.style.left = "-9999px";
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    if (successful) resolve();
+                    else reject(new Error("Copy command failed"));
+                } catch (err) {
+                    reject(err);
+                }
+            });
         }
 
         // --- WAV Helper ---
@@ -387,8 +456,8 @@
 
         // --- Core API ---
         async function callGemini(model, payload) {
-            if (!userApiKey) throw new Error("APIキー未設定");
-            log(`[API] 実行モデル: ${model}`, 'api');
+            if (!userApiKey) throw new Error("API Key missing");
+            log(`[API] Execution Model: ${model}`, 'api');
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userApiKey}`;
             const response = await fetch(url, {
                 method: 'POST',
@@ -397,14 +466,14 @@
             });
             const data = await response.json();
             if (response.ok) {
-                log(`[API] ${model} 応答成功`, 'success');
+                log(`[API] ${model} Success`, 'success');
                 return data;
             }
             if (response.status === 429 || data.error?.code === 429) {
-                log(`[API] ${model} レート制限到達 (429)`, 'error');
+                log(`[API] ${model} Rate limit reached (429)`, 'error');
                 throw { type: 'RATE_LIMIT', message: data.error?.message || "Rate limit reached", status: 429 };
             }
-            log(`[API] ${model} エラー: ${data.error?.message}`, 'error');
+            log(`[API] ${model} Error: ${data.error?.message}`, 'error');
             throw new Error(data.error?.message || `HTTP ${response.status}`);
         }
 
@@ -419,6 +488,7 @@
             log(`[ACTION] 読込解析開始: ${rawText.length} 文字`);
             segments = rawText.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g)
                 .filter(s => s && (s.trim().length > 0 || s === '\n'));
+            
             currentIndex = 0;
             isAudioReady = false;
             segmentMeta = [];
@@ -430,7 +500,7 @@
                 el.onmousedown = (e) => { isSelecting = false; };
                 el.onmousemove = (e) => { if (Math.abs(e.movementX) > 2 || Math.abs(e.movementY) > 2) isSelecting = true; };
                 el.onclick = (e) => {
-                    if (isSelecting) return; // Prevent play if selecting text
+                    if (isSelecting) return;
                     const idx = parseInt(el.dataset.idx);
                     if (isPlaying) stopPlayerAction();
                     currentIndex = idx;
@@ -447,18 +517,36 @@
             const overlay = document.getElementById('loadingOverlay');
             const status = document.getElementById('loadingStatus');
             overlay.style.display = 'flex';
+            
             try {
+                // Check Cache First
+                const cachedBase64 = await getAudioFromCache(text);
+                if (cachedBase64) {
+                    log(`[CACHE] キャッシュから音声データを読み込みました`, 'success');
+                    status.innerText = "LOADING FROM CACHE...";
+                    await setupAudioFromBase64(cachedBase64, text);
+                    overlay.style.display = 'none';
+                    return;
+                }
+
                 log(`[TTS] リクエスト: ${MODELS.PRO_TTS}...`);
                 status.innerText = "PRO TTS REQUESTING...";
                 const result = await requestTTS(MODELS.PRO_TTS, text);
-                await setupAudio(result, text);
+                const base64 = result.candidates[0].content.parts.find(p => p.inlineData)?.inlineData?.data;
+                if (!base64) throw new Error("Audio data not found in response.");
+                
+                await saveAudioToCache(text, base64);
+                await setupAudioFromBase64(base64, text);
             } catch (err) {
                 if (err.type === 'RATE_LIMIT') {
                     log(`[TTS] PRO制限超過。フォールバック: ${MODELS.FLASH_TTS}...`, 'warn');
                     try {
                         status.innerText = "FLASH TTS FALLBACK...";
                         const result2 = await requestTTS(MODELS.FLASH_TTS, text);
-                        await setupAudio(result2, text);
+                        const base64_2 = result2.candidates[0].content.parts.find(p => p.inlineData)?.inlineData?.data;
+                        if (!base64_2) throw new Error("Audio data not found.");
+                        await saveAudioToCache(text, base64_2);
+                        await setupAudioFromBase64(base64_2, text);
                     } catch (err2) {
                         if (err2.type === 'RATE_LIMIT') {
                             log(`[FATAL] TTS全モデル制限到達`, 'error');
@@ -487,39 +575,51 @@
             });
         }
 
-        function setupAudio(data, originalText) {
+        function setupAudioFromBase64(base64String, originalText) {
             return new Promise((resolve, reject) => {
                 log("[AUDIO] データ処理開始...");
-                const part = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-                if (!part) { reject(new Error("No audio data")); return; }
                 try {
-                    const binaryString = atob(part.inlineData.data);
+                    const binaryString = atob(base64String);
                     const len = binaryString.length;
                     const pcmData = new Uint8Array(len);
                     for (let i = 0; i < len; i++) pcmData[i] = binaryString.charCodeAt(i);
+
                     const header = createWavHeader(len, 24000);
                     const wavBlob = new Blob([header, pcmData], { type: 'audio/wav' });
                     const url = URL.createObjectURL(wavBlob);
+
                     if (audioPlayer) {
                         audioPlayer.pause();
                         audioPlayer.removeAttribute('src');
                     }
+                    
                     audioPlayer = new Audio();
+                    audioPlayer.src = url;
+                    
                     audioPlayer.oncanplaythrough = () => {
                         log("[AUDIO] 再生準備完了", 'success');
                         const totalDuration = audioPlayer.duration;
                         const totalChars = originalText.replace(/\s/g, '').length;
                         let processedChars = 0;
+                        
                         segmentMeta = segments.map(s => {
                             const start = (processedChars / (totalChars || 1)) * totalDuration;
                             processedChars += s.replace(/\s/g, '').length;
                             const end = (processedChars / (totalChars || 1)) * totalDuration;
                             return { start, end };
                         });
+
                         isAudioReady = true;
                         isWebSpeechMode = false;
+                        startPlayerAction();
                         resolve();
                     };
+
+                    audioPlayer.onerror = (e) => {
+                        log(`[AUDIO ERROR] ロード失敗: ${audioPlayer.error?.message}`, 'error');
+                        reject(new Error("Audio load error"));
+                    };
+
                     audioPlayer.ontimeupdate = () => {
                         if (!isPlaying || isWebSpeechMode || !isAudioReady) return;
                         const time = audioPlayer.currentTime;
@@ -530,16 +630,26 @@
                                 stopPlayerAction();
                                 currentIndex = targetIdx;
                                 updateUIHighlight();
+                                log(`[STOP] 区切り停止: 次は Seg ${currentIndex}`);
                             } else {
                                 currentIndex = targetIdx;
                                 updateUIHighlight();
                             }
                         }
                     };
-                    audioPlayer.onended = () => { isPlaying = false; syncPlayerIcons(); log("[FINISH] 再生終了"); };
-                    audioPlayer.src = url;
+
+                    audioPlayer.onended = () => {
+                        isPlaying = false;
+                        syncPlayerIcons();
+                        log("[FINISH] 再生終了");
+                    };
+
                     audioPlayer.load();
-                } catch (e) { log(`[DECODE ERROR] ${e.message}`, 'error'); reject(e); }
+
+                } catch (e) {
+                    log(`[DECODE ERROR] ${e.message}`, 'error');
+                    reject(e);
+                }
             });
         }
 
@@ -547,11 +657,46 @@
             if (isWebSpeechMode) {
                 runWebSpeech();
             } else if (audioPlayer && isAudioReady) {
+                const isContinuous = document.getElementById('autoModeToggle').checked;
+                
+                if (!isContinuous && !isPlaying) {
+                    if (currentIndex >= segments.length - 1 && audioPlayer.currentTime > (segmentMeta[currentIndex]?.start || 0)) {
+                        currentIndex = 0;
+                    }
+                }
                 const speed = parseFloat(document.getElementById('rateRange').value);
                 audioPlayer.playbackRate = speed;
                 const targetTime = segmentMeta[currentIndex]?.start || 0;
-                if (Math.abs(audioPlayer.currentTime - targetTime) > 0.3) audioPlayer.currentTime = targetTime;
-                audioPlayer.play().then(() => { isPlaying = true; syncPlayerIcons(); updateUIHighlight(); }).catch(e => { log(`[PLAY ERROR] ${e.message}`, 'error'); isPlaying = false; syncPlayerIcons(); });
+                if (Math.abs(audioPlayer.currentTime - targetTime) > 0.3) {
+                    audioPlayer.currentTime = targetTime;
+                }
+                audioPlayer.play().then(() => {
+                    isPlaying = true;
+                    syncPlayerIcons();
+                    updateUIHighlight();
+                    log(`[PLAY] 再生中`);
+                }).catch(e => {
+                    log(`[PLAY ERROR] ${e.name}: ${e.message}`, 'error');
+                    if (e.name === 'NotSupportedError') {
+                        log("[RECOVER] オーディオの再読み込みを試みます...", "warn");
+                        audioPlayer.load();
+                        audioPlayer.currentTime = targetTime;
+                        audioPlayer.play().then(() => {
+                            isPlaying = true;
+                            syncPlayerIcons();
+                            log("[RECOVER] 成功", "success");
+                        }).catch(err => {
+                            log(`[RECOVER FAILED] ${err.message}`, "error");
+                            isPlaying = false;
+                            syncPlayerIcons();
+                        });
+                    } else {
+                        isPlaying = false;
+                        syncPlayerIcons();
+                    }
+                });
+            } else {
+                log("[WARN] 音声の準備中...", "warn");
             }
         }
 
@@ -573,41 +718,62 @@
             window.speechSynthesis.cancel();
             isPlaying = true;
             syncPlayerIcons();
+
             const isContinuous = document.getElementById('autoModeToggle').checked;
             const textToSpeak = isContinuous ? segments.slice(currentIndex).join('') : segments[currentIndex];
             if (!textToSpeak) { stopPlayerAction(); return; }
+
             const utter = new SpeechSynthesisUtterance(textToSpeak);
             utter.lang = 'zh-CN';
             utter.rate = parseFloat(document.getElementById('rateRange').value);
+
             const offsetInFullText = isContinuous ? segments.slice(0, currentIndex).join('').length : 0;
+
             utter.onboundary = (e) => {
                 if (!isPlaying) return;
-                const charPos = offsetInFullText + e.charIndex;
-                let acc = 0;
-                for (let i = 0; i < segments.length; i++) {
-                    acc += segments[i].length;
-                    if (charPos < acc) {
-                        if (currentIndex !== i) { currentIndex = i; updateUIHighlight(); }
-                        break;
+                if (e.name === 'word' || e.name === 'sentence') {
+                    const absPos = offsetInFullText + e.charIndex;
+                    let acc = 0;
+                    for (let i = 0; i < segments.length; i++) {
+                        acc += segments[i].length;
+                        if (absPos < acc) {
+                            if (currentIndex !== i) {
+                                currentIndex = i;
+                                updateUIHighlight();
+                            }
+                            break;
+                        }
                     }
                 }
             };
+
             utter.onend = () => {
-                if (isPlaying && !isContinuous && currentIndex < segments.length - 1) { currentIndex++; updateUIHighlight(); }
+                if (isPlaying) {
+                    if (isContinuous) {
+                        currentIndex = segments.length - 1;
+                        updateUIHighlight();
+                    } else {
+                        if (currentIndex < segments.length - 1) { 
+                            currentIndex++; 
+                            updateUIHighlight(); 
+                        }
+                    }
+                }
                 isPlaying = false;
                 syncPlayerIcons();
             };
+
             window.speechSynthesis.speak(utter);
         }
 
-        // --- Dictionary & Selection Logic ---
+        // --- Dictionary Logic ---
         async function runDictionary(word) {
             const modal = document.getElementById('dictModal');
             modal.classList.remove('hidden');
-            document.getElementById('dictWord').innerText = word;
-            document.getElementById('dictPinyin').innerText = "解析中...";
+            document.getElementById('dictWord').innerText = "Analyzing...";
+            document.getElementById('dictPinyin').innerText = "Please wait...";
             try {
-                log(`[DICT] 検索: "${word}"...`);
+                log(`[DICT] 解析中: ${word}`);
                 const res = await callGemini(MODELS.DICT, {
                     contents: [{ parts: [{ text: `以下の中国語単語を分析してJSONで返して。
                     単語: "${word}"
@@ -616,22 +782,26 @@
                         "pinyin": "ピンイン",
                         "meaning": "日本語訳",
                         "english": "英単語を3つまでカンマ区切り",
-                        "exampleCn": "中国語の短い例文"
+                        "exampleCn": "短い中国語の例文"
                     }` }] }],
                     generationConfig: { responseMimeType: "application/json" }
                 });
                 const data = JSON.parse(res.candidates[0].content.parts[0].text);
                 activeDictData = { word, ...data };
+                document.getElementById('dictWord').innerText = word;
                 document.getElementById('dictPinyin').innerText = data.pinyin;
                 document.getElementById('dictMean').innerText = data.meaning;
                 document.getElementById('dictEng').innerText = data.english;
                 document.getElementById('dictExCn').innerText = data.exampleCn;
+                log(`[DICT] 完了: ${word}`);
             } catch (err) {
                 log(`[DICT ERROR] ${err.message}`, 'error');
-                document.getElementById('dictPinyin').innerText = "解析エラー";
+                document.getElementById('dictWord').innerText = "解析エラー";
+                document.getElementById('dictPinyin').innerText = "";
             }
         }
 
+        // iOS Optimized Selection
         function initSelectionDetection() {
             const trigger = document.getElementById('searchTrigger');
             const displayArea = document.getElementById('readerDisplay');
@@ -640,21 +810,18 @@
                 const selection = window.getSelection();
                 const text = selection.toString().trim();
                 
-                // Only trigger if selection is within the reader area and contains Chinese
                 if (text && /[\u4e00-\u9fa5]/.test(text)) {
                     const range = selection.getRangeAt(0);
-                    // Check if selection is actually inside displayArea
                     if (!displayArea.contains(range.commonAncestorContainer)) {
                         trigger.style.display = 'none';
                         return;
                     }
-
                     const rect = range.getBoundingClientRect();
                     trigger.style.display = 'block';
                     trigger.style.top = `${rect.top + window.scrollY}px`;
                     trigger.style.left = `${rect.left + rect.width/2 + window.scrollX}px`;
                     
-                    trigger.onmousedown = (e) => {
+                    trigger.onmousedown = trigger.ontouchstart = (e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         runDictionary(text);
@@ -665,10 +832,9 @@
                     trigger.style.display = 'none';
                 }
             };
-
             document.addEventListener('selectionchange', handleSelection);
-            
-            // Standard PC Context Menu
+            document.addEventListener('mouseup', handleSelection);
+            document.addEventListener('touchend', () => setTimeout(handleSelection, 150));
             displayArea.addEventListener('contextmenu', (e) => {
                 const text = window.getSelection().toString().trim();
                 if (text && /[\u4e00-\u9fa5]/.test(text)) {
@@ -710,7 +876,7 @@
             const timeDisplay = document.getElementById('rateLimitTime');
             const msgDisplay = document.getElementById('rateLimitMsg');
             const timeMatch = msg.match(/(\d{2}:\d{2}:\d{2})|(\d+s)/);
-            timeDisplay.innerText = timeMatch ? `復帰予定時刻: ${timeMatch[0]}` : "数分後に解除されます";
+            timeDisplay.innerText = timeMatch ? `復帰予定時刻: ${timeMatch[0]}` : "数分後に再試行してください";
             msgDisplay.innerText = msg;
             modal.classList.remove('hidden');
         }
@@ -720,46 +886,77 @@
             setTimeout(() => { t.style.opacity = "0"; }, 3000);
         }
 
-        function renderVocab() {
+        function renderVocabTable() {
             const body = document.getElementById('vocabTableBody');
             const empty = document.getElementById('emptyState');
-            if (vocabList.length === 0) { body.innerHTML = ""; empty.classList.remove('hidden'); return; }
+            if (vocabList.length === 0) {
+                body.innerHTML = "";
+                empty.classList.remove('hidden');
+                return;
+            }
             empty.classList.add('hidden');
             body.innerHTML = vocabList.map((v, i) => `
                 <tr class="border-b border-slate-50 hover:bg-slate-50/80 transition-colors">
                     <td class="p-5"><div class="font-black text-indigo-600 chinese-text text-lg">${v.word}</div><div class="text-[10px] italic text-slate-400 font-bold">${v.pinyin}</div></td>
-                    <td class="p-5 text-xs font-black text-slate-700">${v.meaning}</td>
-                    <td class="p-5"><div class="text-[11px] chinese-text mb-1 text-slate-600">${v.exampleCn}</div><div class="flex flex-wrap gap-1">${v.english.split(',').map(en => `<span class="text-[8px] bg-slate-100 px-2 py-0.5 rounded-full text-slate-500 font-bold">${en.trim()}</span>`).join('')}</div></td>
+                    <td class="p-5 text-sm font-black text-slate-700">${v.meaning}</td>
+                    <td class="p-5"><div class="text-xs chinese-text mb-2 text-slate-600">${v.exampleCn}</div><div class="flex flex-wrap gap-1">${(v.english||"").split(',').map(en => `<span class="text-[9px] bg-slate-100 px-2 py-0.5 rounded-full text-slate-500 font-bold">${en.trim()}</span>`).join('')}</div></td>
                     <td class="p-5 text-right"><button onclick="removeVocabItem(${i})" class="text-red-300 hover:text-red-500 font-black">×</button></td>
                 </tr>`).join('');
         }
-        window.removeVocabItem = (idx) => { vocabList.splice(idx, 1); saveVocab(); };
-        function saveVocab() { localStorage.setItem('crb_pro_vocab_v75', JSON.stringify(vocabList)); renderVocab(); }
+
+        window.removeVocabItem = (idx) => { vocabList.splice(idx, 1); saveVocabData(); log("[VOCAB] 削除完了"); };
+        function saveVocabData() { localStorage.setItem('crb_pro_vocab_v83', JSON.stringify(vocabList)); renderVocabTable(); }
 
         // --- Event Listeners ---
         document.getElementById('startReadBtn').onclick = initReader;
         document.getElementById('playBtn').onclick = () => isPlaying ? stopPlayerAction() : startPlayerAction();
         document.getElementById('stopBtn').onclick = () => toggleView(false);
-        document.getElementById('prevBtn').onclick = () => { if (currentIndex > 0) { currentIndex--; updateUIHighlight(); if (isPlaying) startPlayerAction(); else if (audioPlayer && isAudioReady) audioPlayer.currentTime = segmentMeta[currentIndex].start; } };
-        document.getElementById('nextBtn').onclick = () => { if (currentIndex < segments.length - 1) { currentIndex++; updateUIHighlight(); if (isPlaying) startPlayerAction(); else if (audioPlayer && isAudioReady) audioPlayer.currentTime = segmentMeta[currentIndex].start; } };
+        document.getElementById('prevBtn').onclick = () => { 
+            if (currentIndex > 0) { 
+                currentIndex--; 
+                updateUIHighlight(); 
+                if (isPlaying) startPlayerAction(); 
+                else if (audioPlayer && isAudioReady) audioPlayer.currentTime = segmentMeta[currentIndex].start; 
+            } 
+        };
+        document.getElementById('nextBtn').onclick = () => { 
+            if (currentIndex < segments.length - 1) { 
+                currentIndex++; 
+                updateUIHighlight(); 
+                if (isPlaying) startPlayerAction(); 
+                else if (audioPlayer && isAudioReady) audioPlayer.currentTime = segmentMeta[currentIndex].start; 
+            } 
+        };
         document.getElementById('rateRange').oninput = (e) => { 
             const v = parseFloat(e.target.value); 
             document.getElementById('rateValue').innerText = v.toFixed(1) + 'x'; 
             if (audioPlayer) audioPlayer.playbackRate = v; 
-            if (isWebSpeechMode && isPlaying) runWebSpeech();
+            if (isWebSpeechMode && isPlaying) {
+                window.speechSynthesis.cancel();
+                runWebSpeech();
+            }
         };
-        document.getElementById('addVocabBtn').onclick = () => { if (activeDictData) { vocabList.unshift({...activeDictData}); saveVocab(); showToast("VOCAB ADDED"); } document.getElementById('dictModal').classList.add('hidden'); };
+        document.getElementById('addVocabBtn').onclick = () => { 
+            if (activeDictData) { vocabList.unshift({...activeDictData}); saveVocabData(); showToast("VOCAB ADDED"); } 
+            document.getElementById('dictModal').classList.add('hidden'); 
+        };
         document.getElementById('cancelVocabBtn').onclick = () => document.getElementById('dictModal').classList.add('hidden');
         document.getElementById('closeDictBtn').onclick = () => document.getElementById('dictModal').classList.add('hidden');
-        document.getElementById('clearAllVocab').onclick = () => { if(confirm("リストをすべて消去しますか？")) { vocabList = []; saveVocab(); } };
+        document.getElementById('clearAllVocab').onclick = () => { if(confirm("リストを全消去しますか？")) { vocabList = []; saveVocabData(); log("[VOCAB] クリア"); } };
         document.getElementById('exportCSV').onclick = () => {
             const header = "Chinese(Pinyin),Meaning,Example,English\n";
             const body = vocabList.map(v => `"${v.word}(${v.pinyin})","${v.meaning}","${v.exampleCn}","${v.english}"`).join('\n');
-            copyToClipboard(header + body).then(() => showToast("CSV COPIED"));
+            copyToClipboard(header + body).then(() => showToast("CSV COPIED")).catch(err=>log(`CSV Copy Error: ${err}`,'error'));
         };
+
         document.getElementById('openSettingsBtn').onclick = () => { document.getElementById('apiKeyInput').value = userApiKey; document.getElementById('settingsModal').classList.remove('hidden'); };
         document.getElementById('closeSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('hidden');
-        document.getElementById('saveSettingsBtn').onclick = () => { userApiKey = document.getElementById('apiKeyInput').value.trim(); localStorage.setItem('crb_gemini_key_v75', userApiKey); document.getElementById('settingsModal').classList.add('hidden'); log("[CONFIG] キー保存"); };
+        document.getElementById('saveSettingsBtn').onclick = () => { 
+            userApiKey = document.getElementById('apiKeyInput').value.trim(); 
+            localStorage.setItem('crb_gemini_key_v83', userApiKey); 
+            document.getElementById('settingsModal').classList.add('hidden'); 
+            log("[CONFIG] キー保存", 'success'); 
+        };
         document.getElementById('clearTextBtn').onclick = () => { document.getElementById('textInput').value = ""; log("[ACTION] テキスト消去"); };
         document.getElementById('rateLimitOkBtn').onclick = () => { document.getElementById('rateLimitModal').classList.add('hidden'); startWebSpeechFallback(document.getElementById('textInput').value); };
 
@@ -795,10 +992,11 @@
         };
 
         window.onload = () => {
-            log(`Chinese Reading Buddy ${VERSION} 起動完了`);
-            renderVocab();
+            log(`Chinese Reading Buddy ${VERSION} 準備完了`);
+            renderVocabTable();
             initLogPanelControls();
             initSelectionDetection();
+            initDB().then(() => log("[DB] Cache system initialized", 'success')).catch(e => log(`[DB ERROR] ${e}`, 'error'));
             if(!userApiKey) document.getElementById('settingsModal').classList.remove('hidden');
         };
     </script>
