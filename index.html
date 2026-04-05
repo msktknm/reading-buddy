@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chinese Reading Buddy Pro v84.0</title>
+    <title>Chinese Reading Buddy Pro v85.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 追加: フォルダ（ディレクトリ）構造で保存するためのZIPライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
         :root { --indigo: #4f46e5; --indigo-dark: #3730a3; }
@@ -73,7 +75,7 @@
     <!-- Log Panel -->
     <div id="logPanel" class="minimized">
         <div id="logHeader">
-            <span class="text-[9px] font-black text-white tracking-widest">CONSOLE v84.0</span>
+            <span class="text-[9px] font-black text-white tracking-widest">CONSOLE v85.0</span>
             <div class="flex items-center gap-1">
                 <button id="copyLogBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-0.5 rounded text-[8px] font-black transition-colors">COPY</button>
                 <button id="clearLogBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-2 py-0.5 rounded text-[8px] font-black transition-colors">CLR</button>
@@ -91,7 +93,7 @@
         <div class="flex items-center justify-between max-w-5xl mx-auto">
             <div class="flex flex-col items-start leading-none gap-1">
                 <h1 class="text-lg sm:text-xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black tracking-tighter">PRO v84.0</span>
+                <span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black tracking-tighter">PRO v85.0</span>
             </div>
             <button id="openSettingsBtn" class="p-3 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-2xl active:scale-90">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
@@ -118,9 +120,10 @@
                     <div id="editHint" class="hidden text-[10px] font-black text-indigo-400 uppercase tracking-widest italic animate-pulse">テキスト選択で単語辞書</div>
                     <div class="flex-1"></div>
                     <div class="flex gap-2">
-                        <input type="file" id="importFile" multiple accept=".wav,.txt" class="hidden" />
-                        <button id="importBtn" class="px-4 py-2 text-[10px] font-black text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors">読込</button>
-                        <button id="exportBtn" class="px-4 py-2 text-[10px] font-black text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>保存</button>
+                        <!-- ZIPと個別ファイルの両方に対応 -->
+                        <input type="file" id="importFile" multiple accept=".zip,.wav,.txt" class="hidden" />
+                        <button id="importBtn" class="px-4 py-2 text-[10px] font-black text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors">読込(ZIP/WAV)</button>
+                        <button id="exportBtn" class="px-4 py-2 text-[10px] font-black text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>保存(ZIP)</button>
                         <button id="clearTextBtn" class="px-4 py-2 text-[10px] font-black text-red-400 hover:bg-red-50 rounded-lg transition-colors">消去</button>
                     </div>
                 </div>
@@ -260,7 +263,7 @@
 
     <script>
         // --- Configuration & Constants ---
-        const VERSION = "v84.0";
+        const VERSION = "v85.0";
         const MODELS = {
             PRO_TTS: "gemini-2.5-pro-preview-tts",
             FLASH_TTS: "gemini-2.5-flash-preview-tts",
@@ -270,11 +273,11 @@
         const STORE_NAME = 'audioStore';
 
         // --- Application State ---
-        let userApiKey = localStorage.getItem('crb_gemini_key_v84') || "";
+        let userApiKey = localStorage.getItem('crb_gemini_key_v85') || "";
         let isPlaying = false;
         let currentIndex = 0;
         let segments = [];
-        let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v84') || '[]');
+        let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v85') || '[]');
         let audioPlayer = null;
         let segmentMeta = []; // {start, end}
         let isWebSpeechMode = false;
@@ -295,10 +298,7 @@
                         db.createObjectStore(STORE_NAME, { keyPath: 'text' });
                     }
                 };
-                request.onsuccess = (event) => {
-                    db = event.target.result;
-                    resolve();
-                };
+                request.onsuccess = (event) => { db = event.target.result; resolve(); };
                 request.onerror = (event) => reject(event.target.error);
             });
         }
@@ -344,8 +344,7 @@
             const panel = document.getElementById('logPanel');
             const header = document.getElementById('logHeader');
             const resizeHandle = document.getElementById('logResizeHandle');
-            let isDragging = false;
-            let isResizing = false;
+            let isDragging = false, isResizing = false;
             let startX, startY, startW, startH, startLeft, startTop;
 
             const onMove = (e) => {
@@ -354,8 +353,7 @@
                 if (isDragging) {
                     panel.style.left = `${startLeft + (clientX - startX)}px`;
                     panel.style.top = `${startTop + (clientY - startY)}px`;
-                    panel.style.bottom = 'auto';
-                    panel.style.right = 'auto';
+                    panel.style.bottom = 'auto'; panel.style.right = 'auto';
                 }
                 if (isResizing) {
                     panel.style.width = `${startW + (clientX - startX)}px`;
@@ -364,39 +362,29 @@
             };
 
             const onEnd = () => {
-                isDragging = false;
-                isResizing = false;
-                document.removeEventListener('mousemove', onMove);
-                document.removeEventListener('mouseup', onEnd);
-                document.removeEventListener('touchmove', onMove);
-                document.removeEventListener('touchend', onEnd);
+                isDragging = false; isResizing = false;
+                document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onEnd);
             };
 
             header.onmousedown = header.ontouchstart = (e) => {
-                if (panel.classList.contains('minimized')) return;
-                if (e.target.tagName === 'BUTTON') return;
+                if (panel.classList.contains('minimized') || e.target.tagName === 'BUTTON') return;
                 isDragging = true;
                 startX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
                 startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
                 const rect = panel.getBoundingClientRect();
-                startLeft = rect.left;
-                startTop = rect.top;
-                document.addEventListener('mousemove', onMove);
-                document.addEventListener('mouseup', onEnd);
-                document.addEventListener('touchmove', onMove, {passive: false});
-                document.addEventListener('touchend', onEnd);
+                startLeft = rect.left; startTop = rect.top;
+                document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onEnd);
+                document.addEventListener('touchmove', onMove, {passive: false}); document.addEventListener('touchend', onEnd);
             };
 
             resizeHandle.onmousedown = resizeHandle.ontouchstart = (e) => {
                 isResizing = true;
                 startX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
                 startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-                startW = panel.offsetWidth;
-                startH = panel.offsetHeight;
-                document.addEventListener('mousemove', onMove);
-                document.addEventListener('mouseup', onEnd);
-                document.addEventListener('touchmove', onMove, {passive: false});
-                document.addEventListener('touchend', onEnd);
+                startW = panel.offsetWidth; startH = panel.offsetHeight;
+                document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onEnd);
+                document.addEventListener('touchmove', onMove, {passive: false}); document.addEventListener('touchend', onEnd);
                 e.stopPropagation();
             };
 
@@ -406,13 +394,7 @@
             };
             
             const clearBtn = document.getElementById('clearLogBtn');
-            if (clearBtn) {
-                clearBtn.onclick = () => { 
-                    const content = document.getElementById('logContent');
-                    if (content) content.innerHTML = ""; 
-                    log("Logs cleared."); 
-                };
-            }
+            if (clearBtn) clearBtn.onclick = () => { document.getElementById('logContent').innerHTML = ""; log("Logs cleared."); };
             
             document.getElementById('copyLogBtn').onclick = () => {
                 const text = Array.from(document.getElementById('logContent').children).map(el => el.innerText).join('\n');
@@ -425,17 +407,13 @@
                 try {
                     const textArea = document.createElement("textarea");
                     textArea.value = text;
-                    textArea.style.position = "fixed";
-                    textArea.style.left = "-9999px";
+                    textArea.style.position = "fixed"; textArea.style.left = "-9999px";
                     document.body.appendChild(textArea);
                     textArea.select();
                     const successful = document.execCommand('copy');
                     document.body.removeChild(textArea);
-                    if (successful) resolve();
-                    else reject(new Error("Copy command failed"));
-                } catch (err) {
-                    reject(err);
-                }
+                    if (successful) resolve(); else reject(new Error("Copy command failed"));
+                } catch (err) { reject(err); }
             });
         }
 
@@ -444,19 +422,12 @@
             const buf = new ArrayBuffer(44);
             const view = new DataView(buf);
             const writeString = (off, s) => { for(let i=0; i<s.length; i++) view.setUint8(off+i, s.charCodeAt(i)); };
-            writeString(0, 'RIFF');
-            view.setUint32(4, 36 + dataLength, true);
-            writeString(8, 'WAVE');
-            writeString(12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true); // PCM
-            view.setUint16(22, 1, true); // Mono
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * 2, true);
-            view.setUint16(32, 2, true);
-            view.setUint16(34, 16, true);
-            writeString(36, 'data');
-            view.setUint32(40, dataLength, true);
+            writeString(0, 'RIFF'); view.setUint32(4, 36 + dataLength, true);
+            writeString(8, 'WAVE'); writeString(12, 'fmt ');
+            view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+            writeString(36, 'data'); view.setUint32(40, dataLength, true);
             return new Uint8Array(buf);
         }
 
@@ -466,15 +437,10 @@
             log(`[API] Execution Model: ${model}`, 'api');
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userApiKey}`;
             const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             });
             const data = await response.json();
-            if (response.ok) {
-                log(`[API] ${model} Success`, 'success');
-                return data;
-            }
+            if (response.ok) { log(`[API] ${model} Success`, 'success'); return data; }
             if (response.status === 429 || data.error?.code === 429) {
                 log(`[API] ${model} Rate limit reached (429)`, 'error');
                 throw { type: 'RATE_LIMIT', message: data.error?.message || "Rate limit reached", status: 429 };
@@ -487,25 +453,18 @@
         async function initReader() {
             const rawText = document.getElementById('textInput').value.trim();
             if (!rawText) return showToast("テキストを入力してください");
-            if (!userApiKey) {
-                document.getElementById('settingsModal').classList.remove('hidden');
-                return;
-            }
+            if (!userApiKey) return document.getElementById('settingsModal').classList.remove('hidden');
+
             log(`[ACTION] 読込解析開始: ${rawText.length} 文字`);
-            segments = rawText.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g)
-                .filter(s => s && (s.trim().length > 0 || s === '\n'));
-            
-            currentIndex = 0;
-            isAudioReady = false;
-            segmentMeta = [];
-            currentWavBlob = null;
+            segments = rawText.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g).filter(s => s && (s.trim().length > 0 || s === '\n'));
+            currentIndex = 0; isAudioReady = false; segmentMeta = []; currentWavBlob = null;
             document.getElementById('exportBtn').disabled = true;
 
             const display = document.getElementById('readerDisplay');
             display.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
             
             display.querySelectorAll('.segment').forEach(el => {
-                el.onmousedown = (e) => { isSelecting = false; };
+                el.onmousedown = () => { isSelecting = false; };
                 el.onmousemove = (e) => { if (Math.abs(e.movementX) > 2 || Math.abs(e.movementY) > 2) isSelecting = true; };
                 el.onclick = (e) => {
                     if (isSelecting) return;
@@ -527,7 +486,6 @@
             overlay.style.display = 'flex';
             
             try {
-                // Check Cache First
                 const cachedBase64 = await getAudioFromCache(text);
                 if (cachedBase64) {
                     log(`[CACHE] キャッシュから音声データを読み込みました`, 'success');
@@ -576,10 +534,7 @@
         async function requestTTS(model, text) {
             return await callGemini(model, {
                 contents: [{ parts: [{ text }] }],
-                generationConfig: { 
-                    responseModalities: ["AUDIO"], 
-                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } 
-                }
+                generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } }
             });
         }
 
@@ -592,7 +547,7 @@
 
                 const header = createWavHeader(len, 24000);
                 const wavBlob = new Blob([header, pcmData], { type: 'audio/wav' });
-                currentWavBlob = wavBlob; // Store for export
+                currentWavBlob = wavBlob;
                 
                 return setupAudioFromBlob(wavBlob, originalText, true);
             } catch (e) {
@@ -606,10 +561,7 @@
                 log("[AUDIO] オーディオソース設定中...");
                 const url = URL.createObjectURL(blob);
                 
-                if (audioPlayer) {
-                    audioPlayer.pause();
-                    audioPlayer.removeAttribute('src');
-                }
+                if (audioPlayer) { audioPlayer.pause(); audioPlayer.removeAttribute('src'); }
                 
                 audioPlayer = new Audio();
                 audioPlayer.src = url;
@@ -629,7 +581,7 @@
 
                     isAudioReady = true;
                     isWebSpeechMode = false;
-                    document.getElementById('exportBtn').disabled = false; // Enable export
+                    document.getElementById('exportBtn').disabled = false;
                     
                     if (autoPlay) startPlayerAction();
                     resolve();
@@ -658,70 +610,92 @@
                     }
                 };
 
-                audioPlayer.onended = () => {
-                    isPlaying = false;
-                    syncPlayerIcons();
-                    log("[FINISH] 再生終了");
-                };
-
+                audioPlayer.onended = () => { isPlaying = false; syncPlayerIcons(); log("[FINISH] 再生終了"); };
                 audioPlayer.load();
             });
         }
 
-        // --- Export / Import Logic ---
-        document.getElementById('exportBtn').onclick = () => {
+        // --- Export / Import (ZIP Integration) ---
+        document.getElementById('exportBtn').onclick = async () => {
             const text = document.getElementById('textInput').value.trim();
-            if (!currentWavBlob || !text) {
-                showToast("保存するデータがありません");
-                return;
-            }
+            if (!currentWavBlob || !text) return showToast("保存するデータがありません");
             
-            log("[EXPORT] テキストとオーディオファイルの保存を開始します");
+            log("[EXPORT] ZIPアーカイブの作成を開始します");
+            const now = new Date();
+            const ts = now.getFullYear().toString() + 
+                       (now.getMonth()+1).toString().padStart(2, '0') + 
+                       now.getDate().toString().padStart(2, '0') + "_" + 
+                       now.getHours().toString().padStart(2, '0') + 
+                       now.getMinutes().toString().padStart(2, '0') + 
+                       now.getSeconds().toString().padStart(2, '0');
+            const dirName = `CRB_${ts}`;
             
-            // Save Text
-            const textBlob = new Blob([text], {type: 'text/plain;charset=utf-8'});
-            const textUrl = URL.createObjectURL(textBlob);
-            const a1 = document.createElement('a');
-            a1.href = textUrl;
-            a1.download = 'ReadingBuddy_Text.txt';
-            document.body.appendChild(a1);
-            a1.click();
-            document.body.removeChild(a1);
-            
-            // Save Audio (delay slightly for mobile browsers)
-            setTimeout(() => {
-                const audioUrl = URL.createObjectURL(currentWavBlob);
-                const a2 = document.createElement('a');
-                a2.href = audioUrl;
-                a2.download = 'ReadingBuddy_Audio.wav';
-                document.body.appendChild(a2);
-                a2.click();
-                document.body.removeChild(a2);
+            try {
+                const zip = new JSZip();
+                const folder = zip.folder(dirName);
+                folder.file("text.txt", text);
+                folder.file("audio.wav", currentWavBlob);
+                
+                const zipBlob = await zip.generateAsync({ type: "blob" });
+                const zipUrl = URL.createObjectURL(zipBlob);
+                
+                const a = document.createElement('a');
+                a.href = zipUrl;
+                a.download = `${dirName}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                log("[EXPORT] ZIPファイルの保存が完了しました", "success");
                 showToast("エクスポート完了");
-            }, 500);
+            } catch (err) {
+                log(`[EXPORT ERROR] ${err.message}`, "error");
+                showToast("エクスポートに失敗しました");
+            }
         };
 
-        document.getElementById('importBtn').onclick = () => {
-            document.getElementById('importFile').click();
-        };
+        document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
 
         document.getElementById('importFile').onchange = async (e) => {
             const files = Array.from(e.target.files);
-            const txtFile = files.find(f => f.name.endsWith('.txt'));
-            const wavFile = files.find(f => f.name.endsWith('.wav'));
-            
-            if (!txtFile || !wavFile) {
-                showToast("WAVファイルとTXTファイルを同時に選択してください");
-                e.target.value = '';
-                return;
-            }
-            
+            if (files.length === 0) return;
+
+            let textContent = null;
+            let wavBlob = null;
+
             try {
-                const text = await txtFile.text();
-                document.getElementById('textInput').value = text;
-                log(`[IMPORT] テキスト読込完了: ${text.length} 文字`);
+                if (files.length === 1 && files[0].name.endsWith('.zip')) {
+                    log("[IMPORT] ZIPアーカイブを読み込んでいます...");
+                    const zip = new JSZip();
+                    const zipContent = await zip.loadAsync(files[0]);
+                    
+                    const txtObj = Object.values(zipContent.files).find(f => !f.dir && f.name.endsWith('.txt'));
+                    const wavObj = Object.values(zipContent.files).find(f => !f.dir && f.name.endsWith('.wav'));
+                    
+                    if (txtObj && wavObj) {
+                        textContent = await txtObj.async("string");
+                        const rawBlob = await wavObj.async("blob");
+                        wavBlob = new Blob([rawBlob], { type: 'audio/wav' });
+                    } else {
+                        throw new Error("ZIP内にテキストとオーディオが揃っていません");
+                    }
+                } else {
+                    const txtFile = files.find(f => f.name.endsWith('.txt'));
+                    const wFile = files.find(f => f.name.endsWith('.wav'));
+                    if (txtFile && wFile) {
+                        textContent = await txtFile.text();
+                        wavBlob = wFile;
+                    } else {
+                        throw new Error("WAVとTXTの両方、またはZIPファイルを選択してください");
+                    }
+                }
+
+                if (!textContent || !wavBlob) throw new Error("データの抽出に失敗しました");
+
+                document.getElementById('textInput').value = textContent;
+                log(`[IMPORT] テキスト読込完了: ${textContent.length} 文字`);
                 
-                segments = text.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g)
+                segments = textContent.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g)
                     .filter(s => s && (s.trim().length > 0 || s === '\n'));
                 currentIndex = 0;
                 isAudioReady = false;
@@ -731,9 +705,9 @@
                 display.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
                 
                 display.querySelectorAll('.segment').forEach(el => {
-                    el.onmousedown = (e) => { isSelecting = false; };
-                    el.onmousemove = (e) => { if (Math.abs(e.movementX) > 2 || Math.abs(e.movementY) > 2) isSelecting = true; };
-                    el.onclick = (ev) => {
+                    el.onmousedown = () => { isSelecting = false; };
+                    el.onmousemove = (ev) => { if (Math.abs(ev.movementX) > 2 || Math.abs(ev.movementY) > 2) isSelecting = true; };
+                    el.onclick = () => {
                         if (isSelecting) return;
                         const idx = parseInt(el.dataset.idx);
                         if (isPlaying) stopPlayerAction();
@@ -744,27 +718,27 @@
                 });
                 
                 toggleView(true);
-                currentWavBlob = wavFile;
+                currentWavBlob = wavBlob;
+                document.getElementById('exportBtn').disabled = false;
                 
-                // Audioセットアップ（インポート時は自動再生しない）
-                await setupAudioFromBlob(wavFile, text, false);
+                await setupAudioFromBlob(wavBlob, textContent, false);
                 log("[IMPORT] インポートと復元が完了しました", 'success');
                 showToast("読込完了");
                 
             } catch (err) {
                 log(`[IMPORT ERROR] ${err.message}`, 'error');
-                showToast("ファイルの読み込みに失敗しました");
+                showToast(err.message);
             } finally {
                 e.target.value = '';
             }
         };
 
+        // --- Playback Actions ---
         function startPlayerAction() {
             if (isWebSpeechMode) {
                 runWebSpeech();
             } else if (audioPlayer && isAudioReady) {
                 const isContinuous = document.getElementById('autoModeToggle').checked;
-                
                 if (!isContinuous && !isPlaying) {
                     if (currentIndex >= segments.length - 1 && audioPlayer.currentTime > (segmentMeta[currentIndex]?.start || 0)) {
                         currentIndex = 0;
@@ -788,17 +762,13 @@
                         audioPlayer.load();
                         audioPlayer.currentTime = targetTime;
                         audioPlayer.play().then(() => {
-                            isPlaying = true;
-                            syncPlayerIcons();
-                            log("[RECOVER] 成功", "success");
+                            isPlaying = true; syncPlayerIcons(); log("[RECOVER] 成功", "success");
                         }).catch(err => {
                             log(`[RECOVER FAILED] ${err.message}`, "error");
-                            isPlaying = false;
-                            syncPlayerIcons();
+                            isPlaying = false; syncPlayerIcons();
                         });
                     } else {
-                        isPlaying = false;
-                        syncPlayerIcons();
+                        isPlaying = false; syncPlayerIcons();
                     }
                 });
             } else {
@@ -816,7 +786,7 @@
         function startWebSpeechFallback(text) {
             isWebSpeechMode = true;
             isAudioReady = true;
-            document.getElementById('exportBtn').disabled = true; // No export for webspeech
+            document.getElementById('exportBtn').disabled = true;
             log("[FALLBACK] WebSpeechAPIへ切り替えました", "warn");
             runWebSpeech();
         }
@@ -869,7 +839,6 @@
                 isPlaying = false;
                 syncPlayerIcons();
             };
-
             window.speechSynthesis.speak(utter);
         }
 
@@ -908,7 +877,6 @@
             }
         }
 
-        // iOS Optimized Selection
         function initSelectionDetection() {
             const trigger = document.getElementById('searchTrigger');
             const displayArea = document.getElementById('readerDisplay');
@@ -920,8 +888,7 @@
                 if (text && /[\u4e00-\u9fa5]/.test(text)) {
                     const range = selection.getRangeAt(0);
                     if (!displayArea.contains(range.commonAncestorContainer)) {
-                        trigger.style.display = 'none';
-                        return;
+                        trigger.style.display = 'none'; return;
                     }
                     const rect = range.getBoundingClientRect();
                     trigger.style.display = 'block';
@@ -929,8 +896,7 @@
                     trigger.style.left = `${rect.left + rect.width/2 + window.scrollX}px`;
                     
                     trigger.onmousedown = trigger.ontouchstart = (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
+                        e.preventDefault(); e.stopPropagation();
                         runDictionary(text);
                         trigger.style.display = 'none';
                         selection.removeAllRanges();
@@ -945,8 +911,7 @@
             displayArea.addEventListener('contextmenu', (e) => {
                 const text = window.getSelection().toString().trim();
                 if (text && /[\u4e00-\u9fa5]/.test(text)) {
-                    e.preventDefault();
-                    runDictionary(text);
+                    e.preventDefault(); runDictionary(text);
                 }
             });
         }
@@ -997,9 +962,7 @@
             const body = document.getElementById('vocabTableBody');
             const empty = document.getElementById('emptyState');
             if (vocabList.length === 0) {
-                body.innerHTML = "";
-                empty.classList.remove('hidden');
-                return;
+                body.innerHTML = ""; empty.classList.remove('hidden'); return;
             }
             empty.classList.add('hidden');
             body.innerHTML = vocabList.map((v, i) => `
@@ -1012,7 +975,7 @@
         }
 
         window.removeVocabItem = (idx) => { vocabList.splice(idx, 1); saveVocabData(); log("[VOCAB] 削除完了"); };
-        function saveVocabData() { localStorage.setItem('crb_pro_vocab_v84', JSON.stringify(vocabList)); renderVocabTable(); }
+        function saveVocabData() { localStorage.setItem('crb_pro_vocab_v85', JSON.stringify(vocabList)); renderVocabTable(); }
 
         // --- Event Listeners ---
         document.getElementById('startReadBtn').onclick = initReader;
@@ -1020,28 +983,21 @@
         document.getElementById('stopBtn').onclick = () => toggleView(false);
         document.getElementById('prevBtn').onclick = () => { 
             if (currentIndex > 0) { 
-                currentIndex--; 
-                updateUIHighlight(); 
-                if (isPlaying) startPlayerAction(); 
-                else if (audioPlayer && isAudioReady) audioPlayer.currentTime = segmentMeta[currentIndex].start; 
+                currentIndex--; updateUIHighlight(); 
+                if (isPlaying) startPlayerAction(); else if (audioPlayer && isAudioReady) audioPlayer.currentTime = segmentMeta[currentIndex].start; 
             } 
         };
         document.getElementById('nextBtn').onclick = () => { 
             if (currentIndex < segments.length - 1) { 
-                currentIndex++; 
-                updateUIHighlight(); 
-                if (isPlaying) startPlayerAction(); 
-                else if (audioPlayer && isAudioReady) audioPlayer.currentTime = segmentMeta[currentIndex].start; 
+                currentIndex++; updateUIHighlight(); 
+                if (isPlaying) startPlayerAction(); else if (audioPlayer && isAudioReady) audioPlayer.currentTime = segmentMeta[currentIndex].start; 
             } 
         };
         document.getElementById('rateRange').oninput = (e) => { 
             const v = parseFloat(e.target.value); 
             document.getElementById('rateValue').innerText = v.toFixed(1) + 'x'; 
             if (audioPlayer) audioPlayer.playbackRate = v; 
-            if (isWebSpeechMode && isPlaying) {
-                window.speechSynthesis.cancel();
-                runWebSpeech();
-            }
+            if (isWebSpeechMode && isPlaying) { window.speechSynthesis.cancel(); runWebSpeech(); }
         };
         document.getElementById('addVocabBtn').onclick = () => { 
             if (activeDictData) { vocabList.unshift({...activeDictData}); saveVocabData(); showToast("VOCAB ADDED"); } 
@@ -1060,7 +1016,7 @@
         document.getElementById('closeSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('hidden');
         document.getElementById('saveSettingsBtn').onclick = () => { 
             userApiKey = document.getElementById('apiKeyInput').value.trim(); 
-            localStorage.setItem('crb_gemini_key_v84', userApiKey); 
+            localStorage.setItem('crb_gemini_key_v85', userApiKey); 
             document.getElementById('settingsModal').classList.add('hidden'); 
             log("[CONFIG] キー保存", 'success'); 
         };
