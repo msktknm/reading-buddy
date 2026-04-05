@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Chinese Reading Buddy Pro v42.0</title>
+    <title>Chinese Reading Buddy Pro v62.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Edge TTS Browser Support (Using Module for ESM compatibility) -->
+    <script type="module">
+        import { EdgeTTS } from 'https://cdn.jsdelivr.net/npm/edge-tts-browser@1.0.1/index.min.js';
+        window.EdgeTTS = EdgeTTS;
+    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
         :root { --indigo: #4f46e5; --indigo-dark: #3730a3; }
@@ -18,596 +22,444 @@
             width: 100%;
         }
         .chinese-text { font-family: 'Noto Sans SC', serif; line-height: 2.2; }
-        
-        .segment { 
-            transition: all 0.2s ease; 
-            border-radius: 6px; 
-            padding: 2px 4px; 
-            display: inline; 
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            user-select: text;
-        }
-        .segment:hover { background: rgba(79, 70, 229, 0.05); }
-        .highlight-active { 
-            background: #fde047 !important; 
-            border-bottom: 2px solid #eab308; 
-            color: #000; 
-            box-shadow: 0 2px 8px rgba(234, 179, 8, 0.3); 
-        }
-
         .glass-panel { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .btn-shadow { box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.3); }
         
-        #toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 20000; }
-        #toast.show { transform: translateX(-50%) translateY(0); }
-
-        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e2e8f0; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #4f46e5; }
-        input:checked + .slider:before { transform: translateX(20px); }
-
-        #logPanel {
-            position: fixed; bottom: 10px; right: 10px; width: 300px;
-            background: rgba(15, 23, 42, 0.98); color: #4ade80; padding: 10px;
-            border-radius: 12px; z-index: 5000; font-family: monospace;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        #logContent { height: 120px; overflow-y: auto; font-size: 10px; display: flex; flex-direction: column-reverse; }
-        .minimized#logPanel { width: 120px; height: 32px; overflow: hidden; }
+        #logPanel { position: fixed; bottom: 10px; right: 10px; width: 340px; background: rgba(15, 23, 42, 0.98); color: #4ade80; padding: 10px; border-radius: 12px; z-index: 5000; font-family: monospace; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); }
+        #logContent { height: 180px; overflow-y: auto; font-size: 10px; display: flex; flex-direction: column-reverse; }
+        .minimized#logPanel { width: 140px; height: 32px; overflow: hidden; }
         .minimized #logContent { display: none; }
-
-        .spinner {
-            border: 3px solid rgba(79, 70, 229, 0.1); border-left-color: #4f46e5;
-            border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite;
-        }
+        
+        .spinner { border: 3px solid rgba(79, 70, 229, 0.1); border-left-color: #4f46e5; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        #searchTrigger {
-            position: absolute;
-            z-index: 15000;
-            display: none;
-            background: #4f46e5;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 14px;
-            font-size: 15px;
-            font-weight: 800;
-            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.6);
-            cursor: pointer;
-            pointer-events: auto;
-            white-space: nowrap;
-            border: 2px solid rgba(255,255,255,0.3);
-        }
-
-        /* 読み込み中オーバーレイ */
-        #loadingOverlay {
-            position: fixed; inset: 0; background: rgba(255,255,255,0.8);
-            backdrop-filter: blur(4px); z-index: 30000; display: none;
-            flex-direction: column; align-items: center; justify-content: center;
-        }
+        
+        #loadingOverlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); z-index: 30000; display: none; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body class="min-h-screen pb-32 w-full">
 
-    <!-- Loading Overlay for Pre-fetching -->
     <div id="loadingOverlay">
         <div class="w-64 space-y-4 text-center">
             <div class="spinner mx-auto mb-4"></div>
-            <div class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Generating Audio Voice...</div>
-            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                <div id="loadingProgressBar" class="h-full bg-indigo-600 transition-all duration-300" style="width: 0%"></div>
-            </div>
-            <div id="loadingStatusText" class="text-[9px] font-bold text-slate-400">0 / 0 segments</div>
+            <div id="loadingStatus" class="text-[10px] font-black text-indigo-600 uppercase tracking-widest italic">Process Starting...</div>
         </div>
     </div>
 
-    <!-- Debug Log -->
+    <!-- LOG PANEL -->
     <div id="logPanel" class="minimized" onclick="if(event.target.tagName !== 'BUTTON') this.classList.toggle('minimized')">
         <div class="flex justify-between items-center cursor-pointer mb-1">
-            <span class="text-[10px] font-bold text-white uppercase tracking-wider">Debug Log v42.0</span>
-            <button id="copyLogBtn" class="bg-slate-700 text-white px-2 py-0.5 rounded text-[10px] font-bold">COPY</button>
+            <span class="text-[10px] font-bold text-white uppercase tracking-wider">PROCESS LOG v62.0</span>
+            <button id="clearLogBtn" class="bg-slate-700 text-white px-2 py-0.5 rounded text-[10px] font-bold">CLEAR</button>
         </div>
         <div id="logContent"></div>
     </div>
 
-    <!-- 検索トリガーボタン -->
-    <div id="searchTrigger">意味を調べる 🔍</div>
-
-    <!-- Navigation -->
     <nav class="sticky top-0 z-[100] glass-panel px-4 py-2 w-full">
         <div class="flex items-center justify-between w-full max-w-full">
             <div class="flex flex-col items-start leading-none gap-0.5">
                 <h1 class="text-base sm:text-lg font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black flex-shrink-0 self-start">PRO v42.0</span>
+                <span class="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-sm font-black tracking-tighter">PRO v62.0 (Hybrid TTS)</span>
             </div>
-            <button id="openSettingsBtn" class="p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            <button id="openSettingsBtn" class="p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
             </button>
         </div>
     </nav>
 
-    <main class="w-full px-4 py-4 space-y-8 mt-2 max-w-full">
+    <main class="w-full px-4 py-4 space-y-8 mt-2">
         <section id="sectionMain" class="space-y-4">
-            <div id="textContainer" class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex flex-col relative w-full">
+            <div id="textContainer" class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex flex-col min-h-[400px]">
                 <div class="flex justify-between items-center mb-3">
                     <label id="modeLabel" class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Input Mode</label>
-                    <div id="playbackOptions" class="hidden flex items-center gap-2">
-                        <span class="text-[9px] font-bold text-slate-400">一区切り</span>
-                        <label class="switch">
-                            <input type="checkbox" id="autoModeToggle" checked>
-                            <span class="slider"></span>
-                        </label>
-                        <span class="text-[9px] font-bold text-indigo-600">連続</span>
-                    </div>
                 </div>
-
-                <div class="relative flex-1 flex flex-col min-h-[350px]">
-                    <textarea id="textInput" rows="14" class="w-full h-full text-xl leading-relaxed p-0 border-none focus:ring-0 placeholder:text-slate-300 resize-none chinese-text overflow-y-auto" placeholder="ここに中国語を入力してください..."></textarea>
-                    <div id="readerDisplay" class="hidden w-full h-full text-xl leading-relaxed p-0 border-none chinese-text overflow-y-auto break-words whitespace-pre-wrap text-slate-800"></div>
-                </div>
-                
+                <textarea id="textInput" rows="12" class="w-full text-xl leading-relaxed p-0 border-none focus:ring-0 placeholder:text-slate-300 resize-none chinese-text flex-1" placeholder="中国語を入力してください..."></textarea>
+                <div id="readerDisplay" class="hidden w-full text-xl leading-relaxed p-0 chinese-text break-words whitespace-pre-wrap text-slate-800 flex-1"></div>
                 <div id="inputFooter" class="flex justify-between mt-3 pt-3 border-t border-slate-50">
-                    <div id="editHint" class="hidden text-[10px] font-bold text-slate-400 self-center uppercase tracking-wider">選択して検索 / タップで再生</div>
-                    <div class="flex-1"></div>
-                    <button id="clearTextBtn" class="flex items-center gap-1 text-[10px] font-bold text-red-400 hover:text-red-600 transition-colors py-1.5 px-2 rounded-xl">消去</button>
+                    <button id="clearTextBtn" class="text-[10px] font-bold text-red-400">テキスト消去</button>
                 </div>
             </div>
-
-            <button id="startReadBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-5 rounded-2xl shadow-xl btn-shadow transition-all active:scale-[0.98] text-base">読み上げを開始する</button>
+            
+            <button id="startReadBtn" class="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-xl transition-all active:scale-[0.98]">読み上げを開始する</button>
 
             <div id="playerControls" class="hidden space-y-4">
                 <div class="flex items-center justify-center gap-6">
-                    <button id="prevBtn" onclick="prevSegment()" class="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" /></svg></button>
-                    <button id="playBtn" class="w-20 h-20 flex items-center justify-center bg-indigo-600 text-white rounded-full shadow-2xl btn-shadow">
-                        <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        <svg id="pauseIcon" xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    <button id="prevBtn" class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center font-bold">←</button>
+                    <button id="playBtn" class="w-20 h-20 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center">
+                        <span id="playIcon" class="text-2xl">▶</span><span id="pauseIcon" class="hidden text-2xl">||</span>
                     </button>
-                    <button id="stopBtn" class="w-12 h-12 flex items-center justify-center bg-slate-800 text-white rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                    <button id="stopBtn" class="w-12 h-12 bg-slate-800 text-white rounded-full flex items-center justify-center font-bold">×</button>
+                    <button id="nextBtn" class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center font-bold">→</button>
                 </div>
-                <div class="bg-white rounded-2xl p-4 border border-slate-100 flex items-center gap-4 w-full">
+                <div class="bg-white rounded-2xl p-4 border border-slate-100 flex items-center gap-4">
                     <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Speed</span>
-                    <input type="range" id="rateRange" min="0.4" max="1.4" step="0.1" value="1.0" class="flex-1 h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                    <input type="range" id="rateRange" min="0.5" max="2.0" step="0.1" value="1.0" class="flex-1 accent-indigo-600">
                 </div>
             </div>
         </section>
 
-        <section id="sectionTimer" class="space-y-4 text-center w-full">
-            <h2 class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Speed Timer</h2>
-            <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 w-full mx-auto">
-                <div id="currentTime" class="text-5xl font-black tracking-tighter tabular-nums text-slate-800 mb-6" style="font-family: 'Syne', sans-serif;">00:00.0</div>
-                <div class="flex justify-center gap-3">
-                    <button id="timerStartBtn" onclick="startTimer()" class="flex-1 bg-indigo-600 text-white py-3.5 rounded-xl font-black shadow-lg">START</button>
-                    <button id="timerStopBtn" onclick="stopTimer()" disabled class="flex-1 bg-slate-200 text-slate-400 py-3.5 rounded-xl font-black">STOP</button>
+        <section id="sectionTimer" class="space-y-4 text-center">
+            <h2 class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Reading Timer & CPM</h2>
+            <div class="bg-white rounded-3xl p-8 border border-slate-100">
+                <div id="currentTime" class="text-5xl font-black text-slate-800 mb-6" style="font-family: 'Syne', sans-serif;">00:00.0</div>
+                <div class="flex gap-3">
+                    <button id="timerStartBtn" class="flex-1 bg-indigo-600 text-white py-3.5 rounded-xl font-black">START</button>
+                    <button id="timerStopBtn" disabled class="flex-1 bg-slate-200 text-slate-400 py-3.5 rounded-xl font-black">STOP</button>
                 </div>
             </div>
-            <div id="resultCard" class="hidden bg-indigo-600 rounded-2xl p-6 text-white w-full mx-auto shadow-xl">
+            <div id="resultCard" class="hidden bg-indigo-600 rounded-2xl p-6 text-white shadow-xl">
                 <div class="grid grid-cols-3 gap-4">
-                    <div><div class="text-[8px] font-black opacity-60 uppercase mb-1">Chars</div><div id="charCount" class="text-xl font-black">0</div></div>
-                    <div><div class="text-[8px] font-black opacity-60 uppercase mb-1">Time</div><div id="finalTime" class="text-xl font-black">0s</div></div>
-                    <div><div class="text-[8px] font-black opacity-60 uppercase mb-1">CPM</div><div id="cpmResult" class="text-xl font-black">0</div></div>
+                    <div><div class="text-[8px] font-black opacity-60 mb-1">Chars</div><div id="charCount" class="text-xl font-black">0</div></div>
+                    <div><div class="text-[8px] font-black opacity-60 mb-1">Time</div><div id="finalTime" class="text-xl font-black">0s</div></div>
+                    <div><div class="text-[8px] font-black opacity-60 mb-1">CPM</div><div id="cpmResult" class="text-xl font-black">0</div></div>
                 </div>
             </div>
         </section>
 
-        <section id="sectionVocab" class="space-y-4 w-full">
-            <div class="flex items-center justify-between px-1">
-                <h2 class="text-xl font-black tracking-tight">MY LIST</h2>
-                <div class="flex gap-1.5">
-                    <button id="exportCSV" class="text-[9px] font-black bg-indigo-50 text-indigo-600 px-3 py-2 rounded-lg">CSV COPY</button>
-                    <button id="clearAllVocab" class="text-[9px] font-black bg-red-50 text-red-400 px-3 py-2 rounded-lg">CLEAR</button>
-                </div>
+        <section id="sectionVocab" class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-black italic">VOCAB LIST</h2>
+                <button id="clearAllVocab" class="text-[9px] font-black bg-red-50 text-red-400 px-3 py-2 rounded-lg">CLEAR ALL</button>
             </div>
             <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
-                <div class="overflow-x-auto w-full"><table class="w-full text-left min-w-[500px]"><thead class="bg-slate-50 border-b border-slate-100"><tr><th class="p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Word</th><th class="p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Meaning</th><th class="p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Details</th><th class="p-3 w-8"></th></tr></thead><tbody id="vocabTableBody"></tbody></table></div>
-                <div id="emptyState" class="p-12 text-center"><p class="text-slate-300 font-bold uppercase tracking-widest text-[9px]">単語帳は空です</p></div>
+                <table class="w-full text-left"><tbody id="vocabTableBody"></tbody></table>
+                <div id="emptyState" class="p-10 text-center text-slate-300 text-[9px] font-black uppercase tracking-widest">List Empty</div>
             </div>
         </section>
     </main>
 
-    <!-- Modals & Toasts -->
+    <!-- API Key Settings Modal -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden z-[20000] flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl w-full max-w-sm p-6 space-y-5 shadow-2xl">
-            <h3 class="text-xl font-black text-slate-800">Settings</h3>
+            <h3 class="text-xl font-black text-slate-800">API Settings</h3>
             <div class="space-y-1.5">
                 <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Gemini API Key</label>
-                <input type="password" id="apiKeyInput" class="w-full bg-slate-50 border-none rounded-xl p-4 text-xs focus:ring-2 focus:ring-indigo-500" placeholder="Enter API Key...">
+                <input type="password" id="apiKeyInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs outline-none" placeholder="APIキーを入力してください...">
+                <p class="text-[8px] text-slate-400">※キーはブラウザにのみ保存されます</p>
             </div>
-            <div class="flex gap-3"><button id="saveSettingsBtn" class="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-black shadow-lg">SAVE</button><button id="closeSettingsBtn" class="flex-1 bg-slate-100 text-slate-600 py-4 rounded-xl font-black">CLOSE</button></div>
+            <button id="saveSettingsBtn" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-black shadow-lg">設定を保存する</button>
         </div>
     </div>
 
-    <div id="dictModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden z-[21000] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[32px] w-full max-w-md p-8 space-y-6 shadow-2xl relative">
-            <button id="closeDictBtn" class="absolute top-6 right-6 text-slate-300 hover:text-slate-600"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg></button>
-            <div id="dictLoading" class="hidden flex flex-col items-center py-12 space-y-4"><div class="spinner"></div><p class="text-[9px] font-black text-slate-400 tracking-widest uppercase">AI Analyzing...</p></div>
-            <div id="dictContent" class="space-y-6">
-                <div class="flex items-baseline justify-between pt-2">
-                    <div class="space-y-1"><h3 id="dictWord" class="text-4xl font-black text-indigo-600 tracking-tighter">...</h3><p id="dictPinyin" class="text-base font-bold text-slate-400 italic">...</p></div>
-                    <div class="text-right"><p id="dictEng" class="text-lg font-black text-slate-800">...</p></div>
-                </div>
-                <div class="grid gap-4">
-                    <div class="space-y-1"><label class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Meaning</label><div id="dictMean" class="text-base font-bold text-slate-700 leading-tight">...</div></div>
-                    <div class="space-y-1.5"><label class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Example (CN)</label><div id="dictExCn" class="text-base font-bold text-slate-800 bg-slate-50 p-3 rounded-xl chinese-text border border-slate-100">...</div></div>
-                    <div class="space-y-1"><label class="text-[8px] font-black text-slate-300 uppercase tracking-widest">JP Translation</label><div id="dictExJp" class="text-xs font-bold text-slate-400 italic">...</div></div>
-                </div>
-                <button id="addToListBtn" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-black shadow-lg text-base">単語帳に追加</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="toast" class="bg-slate-900 text-white px-8 py-4 rounded-2xl text-[9px] font-black shadow-2xl tracking-widest uppercase">Message</div>
+    <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl text-[9px] font-black shadow-2xl tracking-widest uppercase opacity-0 transition-opacity pointer-events-none z-[30000]">Message</div>
 
     <script>
-        const synth = window.speechSynthesis;
-        let isPlaying = false, currentIndex = 0, segments = [];
-        let geminiApiKey = localStorage.getItem('crb_gemini_key') || "";
-        let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v41') || '[]');
-        let currentAudio = null;
-        let audioCache = {}; // セグメントごとのWAV URLを保存
-        let isAborted = false;
+        // Global State
+        let userApiKey = localStorage.getItem('crb_gemini_key') || "";
+        let isPlaying = false;
+        let activeAudio = null;
+        let timerInterval = null;
+        let startTime = 0;
+        let pendingAction = null;
 
+        // Logging Utility
         function addLog(msg, type = 'info') {
             const container = document.getElementById('logContent');
             const entry = document.createElement('div');
-            entry.className = "py-0.5 border-b border-white/5 whitespace-pre-wrap break-all";
-            let color = '#4ade80';
-            if(type === 'error') color = '#f87171';
-            if(type === 'warn') color = '#fbbf24';
-            entry.innerHTML = `<span style="opacity:0.4">[${new Date().toLocaleTimeString()}]</span> <span style="color:${color}">${msg}</span>`;
+            entry.className = "py-0.5 border-b border-white/5 leading-tight";
+            let color = "#4ade80"; // green
+            if (type === 'error') color = "#f87171"; // red
+            if (type === 'warn') color = "#fbbf24"; // yellow
+            
+            const time = new Date().toLocaleTimeString('ja-JP', { hour12: false });
+            entry.innerHTML = `<span style="opacity:0.4">[${time}]</span> <span style="color:${color}">${msg}</span>`;
             container.prepend(entry);
         }
 
-        // --- PRE-FETCH AUDIO LOGIC ---
-        async function prefetchAudio() {
-            isAborted = false;
-            const overlay = document.getElementById('loadingOverlay');
-            const progress = document.getElementById('loadingProgressBar');
-            const status = document.getElementById('loadingStatusText');
-            
-            overlay.style.display = 'flex';
-            audioCache = {};
-            
-            for (let i = 0; i < segments.length; i++) {
-                if (isAborted) break;
-                
-                status.innerText = `${i + 1} / ${segments.length} segments processing...`;
-                progress.style.width = `${((i + 1) / segments.length) * 100}%`;
-                
-                const text = segments[i].trim();
-                if (!text) continue;
+        // PCM to WAV conversion for Gemini TTS (audio/L16)
+        function createWavHeader(dataLength, sampleRate) {
+            const header = new ArrayBuffer(44);
+            const view = new DataView(header);
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+            };
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + dataLength, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); // PCM
+            view.setUint16(22, 1, true); // Mono
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, dataLength, true);
+            return header;
+        }
 
-                try {
-                    // 指数バックオフ付きのリトライ
-                    const wavUrl = await getGeminiTTSWithRetry(text, 5); 
-                    if (wavUrl) {
-                        audioCache[i] = wavUrl;
-                        addLog(`Cached Segment ${i}`, 'debug');
+        // --- Core Audio Process ---
+
+        async function playBase64Audio(base64Data, mimeType) {
+            try {
+                addLog("[AUDIO] データデコード中...");
+                const binary = atob(base64Data);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+                let finalBlob;
+                if (mimeType.includes('L16')) {
+                    const sampleRate = parseInt(mimeType.split('rate=')[1]) || 24000;
+                    const header = createWavHeader(bytes.length, sampleRate);
+                    finalBlob = new Blob([header, bytes], { type: 'audio/wav' });
+                } else {
+                    finalBlob = new Blob([bytes], { type: mimeType });
+                }
+
+                if (activeAudio) activeAudio.pause();
+                const url = URL.createObjectURL(finalBlob);
+                activeAudio = new Audio(url);
+                activeAudio.playbackRate = parseFloat(document.getElementById('rateRange').value);
+                
+                activeAudio.onplay = () => { isPlaying = true; updateUIPlayback(); addLog("[PLAYER] 再生開始。"); };
+                activeAudio.onended = () => { isPlaying = false; updateUIPlayback(); addLog("[PLAYER] 再生完了。"); };
+                
+                await activeAudio.play();
+                return true;
+            } catch (e) {
+                addLog("[AUDIO ERROR] デコードまたは再生失敗: " + e.message, 'error');
+                return false;
+            }
+        }
+
+        async function fetchGeminiTTS(model, text) {
+            addLog(`[API] ${model} リクエスト送信中...`);
+            let retryCount = 0;
+
+            const makeRequest = async () => {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userApiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: text }] }],
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } }
+                        }
+                    })
+                });
+
+                if (response.status === 429) {
+                    if (retryCount < 1) {
+                        retryCount++;
+                        addLog("[API] レート制限(429)検知。8秒後に1度だけ再試行します...", 'warn');
+                        await new Promise(r => setTimeout(r, 8000));
+                        return await makeRequest();
                     }
-                } catch (e) {
-                    addLog(`Failed to fetch segment ${i}: ${e.message}`, 'error');
-                    // 完全に失敗した場合はBrowser TTSに頼るため、nullをセット
-                    audioCache[i] = null;
+                    throw new Error("RATE_LIMIT");
                 }
                 
-                // APIレート制限(429)対策として、リクエスト間にわずかなラグを置く（一括生成時）
-                await new Promise(r => setTimeout(r, 300));
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            };
+
+            try {
+                const data = await makeRequest();
+                const part = data.candidates?.[0]?.content?.parts?.[0];
+                if (part?.inlineData) {
+                    addLog(`[SUCCESS] ${model} 音声生成成功。`);
+                    return await playBase64Audio(part.inlineData.data, part.inlineData.mimeType);
+                }
+                throw new Error("AUDIO_NOT_FOUND");
+            } catch (e) {
+                addLog(`[FAIL] ${model}: ${e.message}`, 'error');
+                return false;
             }
+        }
+
+        async function fetchEdgeTTS(text) {
+            addLog("[EDGE-TTS] ライブラリを使用して生成開始...");
+            try {
+                if (typeof window.EdgeTTS !== 'function') {
+                    throw new Error("ライブラリがまだロードされていません。");
+                }
+                const tts = new window.EdgeTTS();
+                addLog("[EDGE-TTS] ボイス 'zh-CN-XiaoxiaoNeural' をリクエスト中...");
+                const audioBlob = await tts.getAudio(text, "zh-CN-XiaoxiaoNeural");
+                addLog("[EDGE-TTS] Blob生成完了。再生準備中...");
+                
+                if (activeAudio) activeAudio.pause();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                activeAudio = new Audio(audioUrl);
+                activeAudio.playbackRate = parseFloat(document.getElementById('rateRange').value);
+                
+                activeAudio.onplay = () => { isPlaying = true; updateUIPlayback(); addLog("[EDGE-TTS] 再生開始。"); };
+                activeAudio.onended = () => { isPlaying = false; updateUIPlayback(); addLog("[EDGE-TTS] 再生完了。"); };
+                
+                await activeAudio.play();
+                return true;
+            } catch (e) {
+                addLog("[EDGE-TTS ERROR] 生成失敗: " + e.message, 'error');
+                return false;
+            }
+        }
+
+        async function startTtsPipeline(text) {
+            if (!userApiKey) {
+                addLog("[AUTH] APIキーが設定されていません。モーダルを表示します。", 'warn');
+                pendingAction = () => startTtsPipeline(text);
+                document.getElementById('settingsModal').classList.remove('hidden');
+                return;
+            }
+
+            const overlay = document.getElementById('loadingOverlay');
+            const status = document.getElementById('loadingStatus');
+            overlay.style.display = 'flex';
             
+            // Step 1: Candidate 1 (Native Audio)
+            status.innerText = "GENERATE: NATIVE-AUDIO...";
+            let success = await fetchGeminiTTS('gemini-2.5-flash-native-audio-latest', text);
+
+            // Step 2: Candidate 2 (Preview TTS)
+            if (!success) {
+                status.innerText = "GENERATE: PREVIEW-TTS...";
+                success = await fetchGeminiTTS('gemini-2.5-flash-preview-tts', text);
+            }
+
+            // Step 3: Candidate 3 (Edge-TTS)
+            if (!success) {
+                status.innerText = "GENERATE: MICROSOFT EDGE...";
+                success = await fetchEdgeTTS(text);
+            }
+
+            if (!success) {
+                addLog("[PIPELINE] 全ての生成手段が失敗しました。", 'error');
+                showToast("音声生成に失敗しました");
+            }
+
             overlay.style.display = 'none';
         }
 
-        async function getGeminiTTSWithRetry(text, maxRetries = 5) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${geminiApiKey}`;
-            const payload = {
-                contents: [{ parts: [{ text: `Say in a clear Chinese (Mandarin) voice: ${text}` }] }],
-                generationConfig: { 
-                    responseModalities: ["AUDIO"], 
-                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } 
-                }
-            };
+        // --- UI & Interaction ---
 
-            for (let attempt = 0; attempt < maxRetries; attempt++) {
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        const base64Data = result.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-                        if (base64Data) return pcmToWav(base64Data, 24000);
-                        throw new Error("No audio data in response");
-                    }
-
-                    if (response.status === 429) {
-                        const wait = Math.pow(2, attempt) * 1000 + (Math.random() * 500);
-                        addLog(`Rate Limit (429). Retrying in ${Math.round(wait)}ms...`, 'warn');
-                        await new Promise(r => setTimeout(r, wait));
-                        continue;
-                    }
-
-                    throw new Error(`HTTP ${response.status}`);
-                } catch (e) {
-                    if (attempt === maxRetries - 1) throw e;
-                    await new Promise(r => setTimeout(r, 1000));
-                }
-            }
-            return null;
-        }
-
-        function pcmToWav(base64, sampleRate) {
-            const binaryString = window.atob(base64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
-            const wavHeader = new ArrayBuffer(44);
-            const view = new DataView(wavHeader);
-            const writeString = (view, offset, string) => { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); };
-            writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + len, true); writeString(view, 8, 'WAVE');
-            writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
-            view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
-            writeString(view, 36, 'data'); view.setUint32(40, len, true);
-            return URL.createObjectURL(new Blob([wavHeader, bytes], { type: 'audio/wav' }));
-        }
-
-        // --- PLAYBACK LOGIC ---
-        function speak() {
-            if (!isPlaying || currentIndex >= segments.length) { 
-                isPlaying = false; updateIcons(); return; 
-            }
-            
-            stopAnyAudio();
-            const text = segments[currentIndex].trim();
-            updateHighlight(currentIndex);
-            updateIcons();
-
-            const cachedUrl = audioCache[currentIndex];
-            if (cachedUrl) {
-                playAudioBuffer(cachedUrl);
-            } else {
-                addLog(`No cache for segment ${currentIndex}. Falling back to Browser TTS.`, 'warn');
-                speakWithBrowser(text);
-            }
-        }
-
-        function stopAnyAudio() {
-            if (currentAudio) {
-                currentAudio.onended = null;
-                currentAudio.pause();
-                currentAudio = null;
-            }
-            synth.cancel();
-        }
-
-        function playAudioBuffer(url) {
-            currentAudio = new Audio(url);
-            currentAudio.playbackRate = parseFloat(document.getElementById('rateRange').value);
-            currentAudio.onended = onPlaybackEnd;
-            currentAudio.play().catch(e => { addLog("Playback Error: " + e.message, "error"); onPlaybackEnd(); });
-        }
-
-        function speakWithBrowser(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'zh-CN';
-            utterance.rate = parseFloat(document.getElementById('rateRange').value);
-            utterance.onend = onPlaybackEnd;
-            synth.speak(utterance);
-        }
-
-        function onPlaybackEnd() {
-            if (!isPlaying) return;
-            currentIndex++;
-            if (currentIndex < segments.length) {
-                if (document.getElementById('autoModeToggle').checked) speak();
-                else { isPlaying = false; updateIcons(); }
-            } else {
-                isPlaying = false; updateIcons(); addLog("Playback Finished", "info");
-            }
-        }
-
-        // --- GUI Logic ---
-        function updateIcons() {
+        function updateUIPlayback() {
             document.getElementById('playIcon').classList.toggle('hidden', isPlaying);
             document.getElementById('pauseIcon').classList.toggle('hidden', !isPlaying);
         }
 
-        function setMode(mode) {
-            const isReading = mode === 'reading';
-            document.getElementById('textInput').classList.toggle('hidden', isReading);
-            document.getElementById('readerDisplay').classList.toggle('hidden', !isReading);
-            document.getElementById('startReadBtn').classList.toggle('hidden', isReading);
-            document.getElementById('playerControls').classList.toggle('hidden', !isReading);
-            document.getElementById('playbackOptions').classList.toggle('hidden', !isReading);
-            document.getElementById('editHint').classList.toggle('hidden', !isReading);
-            document.getElementById('modeLabel').innerText = isReading ? "Reading Mode" : "Input Mode";
-        }
+        document.getElementById('startReadBtn').onclick = () => {
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) return;
 
-        document.getElementById('startReadBtn').onclick = async () => {
-            const raw = document.getElementById('textInput').value.trim();
-            if (!raw) return;
-            if (!geminiApiKey) { showToast("API Key Required"); document.getElementById('settingsModal').classList.remove('hidden'); return; }
+            addLog("[SYSTEM] 読み上げ処理を開始。");
+            document.getElementById('textInput').classList.add('hidden');
+            document.getElementById('readerDisplay').classList.remove('hidden');
+            document.getElementById('readerDisplay').innerText = text;
+            document.getElementById('startReadBtn').classList.add('hidden');
+            document.getElementById('playerControls').classList.remove('hidden');
+            document.getElementById('modeLabel').innerText = "Reading Mode";
 
-            segments = raw.match(/([^，。！？；：\n]+[，。！？；：\n]*)/g) || [raw];
-            currentIndex = 0;
-            
-            // 全音声を事前キャッシュ
-            await prefetchAudio();
-            
-            const display = document.getElementById('readerDisplay');
-            display.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
-            
-            display.addEventListener('mouseup', handleTextSelection);
-            display.addEventListener('touchend', handleTextSelection);
-            
-            display.querySelectorAll('.segment').forEach(el => {
-                el.onclick = () => {
-                    if (!window.getSelection().toString().trim()) {
-                        currentIndex = parseInt(el.dataset.idx); isPlaying = true; speak();
-                    }
-                };
-            });
-            setMode('reading'); isPlaying = true; speak();
+            startTtsPipeline(text);
         };
 
-        function updateHighlight(idx) {
-            document.querySelectorAll('.segment').forEach(el => el.classList.remove('highlight-active'));
-            const target = document.querySelector(`.segment[data-idx="${idx}"]`);
-            if (target) { target.classList.add('highlight-active'); target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-        }
-
-        function prevSegment() {
-            if (currentIndex > 0) { currentIndex--; isPlaying = true; speak(); }
-        }
-
-        // --- Search Popup Logic ---
-        let selectedTextForSearch = "";
-        function handleTextSelection() {
-            setTimeout(() => {
-                const sel = window.getSelection();
-                const word = sel.toString().trim();
-                const trigger = document.getElementById('searchTrigger');
-                if (word && word.length > 0 && /[\u4e00-\u9fa5]/.test(word)) {
-                    selectedTextForSearch = word;
-                    const range = sel.getRangeAt(0);
-                    const rect = range.getBoundingClientRect();
-                    trigger.innerText = `意味を調べる: "${word.substring(0,8)}"`;
-                    trigger.style.display = 'block';
-                    trigger.style.top = `${window.scrollY + rect.top - 60}px`;
-                    trigger.style.left = `${Math.max(10, window.scrollX + rect.left + (rect.width/2) - (trigger.offsetWidth/2))}px`;
-                } else {
-                    trigger.style.display = 'none';
-                }
-            }, 100);
-        }
-
-        document.getElementById('searchTrigger').onpointerdown = (e) => {
-            e.preventDefault(); e.stopPropagation();
-            document.getElementById('searchTrigger').style.display = 'none';
-            if (selectedTextForSearch) openDictionary(selectedTextForSearch);
+        document.getElementById('playBtn').onclick = () => {
+            if (!activeAudio) return;
+            if (isPlaying) {
+                activeAudio.pause();
+                isPlaying = false;
+            } else {
+                activeAudio.play();
+                isPlaying = true;
+            }
+            updateUIPlayback();
         };
 
-        const modelList = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
-        async function fetchDictionaryWithFallback(prompt, models, index = 0) {
-            if (index >= models.length) throw new Error("全モデルで解析に失敗しました。");
-            const model = models[index];
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
-            try {
-                const response = await fetch(url, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-                if (!response.ok) return await fetchDictionaryWithFallback(prompt, models, index + 1);
-                return await response.json();
-            } catch (e) { return await fetchDictionaryWithFallback(prompt, models, index + 1); }
-        }
+        document.getElementById('stopBtn').onclick = () => {
+            if (activeAudio) {
+                activeAudio.pause();
+                activeAudio.currentTime = 0;
+            }
+            isPlaying = false;
+            updateUIPlayback();
+            
+            document.getElementById('textInput').classList.remove('hidden');
+            document.getElementById('readerDisplay').classList.add('hidden');
+            document.getElementById('startReadBtn').classList.remove('hidden');
+            document.getElementById('playerControls').classList.add('hidden');
+            document.getElementById('modeLabel').innerText = "Input Mode";
+            addLog("[SYSTEM] 読み上げ停止。");
+        };
 
-        async function openDictionary(word) {
-            if (!geminiApiKey) { document.getElementById('settingsModal').classList.remove('hidden'); return; }
-            const modal = document.getElementById('dictModal'), loading = document.getElementById('dictLoading'), content = document.getElementById('dictContent');
-            modal.classList.remove('hidden'); loading.classList.remove('hidden'); content.classList.add('hidden');
-            try {
-                const prompt = `Analyze "${word}". Return JSON only: {"pinyin":"","meaning":"","english":"max 3 words","exampleCn":"","exampleJp":""}`;
-                const data = await fetchDictionaryWithFallback(prompt, modelList);
-                let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-                rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
-                const json = JSON.parse(rawText);
-                
-                document.getElementById('dictWord').innerText = word;
-                document.getElementById('dictPinyin').innerText = json.pinyin || "-";
-                document.getElementById('dictMean').innerText = json.meaning || "-";
-                document.getElementById('dictEng').innerText = json.english || "-";
-                document.getElementById('dictExCn').innerText = json.exampleCn || "-";
-                document.getElementById('dictExJp').innerText = json.exampleJp || "-";
-                loading.classList.add('hidden'); content.classList.remove('hidden');
-            } catch (e) { modal.classList.add('hidden'); showToast("解析エラー"); }
-        }
+        document.getElementById('rateRange').oninput = (e) => {
+            const val = parseFloat(e.target.value);
+            if (activeAudio) activeAudio.playbackRate = val;
+            addLog(`[PLAYER] 再生速度を ${val}x に変更。`);
+        };
 
-        function saveVocab() { localStorage.setItem('crb_pro_vocab_v41', JSON.stringify(vocabList)); renderVocabTable(); }
-        function renderVocabTable() {
-            const body = document.getElementById('vocabTableBody'), empty = document.getElementById('emptyState');
-            if (vocabList.length === 0) { empty.classList.remove('hidden'); body.innerHTML = ''; return; }
-            empty.classList.add('hidden');
-            body.innerHTML = vocabList.map((v, i) => `
-                <tr class="border-b border-slate-50">
-                    <td class="p-3"><div class="font-black text-indigo-600 text-lg cursor-pointer" onclick="openDictionary('${v.word}')">${v.word}</div><div class="text-[9px] font-bold text-slate-400">${v.pinyin}</div></td>
-                    <td class="p-3 font-bold text-slate-600 text-sm">${v.meaning}</td>
-                    <td class="p-3">
-                        <div class="text-xs text-slate-800 chinese-text">${v.exampleCn}</div>
-                        <div class="text-[9px] text-slate-400 italic">${v.exampleJp}</div>
-                        <div class="text-[9px] text-slate-500 font-bold mt-1">EN: ${v.english}</div>
-                    </td>
-                    <td class="p-3 text-right"><button onclick="deleteItem(${i})" class="text-slate-300 hover:text-red-500 text-xl">×</button></td>
-                </tr>`).join('');
-        }
-        window.deleteItem = (i) => { vocabList.splice(i, 1); saveVocab(); };
-
-        let startTime, timerInterval;
-        window.startTimer = () => {
+        // Timer Logic
+        document.getElementById('timerStartBtn').onclick = () => {
             startTime = Date.now();
-            document.getElementById('timerStartBtn').disabled = true; document.getElementById('timerStopBtn').disabled = false;
-            document.getElementById('timerStopBtn').className = "flex-1 bg-red-500 text-white py-3.5 rounded-xl font-black";
-            document.getElementById('resultCard').classList.add('hidden');
+            document.getElementById('timerStartBtn').disabled = true;
+            document.getElementById('timerStopBtn').disabled = false;
+            document.getElementById('timerStopBtn').classList.replace('bg-slate-200', 'bg-red-500');
+            document.getElementById('timerStopBtn').classList.replace('text-slate-400', 'text-white');
+            
             timerInterval = setInterval(() => {
-                const ms = Date.now() - startTime;
-                document.getElementById('currentTime').innerText = `00:${Math.floor(ms/1000).toString().padStart(2,'0')}.${Math.floor((ms%1000)/100)}`;
+                const elapsed = (Date.now() - startTime) / 1000;
+                const m = Math.floor(elapsed / 60);
+                const s = Math.floor(elapsed % 60);
+                const ms = Math.floor((elapsed % 1) * 10);
+                document.getElementById('currentTime').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}.${ms}`;
             }, 100);
         };
-        window.stopTimer = () => {
+
+        document.getElementById('timerStopBtn').onclick = () => {
             clearInterval(timerInterval);
-            const ms = Date.now() - startTime, text = document.getElementById('textInput').value;
+            const elapsed = (Date.now() - startTime) / 1000;
+            const text = document.getElementById('textInput').value.trim();
             const charCount = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+            const cpm = Math.round(charCount / (elapsed / 60)) || 0;
+
             document.getElementById('charCount').innerText = charCount;
-            document.getElementById('finalTime').innerText = (ms/1000).toFixed(1)+'s';
-            document.getElementById('cpmResult').innerText = Math.round(charCount / (ms / 60000)) || '0';
-            document.getElementById('timerStartBtn').disabled = false; document.getElementById('timerStopBtn').disabled = true;
-            document.getElementById('timerStopBtn').className = "flex-1 bg-slate-200 text-slate-400 py-3.5 rounded-xl font-black";
+            document.getElementById('finalTime').innerText = elapsed.toFixed(1) + 's';
+            document.getElementById('cpmResult').innerText = cpm;
             document.getElementById('resultCard').classList.remove('hidden');
+
+            document.getElementById('timerStartBtn').disabled = false;
+            document.getElementById('timerStopBtn').disabled = true;
+            document.getElementById('timerStopBtn').classList.replace('bg-red-500', 'bg-slate-200');
+            document.getElementById('timerStopBtn').classList.replace('text-white', 'text-slate-400');
         };
 
-        // Handlers
-        document.getElementById('playBtn').onclick = () => { if(isPlaying){isPlaying=false; stopAnyAudio(); updateIcons();} else {isPlaying=true; speak();} };
-        document.getElementById('stopBtn').onclick = () => { isPlaying = false; stopAnyAudio(); isAborted = true; setMode('input'); };
-        document.getElementById('clearTextBtn').onclick = () => { document.getElementById('textInput').value = ''; };
-        document.getElementById('saveSettingsBtn').onclick = () => { geminiApiKey = document.getElementById('apiKeyInput').value.trim(); localStorage.setItem('crb_gemini_key', geminiApiKey); document.getElementById('settingsModal').classList.add('hidden'); showToast("SAVED"); };
-        document.getElementById('openSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
-        document.getElementById('closeSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('hidden');
-        document.getElementById('closeDictBtn').onclick = () => document.getElementById('dictModal').classList.add('hidden');
-        document.getElementById('addToListBtn').onclick = () => { 
-            vocabList.unshift({ 
-                word: document.getElementById('dictWord').innerText, 
-                pinyin: document.getElementById('dictPinyin').innerText, 
-                meaning: document.getElementById('dictMean').innerText, 
-                english: document.getElementById('dictEng').innerText, 
-                exampleCn: document.getElementById('dictExCn').innerText, 
-                exampleJp: document.getElementById('dictExJp').innerText 
-            }); 
-            saveVocab(); 
-            document.getElementById('dictModal').classList.add('hidden'); 
-            showToast("ADDED"); 
-        };
-        document.getElementById('clearAllVocab').onclick = () => { if(confirm("消去しますか？")){vocabList=[];saveVocab();showToast("CLEARED");} };
-        document.getElementById('exportCSV').onclick = () => { 
-            const csv = vocabList.map(v => `"${v.word} (${v.pinyin})","${v.meaning}","${v.exampleCn} / ${v.exampleJp} / EN: ${v.english}"`).join('\n'); 
-            const el = document.createElement('textarea'); el.value = csv; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); showToast("CSV COPIED");
-        };
-        document.getElementById('copyLogBtn').onclick = (e) => { 
-            e.stopPropagation(); 
-            const text = Array.from(document.getElementById('logContent').children).map(c=>c.innerText).join('\n'); 
-            const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); showToast("LOGS COPIED");
+        // Settings
+        document.getElementById('openSettingsBtn').onclick = () => {
+            document.getElementById('apiKeyInput').value = userApiKey;
+            document.getElementById('settingsModal').classList.remove('hidden');
         };
 
-        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
-        
-        window.onload = () => { 
-            if(geminiApiKey) document.getElementById('apiKeyInput').value = geminiApiKey;
-            renderVocabTable(); 
-            addLog("System Initialized v42.0 (Pre-fetch Engine)"); 
+        document.getElementById('saveSettingsBtn').onclick = () => {
+            const val = document.getElementById('apiKeyInput').value.trim();
+            userApiKey = val;
+            localStorage.setItem('crb_gemini_key', val);
+            document.getElementById('settingsModal').classList.add('hidden');
+            showToast("Settings Saved");
+            if (pendingAction) {
+                const action = pendingAction;
+                pendingAction = null;
+                action();
+            }
+        };
+
+        document.getElementById('clearTextBtn').onclick = () => {
+            document.getElementById('textInput').value = "";
+        };
+
+        document.getElementById('clearLogBtn').onclick = () => {
+            document.getElementById('logContent').innerHTML = "";
+        };
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.opacity = "1";
+            setTimeout(() => t.style.opacity = "0", 3000);
+        }
+
+        window.onload = () => {
+            addLog("Reading Buddy Pro v62.0 起動完了。");
+            if (!userApiKey) {
+                addLog("[SYSTEM] 初回起動: APIキーを設定してください。", 'warn');
+                document.getElementById('settingsModal').classList.remove('hidden');
+            }
         };
     </script>
 </body>
