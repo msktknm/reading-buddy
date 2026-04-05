@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chinese Reading Buddy Pro v80.0</title>
+    <title>Chinese Reading Buddy Pro v81.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -16,7 +16,7 @@
             overflow-x: hidden;
             width: 100%;
         }
-        .chinese-text { font-family: 'Noto Sans SC', serif; line-height: 2.2; }
+        .chinese-text { font-family: 'Noto Sans SC', serif; line-height: 2.2; user-select: text; -webkit-user-select: text; }
         .segment { transition: all 0.15s ease; border-radius: 4px; padding: 2px 2px; display: inline; cursor: pointer; border-bottom: 2px solid transparent; }
         .highlight-active { background: #fef08a !important; border-bottom: 2px solid #eab308; color: #000; box-shadow: 0 1px 4px rgba(234, 179, 8, 0.2); }
         .glass-panel { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
@@ -42,14 +42,15 @@
         
         /* Floating Dictionary Trigger */
         #searchTrigger { 
-            position: absolute; z-index: 15000; display: none; 
-            background: #4f46e5; color: white; padding: 8px 16px; 
-            border-radius: 12px; font-size: 12px; font-weight: 800; 
-            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4); cursor: pointer; 
-            white-space: nowrap; transform: translate(-50%, -100%);
-            margin-top: -10px; animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: fixed; z-index: 65000; display: none; 
+            background: #4f46e5; color: white; padding: 10px 18px; 
+            border-radius: 14px; font-size: 13px; font-weight: 800; 
+            box-shadow: 0 12px 28px rgba(79, 70, 229, 0.5); cursor: pointer; 
+            white-space: nowrap; transform: translate(-50%, -120%);
+            animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: auto;
         }
-        @keyframes popIn { from { opacity: 0; transform: translate(-50%, -80%) scale(0.8); } to { opacity: 1; transform: translate(-50%, -100%) scale(1); } }
+        @keyframes popIn { from { opacity: 0; transform: translate(-50%, -100%) scale(0.8); } to { opacity: 1; transform: translate(-50%, -120%) scale(1); } }
 
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -72,7 +73,7 @@
     <!-- Log Panel -->
     <div id="logPanel" class="minimized">
         <div id="logHeader">
-            <span class="text-[9px] font-black text-white tracking-widest">CONSOLE v80.0</span>
+            <span class="text-[9px] font-black text-white tracking-widest">CONSOLE v81.0</span>
             <div class="flex items-center gap-1">
                 <button id="copyLogBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-0.5 rounded text-[8px] font-black transition-colors">COPY</button>
                 <button id="toggleLogBtn" class="bg-slate-500 hover:bg-slate-400 text-white px-2 py-0.5 rounded text-[8px] font-black transition-colors">MAX</button>
@@ -82,13 +83,14 @@
         <div id="logResizeHandle"></div>
     </div>
 
-    <div id="searchTrigger">この単語を調べますか？</div>
+    <!-- Floating Trigger -->
+    <div id="searchTrigger">単語を調べますか？</div>
 
     <nav class="sticky top-0 z-[100] glass-panel px-4 py-3 w-full">
         <div class="flex items-center justify-between max-w-5xl mx-auto">
             <div class="flex flex-col items-start leading-none gap-1">
                 <h1 class="text-lg sm:text-xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black tracking-tighter">PRO v80.0</span>
+                <span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black tracking-tighter">PRO v81.0</span>
             </div>
             <button id="openSettingsBtn" class="p-3 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-2xl active:scale-90">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
@@ -107,8 +109,10 @@
                         <span class="text-[10px] font-black text-indigo-600 pr-2">連続</span>
                     </div>
                 </div>
+                <!-- Textbox and Reader Area -->
                 <textarea id="textInput" rows="14" class="w-full text-2xl leading-relaxed p-0 border-none focus:ring-0 placeholder:text-slate-200 resize-none chinese-text flex-1" placeholder="ここに従文を貼り付けてください..."></textarea>
-                <div id="readerDisplay" class="hidden w-full text-2xl leading-relaxed p-0 chinese-text break-words whitespace-pre-wrap text-slate-800 flex-1 relative overflow-y-auto"></div>
+                <div id="readerDisplay" class="hidden w-full text-2xl leading-relaxed p-0 chinese-text break-words whitespace-pre-wrap text-slate-800 flex-1 relative overflow-y-auto" style="user-select: text; -webkit-user-select: text;"></div>
+                
                 <div id="inputFooter" class="flex justify-between mt-4 pt-4 border-t border-slate-50 items-center">
                     <div id="editHint" class="hidden text-[10px] font-black text-indigo-400 uppercase tracking-widest italic animate-pulse">テキスト選択で単語辞書</div>
                     <div class="flex-1"></div>
@@ -147,9 +151,9 @@
             </div>
             <div id="resultCard" class="hidden bg-indigo-600 rounded-3xl p-6 text-white shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-lg mx-auto">
                 <div class="grid grid-cols-3 gap-4">
-                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">Chars</div><div id="charCount" class="text-xl font-black">0</div></div>
-                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">Time</div><div id="finalTime" class="text-xl font-black">0s</div></div>
-                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">CPM</div><div id="cpmResult" class="text-xl font-black italic">0</div></div>
+                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">Chars</div><div id="charCount" class="text-base font-black">0</div></div>
+                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">Time</div><div id="finalTime" class="text-base font-black">0s</div></div>
+                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">CPM</div><div id="cpmResult" class="text-base font-black italic">0</div></div>
                 </div>
             </div>
         </section>
@@ -250,7 +254,7 @@
 
     <script>
         // --- Configuration ---
-        const VERSION = "v80.0";
+        const VERSION = "v81.0";
         const MODELS = {
             PRO_TTS: "gemini-2.5-pro-preview-tts",
             FLASH_TTS: "gemini-2.5-flash-preview-tts",
@@ -268,8 +272,9 @@
         let isWebSpeechMode = false;
         let activeDictData = null;
         let isAudioReady = false;
+        let isSelecting = false; // Flag to prevent play on selection end
 
-        // --- Logging System & Draggable/Resizable Logic ---
+        // --- Logging System ---
         function log(msg, type = 'info') {
             const container = document.getElementById('logContent');
             const entry = document.createElement('div');
@@ -284,7 +289,6 @@
             const panel = document.getElementById('logPanel');
             const header = document.getElementById('logHeader');
             const resizeHandle = document.getElementById('logResizeHandle');
-            
             let isDragging = false;
             let isResizing = false;
             let startX, startY, startW, startH, startLeft, startTop;
@@ -292,7 +296,6 @@
             const onMove = (e) => {
                 const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
                 const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-
                 if (isDragging) {
                     panel.style.left = `${startLeft + (clientX - startX)}px`;
                     panel.style.top = `${startTop + (clientY - startY)}px`;
@@ -361,7 +364,7 @@
             return success ? Promise.resolve() : Promise.reject();
         }
 
-        // --- WAV Helper (Converter for audio/L16) ---
+        // --- WAV Helper ---
         function createWavHeader(dataLength, sampleRate = 24000) {
             const buf = new ArrayBuffer(44);
             const view = new DataView(buf);
@@ -387,19 +390,16 @@
             if (!userApiKey) throw new Error("APIキー未設定");
             log(`[API] 実行モデル: ${model}`, 'api');
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userApiKey}`;
-            
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-
             const data = await response.json();
             if (response.ok) {
                 log(`[API] ${model} 応答成功`, 'success');
                 return data;
             }
-
             if (response.status === 429 || data.error?.code === 429) {
                 log(`[API] ${model} レート制限到達 (429)`, 'error');
                 throw { type: 'RATE_LIMIT', message: data.error?.message || "Rate limit reached", status: 429 };
@@ -416,11 +416,9 @@
                 document.getElementById('settingsModal').classList.remove('hidden');
                 return;
             }
-
             log(`[ACTION] 読込解析開始: ${rawText.length} 文字`);
             segments = rawText.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g)
                 .filter(s => s && (s.trim().length > 0 || s === '\n'));
-            
             currentIndex = 0;
             isAudioReady = false;
             segmentMeta = [];
@@ -429,7 +427,10 @@
             display.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
             
             display.querySelectorAll('.segment').forEach(el => {
-                el.onclick = () => {
+                el.onmousedown = (e) => { isSelecting = false; };
+                el.onmousemove = (e) => { if (Math.abs(e.movementX) > 2 || Math.abs(e.movementY) > 2) isSelecting = true; };
+                el.onclick = (e) => {
+                    if (isSelecting) return; // Prevent play if selecting text
                     const idx = parseInt(el.dataset.idx);
                     if (isPlaying) stopPlayerAction();
                     currentIndex = idx;
@@ -446,7 +447,6 @@
             const overlay = document.getElementById('loadingOverlay');
             const status = document.getElementById('loadingStatus');
             overlay.style.display = 'flex';
-            
             try {
                 log(`[TTS] リクエスト: ${MODELS.PRO_TTS}...`);
                 status.innerText = "PRO TTS REQUESTING...";
@@ -492,47 +492,34 @@
                 log("[AUDIO] データ処理開始...");
                 const part = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
                 if (!part) { reject(new Error("No audio data")); return; }
-
                 try {
                     const binaryString = atob(part.inlineData.data);
                     const len = binaryString.length;
                     const pcmData = new Uint8Array(len);
                     for (let i = 0; i < len; i++) pcmData[i] = binaryString.charCodeAt(i);
-
                     const header = createWavHeader(len, 24000);
                     const wavBlob = new Blob([header, pcmData], { type: 'audio/wav' });
                     const url = URL.createObjectURL(wavBlob);
-
                     if (audioPlayer) {
                         audioPlayer.pause();
                         audioPlayer.removeAttribute('src');
                     }
-                    
                     audioPlayer = new Audio();
-                    
                     audioPlayer.oncanplaythrough = () => {
                         log("[AUDIO] 再生準備完了", 'success');
                         const totalDuration = audioPlayer.duration;
                         const totalChars = originalText.replace(/\s/g, '').length;
                         let processedChars = 0;
-                        
                         segmentMeta = segments.map(s => {
                             const start = (processedChars / (totalChars || 1)) * totalDuration;
                             processedChars += s.replace(/\s/g, '').length;
                             const end = (processedChars / (totalChars || 1)) * totalDuration;
                             return { start, end };
                         });
-
                         isAudioReady = true;
                         isWebSpeechMode = false;
                         resolve();
                     };
-
-                    audioPlayer.onerror = (e) => {
-                        log(`[AUDIO ERROR] ロード失敗: ${audioPlayer.error?.message}`, 'error');
-                        reject(new Error("Audio load error"));
-                    };
-
                     audioPlayer.ontimeupdate = () => {
                         if (!isPlaying || isWebSpeechMode || !isAudioReady) return;
                         const time = audioPlayer.currentTime;
@@ -549,20 +536,10 @@
                             }
                         }
                     };
-
-                    audioPlayer.onended = () => {
-                        isPlaying = false;
-                        syncPlayerIcons();
-                        log("[FINISH] 再生終了");
-                    };
-
+                    audioPlayer.onended = () => { isPlaying = false; syncPlayerIcons(); log("[FINISH] 再生終了"); };
                     audioPlayer.src = url;
                     audioPlayer.load();
-
-                } catch (e) {
-                    log(`[DECODE ERROR] ${e.message}`, 'error');
-                    reject(e);
-                }
+                } catch (e) { log(`[DECODE ERROR] ${e.message}`, 'error'); reject(e); }
             });
         }
 
@@ -570,30 +547,11 @@
             if (isWebSpeechMode) {
                 runWebSpeech();
             } else if (audioPlayer && isAudioReady) {
-                const isContinuous = document.getElementById('autoModeToggle').checked;
-                if (!isContinuous && !isPlaying) {
-                    if (currentIndex >= segments.length - 1 && audioPlayer.currentTime > (segmentMeta[currentIndex]?.start || 0)) {
-                        currentIndex = 0;
-                    }
-                }
                 const speed = parseFloat(document.getElementById('rateRange').value);
                 audioPlayer.playbackRate = speed;
                 const targetTime = segmentMeta[currentIndex]?.start || 0;
-                if (Math.abs(audioPlayer.currentTime - targetTime) > 0.3) {
-                    audioPlayer.currentTime = targetTime;
-                }
-                audioPlayer.play().then(() => {
-                    isPlaying = true;
-                    syncPlayerIcons();
-                    updateUIHighlight();
-                    log(`[PLAY] 再生中`);
-                }).catch(e => {
-                    log(`[PLAY ERROR] ${e.message}`, 'error');
-                    isPlaying = false;
-                    syncPlayerIcons();
-                });
-            } else {
-                log("[WARN] 音声の準備中...", "warn");
+                if (Math.abs(audioPlayer.currentTime - targetTime) > 0.3) audioPlayer.currentTime = targetTime;
+                audioPlayer.play().then(() => { isPlaying = true; syncPlayerIcons(); updateUIHighlight(); }).catch(e => { log(`[PLAY ERROR] ${e.message}`, 'error'); isPlaying = false; syncPlayerIcons(); });
             }
         }
 
@@ -602,10 +560,8 @@
             if (isWebSpeechMode) window.speechSynthesis.cancel();
             else if (audioPlayer) audioPlayer.pause();
             syncPlayerIcons();
-            log("[STOP] 停止");
         }
 
-        // --- WebSpeech Fallback ---
         function startWebSpeechFallback(text) {
             isWebSpeechMode = true;
             isAudioReady = true;
@@ -637,21 +593,14 @@
                 }
             };
             utter.onend = () => {
-                if (isPlaying) {
-                    if (isContinuous) {
-                        currentIndex = segments.length - 1;
-                        updateUIHighlight();
-                    } else {
-                        if (currentIndex < segments.length - 1) { currentIndex++; updateUIHighlight(); }
-                    }
-                }
+                if (isPlaying && !isContinuous && currentIndex < segments.length - 1) { currentIndex++; updateUIHighlight(); }
                 isPlaying = false;
                 syncPlayerIcons();
             };
             window.speechSynthesis.speak(utter);
         }
 
-        // --- Dictionary Logic ---
+        // --- Dictionary & Selection Logic ---
         async function runDictionary(word) {
             const modal = document.getElementById('dictModal');
             modal.classList.remove('hidden');
@@ -683,23 +632,29 @@
             }
         }
 
-        // Optimized iOS Selection Detection
         function initSelectionDetection() {
             const trigger = document.getElementById('searchTrigger');
+            const displayArea = document.getElementById('readerDisplay');
             
             const handleSelection = () => {
                 const selection = window.getSelection();
                 const text = selection.toString().trim();
                 
+                // Only trigger if selection is within the reader area and contains Chinese
                 if (text && /[\u4e00-\u9fa5]/.test(text)) {
                     const range = selection.getRangeAt(0);
+                    // Check if selection is actually inside displayArea
+                    if (!displayArea.contains(range.commonAncestorContainer)) {
+                        trigger.style.display = 'none';
+                        return;
+                    }
+
                     const rect = range.getBoundingClientRect();
-                    
                     trigger.style.display = 'block';
-                    trigger.style.top = `${window.scrollY + rect.bottom + 10}px`;
-                    trigger.style.left = `${window.scrollX + rect.left + rect.width/2}px`;
+                    trigger.style.top = `${rect.top + window.scrollY}px`;
+                    trigger.style.left = `${rect.left + rect.width/2 + window.scrollX}px`;
                     
-                    trigger.onclick = (e) => {
+                    trigger.onmousedown = (e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         runDictionary(text);
@@ -711,15 +666,10 @@
                 }
             };
 
-            // Listen for various selection events
             document.addEventListener('selectionchange', handleSelection);
-            document.addEventListener('mouseup', handleSelection);
-            document.addEventListener('touchend', (e) => {
-                setTimeout(handleSelection, 150); // Delay for iOS selection UI
-            });
-
+            
             // Standard PC Context Menu
-            document.addEventListener('contextmenu', (e) => {
+            displayArea.addEventListener('contextmenu', (e) => {
                 const text = window.getSelection().toString().trim();
                 if (text && /[\u4e00-\u9fa5]/.test(text)) {
                     e.preventDefault();
@@ -777,33 +727,21 @@
             empty.classList.add('hidden');
             body.innerHTML = vocabList.map((v, i) => `
                 <tr class="border-b border-slate-50 hover:bg-slate-50/80 transition-colors">
-                    <td class="p-5"><div class="font-black text-indigo-600 chinese-text text-xl">${v.word}</div><div class="text-[10px] italic text-slate-400 font-bold">${v.pinyin}</div></td>
-                    <td class="p-5 text-sm font-black text-slate-700">${v.meaning}</td>
-                    <td class="p-5"><div class="text-xs chinese-text mb-2 text-slate-600">${v.exampleCn}</div><div class="flex flex-wrap gap-1">${v.english.split(',').map(en => `<span class="text-[9px] bg-slate-100 px-2 py-0.5 rounded-full text-slate-500 font-bold">${en.trim()}</span>`).join('')}</div></td>
+                    <td class="p-5"><div class="font-black text-indigo-600 chinese-text text-lg">${v.word}</div><div class="text-[10px] italic text-slate-400 font-bold">${v.pinyin}</div></td>
+                    <td class="p-5 text-xs font-black text-slate-700">${v.meaning}</td>
+                    <td class="p-5"><div class="text-[11px] chinese-text mb-1 text-slate-600">${v.exampleCn}</div><div class="flex flex-wrap gap-1">${v.english.split(',').map(en => `<span class="text-[8px] bg-slate-100 px-2 py-0.5 rounded-full text-slate-500 font-bold">${en.trim()}</span>`).join('')}</div></td>
                     <td class="p-5 text-right"><button onclick="removeVocabItem(${i})" class="text-red-300 hover:text-red-500 font-black">×</button></td>
                 </tr>`).join('');
         }
-        window.removeVocabItem = (idx) => { vocabList.splice(idx, 1); saveVocab(); log("[VOCAB] 削除完了"); };
+        window.removeVocabItem = (idx) => { vocabList.splice(idx, 1); saveVocab(); };
         function saveVocab() { localStorage.setItem('crb_pro_vocab_v75', JSON.stringify(vocabList)); renderVocab(); }
 
         // --- Event Listeners ---
         document.getElementById('startReadBtn').onclick = initReader;
         document.getElementById('playBtn').onclick = () => isPlaying ? stopPlayerAction() : startPlayerAction();
         document.getElementById('stopBtn').onclick = () => toggleView(false);
-        document.getElementById('prevBtn').onclick = () => { 
-            if (currentIndex > 0) { 
-                currentIndex--; updateUIHighlight(); 
-                if (isPlaying) startPlayerAction(); 
-                else if (audioPlayer && isAudioReady) audioPlayer.currentTime = segmentMeta[currentIndex].start; 
-            } 
-        };
-        document.getElementById('nextBtn').onclick = () => { 
-            if (currentIndex < segments.length - 1) { 
-                currentIndex++; updateUIHighlight(); 
-                if (isPlaying) startPlayerAction(); 
-                else if (audioPlayer && isAudioReady) audioPlayer.currentTime = segmentMeta[currentIndex].start; 
-            } 
-        };
+        document.getElementById('prevBtn').onclick = () => { if (currentIndex > 0) { currentIndex--; updateUIHighlight(); if (isPlaying) startPlayerAction(); else if (audioPlayer && isAudioReady) audioPlayer.currentTime = segmentMeta[currentIndex].start; } };
+        document.getElementById('nextBtn').onclick = () => { if (currentIndex < segments.length - 1) { currentIndex++; updateUIHighlight(); if (isPlaying) startPlayerAction(); else if (audioPlayer && isAudioReady) audioPlayer.currentTime = segmentMeta[currentIndex].start; } };
         document.getElementById('rateRange').oninput = (e) => { 
             const v = parseFloat(e.target.value); 
             document.getElementById('rateValue').innerText = v.toFixed(1) + 'x'; 
