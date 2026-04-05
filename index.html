@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chinese Reading Buddy Pro v79.0</title>
+    <title>Chinese Reading Buddy Pro v80.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -21,30 +21,42 @@
         .highlight-active { background: #fef08a !important; border-bottom: 2px solid #eab308; color: #000; box-shadow: 0 1px 4px rgba(234, 179, 8, 0.2); }
         .glass-panel { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
         
+        /* Log Panel Styling */
         #logPanel { 
-            position: fixed; bottom: 20px; right: 20px; 
-            width: 400px; height: 300px;
+            position: fixed; bottom: 80px; right: 20px; 
+            width: 320px; height: 240px;
             background: rgba(15, 23, 42, 0.98); color: #4ade80; padding: 0; 
             border-radius: 12px; z-index: 50000; font-family: 'Courier New', monospace; 
             box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); 
-            resize: both; overflow: hidden; display: flex; flex-direction: column;
+            display: flex; flex-direction: column; touch-action: none;
         }
-        #logHeader { cursor: move; padding: 12px; background: rgba(30, 41, 59, 0.9); display: flex; justify-content: space-between; align-items: center; user-select: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        #logContent { flex: 1; overflow-y: auto; font-size: 11px; display: flex; flex-direction: column-reverse; padding: 10px; scrollbar-width: thin; }
-        .minimized#logPanel { height: 48px !important; min-height: 48px; resize: none; overflow: hidden; }
+        #logHeader { cursor: move; padding: 10px; background: rgba(30, 41, 59, 0.9); display: flex; justify-content: space-between; align-items: center; user-select: none; border-bottom: 1px solid rgba(255,255,255,0.05); border-radius: 12px 12px 0 0; }
+        #logContent { flex: 1; overflow-y: auto; font-size: 10px; display: flex; flex-direction: column-reverse; padding: 10px; scrollbar-width: thin; }
+        #logResizeHandle { position: absolute; bottom: 0; right: 0; width: 20px; height: 20px; cursor: nwse-resize; background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.2) 50%); border-radius: 0 0 12px 0; }
+        .minimized#logPanel { height: 44px !important; width: 200px !important; }
         
         .spinner { border: 4px solid rgba(79, 70, 229, 0.1); border-left-color: #4f46e5; border-radius: 50%; width: 32px; height: 32px; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         
         #loadingOverlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); backdrop-filter: blur(8px); z-index: 40000; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        #searchTrigger { position: absolute; z-index: 15000; display: none; background: #4f46e5; color: white; padding: 12px 24px; border-radius: 16px; font-size: 14px; font-weight: 800; box-shadow: 0 10px 30px rgba(79, 70, 229, 0.5); cursor: pointer; white-space: nowrap; transition: transform 0.1s; }
+        
+        /* Floating Dictionary Trigger */
+        #searchTrigger { 
+            position: absolute; z-index: 15000; display: none; 
+            background: #4f46e5; color: white; padding: 8px 16px; 
+            border-radius: 12px; font-size: 12px; font-weight: 800; 
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4); cursor: pointer; 
+            white-space: nowrap; transform: translate(-50%, -100%);
+            margin-top: -10px; animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from { opacity: 0; transform: translate(-50%, -80%) scale(0.8); } to { opacity: 1; transform: translate(-50%, -100%) scale(1); } }
 
-        .switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e2e8f0; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #4f46e5; }
-        input:checked + .slider:before { transform: translateX(22px); }
+        input:checked + .slider:before { transform: translateX(20px); }
     </style>
 </head>
 <body class="min-h-screen pb-32 w-full">
@@ -60,14 +72,14 @@
     <!-- Log Panel -->
     <div id="logPanel" class="minimized">
         <div id="logHeader">
-            <span class="text-[10px] font-black text-white tracking-widest">CRB CONSOLE v79.0</span>
-            <div class="flex items-center gap-1.5">
-                <button id="copyLogBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-md text-[9px] font-black transition-colors">COPY</button>
-                <button id="clearLogBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-2.5 py-1 rounded-md text-[9px] font-black transition-colors">CLR</button>
-                <button id="toggleLogBtn" class="bg-slate-500 hover:bg-slate-400 text-white px-2.5 py-1 rounded-md text-[9px] font-black transition-colors">MAX</button>
+            <span class="text-[9px] font-black text-white tracking-widest">CONSOLE v80.0</span>
+            <div class="flex items-center gap-1">
+                <button id="copyLogBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-0.5 rounded text-[8px] font-black transition-colors">COPY</button>
+                <button id="toggleLogBtn" class="bg-slate-500 hover:bg-slate-400 text-white px-2 py-0.5 rounded text-[8px] font-black transition-colors">MAX</button>
             </div>
         </div>
         <div id="logContent"></div>
+        <div id="logResizeHandle"></div>
     </div>
 
     <div id="searchTrigger">この単語を調べますか？</div>
@@ -76,7 +88,7 @@
         <div class="flex items-center justify-between max-w-5xl mx-auto">
             <div class="flex flex-col items-start leading-none gap-1">
                 <h1 class="text-lg sm:text-xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black tracking-tighter">PRO v79.0</span>
+                <span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black tracking-tighter">PRO v80.0</span>
             </div>
             <button id="openSettingsBtn" class="p-3 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-2xl active:scale-90">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
@@ -98,7 +110,7 @@
                 <textarea id="textInput" rows="14" class="w-full text-2xl leading-relaxed p-0 border-none focus:ring-0 placeholder:text-slate-200 resize-none chinese-text flex-1" placeholder="ここに従文を貼り付けてください..."></textarea>
                 <div id="readerDisplay" class="hidden w-full text-2xl leading-relaxed p-0 chinese-text break-words whitespace-pre-wrap text-slate-800 flex-1 relative overflow-y-auto"></div>
                 <div id="inputFooter" class="flex justify-between mt-4 pt-4 border-t border-slate-50 items-center">
-                    <div id="editHint" class="hidden text-[10px] font-black text-indigo-400 uppercase tracking-widest italic animate-pulse">右クリックで単語辞書</div>
+                    <div id="editHint" class="hidden text-[10px] font-black text-indigo-400 uppercase tracking-widest italic animate-pulse">テキスト選択で単語辞書</div>
                     <div class="flex-1"></div>
                     <button id="clearTextBtn" class="px-4 py-2 text-[10px] font-black text-red-400 hover:bg-red-50 rounded-lg transition-colors">テキスト消去</button>
                 </div>
@@ -126,18 +138,18 @@
         <!-- Timer Section -->
         <section id="sectionTimer" class="space-y-4 text-center">
             <h2 class="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">Performance Metrics</h2>
-            <div class="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm">
-                <div id="currentTime" class="text-6xl font-black text-slate-800 mb-8" style="font-family: 'Syne', sans-serif;">00:00.0</div>
-                <div class="flex gap-4 max-w-md mx-auto">
-                    <button id="timerStartBtn" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all">START</button>
-                    <button id="timerStopBtn" disabled class="flex-1 bg-slate-200 text-slate-400 py-4 rounded-2xl font-black transition-all">STOP</button>
+            <div class="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
+                <div id="currentTime" class="text-4xl font-black text-slate-800 mb-6" style="font-family: 'Syne', sans-serif;">00:00.0</div>
+                <div class="flex gap-4 max-w-sm mx-auto">
+                    <button id="timerStartBtn" class="flex-1 bg-indigo-600 text-white py-3.5 rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all text-sm">START</button>
+                    <button id="timerStopBtn" disabled class="flex-1 bg-slate-200 text-slate-400 py-3.5 rounded-2xl font-black transition-all text-sm">STOP</button>
                 </div>
             </div>
-            <div id="resultCard" class="hidden bg-indigo-600 rounded-3xl p-8 text-white shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div class="grid grid-cols-3 gap-6">
-                    <div class="space-y-1"><div class="text-[10px] font-black opacity-60 uppercase tracking-widest">Chars</div><div id="charCount" class="text-3xl font-black">0</div></div>
-                    <div class="space-y-1"><div class="text-[10px] font-black opacity-60 uppercase tracking-widest">Time</div><div id="finalTime" class="text-3xl font-black">0s</div></div>
-                    <div class="space-y-1"><div class="text-[10px] font-black opacity-60 uppercase tracking-widest">CPM</div><div id="cpmResult" class="text-3xl font-black italic">0</div></div>
+            <div id="resultCard" class="hidden bg-indigo-600 rounded-3xl p-6 text-white shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-lg mx-auto">
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">Chars</div><div id="charCount" class="text-xl font-black">0</div></div>
+                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">Time</div><div id="finalTime" class="text-xl font-black">0s</div></div>
+                    <div class="space-y-0.5"><div class="text-[9px] font-black opacity-60 uppercase tracking-widest">CPM</div><div id="cpmResult" class="text-xl font-black italic">0</div></div>
                 </div>
             </div>
         </section>
@@ -238,7 +250,7 @@
 
     <script>
         // --- Configuration ---
-        const VERSION = "v79.0";
+        const VERSION = "v80.0";
         const MODELS = {
             PRO_TTS: "gemini-2.5-pro-preview-tts",
             FLASH_TTS: "gemini-2.5-flash-preview-tts",
@@ -257,7 +269,7 @@
         let activeDictData = null;
         let isAudioReady = false;
 
-        // --- Logging System ---
+        // --- Logging System & Draggable/Resizable Logic ---
         function log(msg, type = 'info') {
             const container = document.getElementById('logContent');
             const entry = document.createElement('div');
@@ -266,6 +278,77 @@
             const time = new Date().toLocaleTimeString('ja-JP', { hour12: false, fractionalSecondDigits: 1 });
             entry.innerHTML = `<span style="opacity:0.3">[${time}]</span> <span style="color:${colorMap[type] || '#4ade80'}">${msg}</span>`;
             container.prepend(entry);
+        }
+
+        function initLogPanelControls() {
+            const panel = document.getElementById('logPanel');
+            const header = document.getElementById('logHeader');
+            const resizeHandle = document.getElementById('logResizeHandle');
+            
+            let isDragging = false;
+            let isResizing = false;
+            let startX, startY, startW, startH, startLeft, startTop;
+
+            const onMove = (e) => {
+                const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+                if (isDragging) {
+                    panel.style.left = `${startLeft + (clientX - startX)}px`;
+                    panel.style.top = `${startTop + (clientY - startY)}px`;
+                    panel.style.bottom = 'auto';
+                    panel.style.right = 'auto';
+                }
+                if (isResizing) {
+                    panel.style.width = `${startW + (clientX - startX)}px`;
+                    panel.style.height = `${startH + (clientY - startY)}px`;
+                }
+            };
+
+            const onEnd = () => {
+                isDragging = false;
+                isResizing = false;
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onEnd);
+            };
+
+            header.onmousedown = header.ontouchstart = (e) => {
+                if (panel.classList.contains('minimized')) return;
+                isDragging = true;
+                startX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+                const rect = panel.getBoundingClientRect();
+                startLeft = rect.left;
+                startTop = rect.top;
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onEnd);
+                document.addEventListener('touchmove', onMove, {passive: false});
+                document.addEventListener('touchend', onEnd);
+            };
+
+            resizeHandle.onmousedown = resizeHandle.ontouchstart = (e) => {
+                isResizing = true;
+                startX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+                startW = panel.offsetWidth;
+                startH = panel.offsetHeight;
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onEnd);
+                document.addEventListener('touchmove', onMove, {passive: false});
+                document.addEventListener('touchend', onEnd);
+                e.stopPropagation();
+            };
+
+            document.getElementById('toggleLogBtn').onclick = () => {
+                panel.classList.toggle('minimized');
+                document.getElementById('toggleLogBtn').innerText = panel.classList.contains('minimized') ? 'MAX' : 'MIN';
+            };
+            document.getElementById('copyLogBtn').onclick = () => {
+                const text = Array.from(document.getElementById('logContent').children).map(el => el.innerText).join('\n');
+                copyToClipboard(text).then(() => showToast("LOG COPIED"));
+            };
         }
 
         function copyToClipboard(text) {
@@ -291,9 +374,9 @@
             view.setUint16(20, 1, true); // PCM
             view.setUint16(22, 1, true); // Mono
             view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * 2, true); // Byte rate
-            view.setUint16(32, 2, true); // Block align
-            view.setUint16(34, 16, true); // Bits per sample
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
             writeString(36, 'data');
             view.setUint32(40, dataLength, true);
             return new Uint8Array(buf);
@@ -348,7 +431,6 @@
             display.querySelectorAll('.segment').forEach(el => {
                 el.onclick = () => {
                     const idx = parseInt(el.dataset.idx);
-                    log(`[UI] セグメント ${idx} を手動選択`);
                     if (isPlaying) stopPlayerAction();
                     currentIndex = idx;
                     updateUIHighlight();
@@ -407,18 +489,16 @@
 
         function setupAudio(data, originalText) {
             return new Promise((resolve, reject) => {
-                log("[AUDIO] バイナリデータ取得中...");
+                log("[AUDIO] データ処理開始...");
                 const part = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
                 if (!part) { reject(new Error("No audio data")); return; }
 
-                log("[AUDIO] L16 -> WAV変換中...");
                 try {
                     const binaryString = atob(part.inlineData.data);
                     const len = binaryString.length;
                     const pcmData = new Uint8Array(len);
                     for (let i = 0; i < len; i++) pcmData[i] = binaryString.charCodeAt(i);
 
-                    // WAVヘッダーを付与 (Gemini 2.5 TTSは 24kHz Mono 16bit が標準)
                     const header = createWavHeader(len, 24000);
                     const wavBlob = new Blob([header, pcmData], { type: 'audio/wav' });
                     const url = URL.createObjectURL(wavBlob);
@@ -437,9 +517,9 @@
                         let processedChars = 0;
                         
                         segmentMeta = segments.map(s => {
-                            const start = (processedChars / totalChars) * totalDuration;
+                            const start = (processedChars / (totalChars || 1)) * totalDuration;
                             processedChars += s.replace(/\s/g, '').length;
-                            const end = (processedChars / totalChars) * totalDuration;
+                            const end = (processedChars / (totalChars || 1)) * totalDuration;
                             return { start, end };
                         });
 
@@ -491,35 +571,29 @@
                 runWebSpeech();
             } else if (audioPlayer && isAudioReady) {
                 const isContinuous = document.getElementById('autoModeToggle').checked;
-                
-                // 区切り再生の場合、停止状態で再生を押したら「次」へ進む
                 if (!isContinuous && !isPlaying) {
-                    // 何もハイライトされていない、または末尾なら最初へ
-                    if (currentIndex >= segments.length - 1 && audioPlayer.currentTime > segmentMeta[currentIndex].start) {
+                    if (currentIndex >= segments.length - 1 && audioPlayer.currentTime > (segmentMeta[currentIndex]?.start || 0)) {
                         currentIndex = 0;
                     }
                 }
-
                 const speed = parseFloat(document.getElementById('rateRange').value);
                 audioPlayer.playbackRate = speed;
-                
                 const targetTime = segmentMeta[currentIndex]?.start || 0;
                 if (Math.abs(audioPlayer.currentTime - targetTime) > 0.3) {
                     audioPlayer.currentTime = targetTime;
                 }
-
                 audioPlayer.play().then(() => {
                     isPlaying = true;
                     syncPlayerIcons();
                     updateUIHighlight();
-                    log(`[PLAY] 再生中 (Gemini Mode)`);
+                    log(`[PLAY] 再生中`);
                 }).catch(e => {
                     log(`[PLAY ERROR] ${e.message}`, 'error');
                     isPlaying = false;
                     syncPlayerIcons();
                 });
             } else {
-                log("[WARN] 音声の準備を待っています...", "warn");
+                log("[WARN] 音声の準備中...", "warn");
             }
         }
 
@@ -528,7 +602,7 @@
             if (isWebSpeechMode) window.speechSynthesis.cancel();
             else if (audioPlayer) audioPlayer.pause();
             syncPlayerIcons();
-            log("[STOP] 停止中");
+            log("[STOP] 停止");
         }
 
         // --- WebSpeech Fallback ---
@@ -543,22 +617,13 @@
             window.speechSynthesis.cancel();
             isPlaying = true;
             syncPlayerIcons();
-
             const isContinuous = document.getElementById('autoModeToggle').checked;
-            
-            // 区切り再生の場合は現在の一つだけを読み上げる
-            const textToSpeak = isContinuous 
-                ? segments.slice(currentIndex).join('') 
-                : segments[currentIndex];
-
+            const textToSpeak = isContinuous ? segments.slice(currentIndex).join('') : segments[currentIndex];
             if (!textToSpeak) { stopPlayerAction(); return; }
-
             const utter = new SpeechSynthesisUtterance(textToSpeak);
             utter.lang = 'zh-CN';
             utter.rate = parseFloat(document.getElementById('rateRange').value);
-
             const offsetInFullText = isContinuous ? segments.slice(0, currentIndex).join('').length : 0;
-
             utter.onboundary = (e) => {
                 if (!isPlaying) return;
                 const charPos = offsetInFullText + e.charIndex;
@@ -566,44 +631,32 @@
                 for (let i = 0; i < segments.length; i++) {
                     acc += segments[i].length;
                     if (charPos < acc) {
-                        if (currentIndex !== i) {
-                            currentIndex = i;
-                            updateUIHighlight();
-                        }
+                        if (currentIndex !== i) { currentIndex = i; updateUIHighlight(); }
                         break;
                     }
                 }
             };
-
             utter.onend = () => {
                 if (isPlaying) {
                     if (isContinuous) {
                         currentIndex = segments.length - 1;
                         updateUIHighlight();
-                        log("[WEB SPEECH] 全文終了");
                     } else {
-                        log("[WEB SPEECH] セグメント終了");
-                        // 区切り再生の場合は次のインデックスをセットして止まる
-                        if (currentIndex < segments.length - 1) {
-                            currentIndex++;
-                            updateUIHighlight();
-                        }
+                        if (currentIndex < segments.length - 1) { currentIndex++; updateUIHighlight(); }
                     }
                 }
                 isPlaying = false;
                 syncPlayerIcons();
             };
-
             window.speechSynthesis.speak(utter);
         }
 
-        // --- Dictionary (Gemini 3 Flash Only) ---
+        // --- Dictionary Logic ---
         async function runDictionary(word) {
             const modal = document.getElementById('dictModal');
             modal.classList.remove('hidden');
             document.getElementById('dictWord').innerText = word;
             document.getElementById('dictPinyin').innerText = "解析中...";
-            
             try {
                 log(`[DICT] 検索: "${word}"...`);
                 const res = await callGemini(MODELS.DICT, {
@@ -618,36 +671,62 @@
                     }` }] }],
                     generationConfig: { responseMimeType: "application/json" }
                 });
-                
                 const data = JSON.parse(res.candidates[0].content.parts[0].text);
                 activeDictData = { word, ...data };
-                
                 document.getElementById('dictPinyin').innerText = data.pinyin;
                 document.getElementById('dictMean').innerText = data.meaning;
                 document.getElementById('dictEng').innerText = data.english;
                 document.getElementById('dictExCn').innerText = data.exampleCn;
             } catch (err) {
                 log(`[DICT ERROR] ${err.message}`, 'error');
-                document.getElementById('dictPinyin').innerText = "エラーが発生しました";
+                document.getElementById('dictPinyin').innerText = "解析エラー";
             }
         }
 
-        document.addEventListener('contextmenu', (e) => {
-            const selection = window.getSelection().toString().trim();
-            if (selection && /[\u4e00-\u9fa5]/.test(selection)) {
-                e.preventDefault();
-                const trigger = document.getElementById('searchTrigger');
-                trigger.style.display = 'block';
-                trigger.style.top = `${e.pageY - 50}px`;
-                trigger.style.left = `${e.pageX}px`;
-                trigger.onclick = (ev) => {
-                    ev.stopPropagation();
-                    runDictionary(selection);
+        // Optimized iOS Selection Detection
+        function initSelectionDetection() {
+            const trigger = document.getElementById('searchTrigger');
+            
+            const handleSelection = () => {
+                const selection = window.getSelection();
+                const text = selection.toString().trim();
+                
+                if (text && /[\u4e00-\u9fa5]/.test(text)) {
+                    const range = selection.getRangeAt(0);
+                    const rect = range.getBoundingClientRect();
+                    
+                    trigger.style.display = 'block';
+                    trigger.style.top = `${window.scrollY + rect.bottom + 10}px`;
+                    trigger.style.left = `${window.scrollX + rect.left + rect.width/2}px`;
+                    
+                    trigger.onclick = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        runDictionary(text);
+                        trigger.style.display = 'none';
+                        selection.removeAllRanges();
+                    };
+                } else {
                     trigger.style.display = 'none';
-                };
-            }
-        });
-        document.addEventListener('click', () => document.getElementById('searchTrigger').style.display = 'none');
+                }
+            };
+
+            // Listen for various selection events
+            document.addEventListener('selectionchange', handleSelection);
+            document.addEventListener('mouseup', handleSelection);
+            document.addEventListener('touchend', (e) => {
+                setTimeout(handleSelection, 150); // Delay for iOS selection UI
+            });
+
+            // Standard PC Context Menu
+            document.addEventListener('contextmenu', (e) => {
+                const text = window.getSelection().toString().trim();
+                if (text && /[\u4e00-\u9fa5]/.test(text)) {
+                    e.preventDefault();
+                    runDictionary(text);
+                }
+            });
+        }
 
         // --- UI Utils ---
         function toggleView(isReading) {
@@ -713,16 +792,14 @@
         document.getElementById('stopBtn').onclick = () => toggleView(false);
         document.getElementById('prevBtn').onclick = () => { 
             if (currentIndex > 0) { 
-                currentIndex--; 
-                updateUIHighlight(); 
+                currentIndex--; updateUIHighlight(); 
                 if (isPlaying) startPlayerAction(); 
                 else if (audioPlayer && isAudioReady) audioPlayer.currentTime = segmentMeta[currentIndex].start; 
             } 
         };
         document.getElementById('nextBtn').onclick = () => { 
             if (currentIndex < segments.length - 1) { 
-                currentIndex++; 
-                updateUIHighlight(); 
+                currentIndex++; updateUIHighlight(); 
                 if (isPlaying) startPlayerAction(); 
                 else if (audioPlayer && isAudioReady) audioPlayer.currentTime = segmentMeta[currentIndex].start; 
             } 
@@ -744,7 +821,7 @@
         };
         document.getElementById('openSettingsBtn').onclick = () => { document.getElementById('apiKeyInput').value = userApiKey; document.getElementById('settingsModal').classList.remove('hidden'); };
         document.getElementById('closeSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('hidden');
-        document.getElementById('saveSettingsBtn').onclick = () => { userApiKey = document.getElementById('apiKeyInput').value.trim(); localStorage.setItem('crb_gemini_key_v75', userApiKey); document.getElementById('settingsModal').classList.add('hidden'); log("[CONFIG] キー保存成功", 'success'); };
+        document.getElementById('saveSettingsBtn').onclick = () => { userApiKey = document.getElementById('apiKeyInput').value.trim(); localStorage.setItem('crb_gemini_key_v75', userApiKey); document.getElementById('settingsModal').classList.add('hidden'); log("[CONFIG] キー保存"); };
         document.getElementById('clearTextBtn').onclick = () => { document.getElementById('textInput').value = ""; log("[ACTION] テキスト消去"); };
         document.getElementById('rateLimitOkBtn').onclick = () => { document.getElementById('rateLimitModal').classList.add('hidden'); startWebSpeechFallback(document.getElementById('textInput').value); };
 
@@ -754,7 +831,7 @@
             const startTime = Date.now();
             document.getElementById('timerStartBtn').disabled = true;
             document.getElementById('timerStopBtn').disabled = false;
-            document.getElementById('timerStopBtn').className = "flex-1 bg-red-500 text-white py-4 rounded-2xl font-black shadow-lg";
+            document.getElementById('timerStopBtn').className = "flex-1 bg-red-500 text-white py-3.5 rounded-2xl font-black shadow-lg text-sm";
             timerId = setInterval(() => {
                 const diff = Date.now() - startTime;
                 const ms = Math.floor((diff % 1000) / 100);
@@ -776,12 +853,14 @@
             document.getElementById('resultCard').classList.remove('hidden');
             document.getElementById('timerStartBtn').disabled = false;
             document.getElementById('timerStopBtn').disabled = true;
-            document.getElementById('timerStopBtn').className = "flex-1 bg-slate-200 text-slate-400 py-4 rounded-2xl font-black";
+            document.getElementById('timerStopBtn').className = "flex-1 bg-slate-200 text-slate-400 py-3.5 rounded-2xl font-black text-sm";
         };
 
         window.onload = () => {
             log(`Chinese Reading Buddy ${VERSION} 起動完了`);
             renderVocab();
+            initLogPanelControls();
+            initSelectionDetection();
             if(!userApiKey) document.getElementById('settingsModal').classList.remove('hidden');
         };
     </script>
