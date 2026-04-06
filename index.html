@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chinese Reading Buddy Pro v85.0</title>
+    <title>Chinese Reading Buddy Pro v86.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 追加: フォルダ（ディレクトリ）構造で保存するためのZIPライブラリ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@700;800&display=swap');
@@ -23,7 +22,6 @@
         .highlight-active { background: #fef08a !important; border-bottom: 2px solid #eab308; color: #000; box-shadow: 0 1px 4px rgba(234, 179, 8, 0.2); }
         .glass-panel { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
         
-        /* Log Panel Styling */
         #logPanel { 
             position: fixed; bottom: 80px; right: 20px; 
             width: 320px; height: 240px;
@@ -42,7 +40,6 @@
         
         #loadingOverlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); backdrop-filter: blur(8px); z-index: 40000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         
-        /* Floating Dictionary Trigger */
         #searchTrigger { 
             position: fixed; z-index: 65000; display: none; 
             background: #4f46e5; color: white; padding: 10px 18px; 
@@ -54,10 +51,10 @@
         }
         @keyframes popIn { from { opacity: 0; transform: translate(-50%, -100%) scale(0.8); } to { opacity: 1; transform: translate(-50%, -120%) scale(1); } }
 
-        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e2e8f0; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #4f46e5; }
         input:checked + .slider:before { transform: translateX(20px); }
     </style>
@@ -75,7 +72,7 @@
     <!-- Log Panel -->
     <div id="logPanel" class="minimized">
         <div id="logHeader">
-            <span class="text-[9px] font-black text-white tracking-widest">CONSOLE v85.0</span>
+            <span class="text-[9px] font-black text-white tracking-widest">CONSOLE v86.0</span>
             <div class="flex items-center gap-1">
                 <button id="copyLogBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-0.5 rounded text-[8px] font-black transition-colors">COPY</button>
                 <button id="clearLogBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-2 py-0.5 rounded text-[8px] font-black transition-colors">CLR</button>
@@ -93,7 +90,7 @@
         <div class="flex items-center justify-between max-w-5xl mx-auto">
             <div class="flex flex-col items-start leading-none gap-1">
                 <h1 class="text-lg sm:text-xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">READING BUDDY</h1>
-                <span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black tracking-tighter">PRO v85.0</span>
+                <span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black tracking-tighter">PRO v86.0</span>
             </div>
             <button id="openSettingsBtn" class="p-3 text-slate-500 hover:text-indigo-600 transition-all bg-white shadow-sm border border-slate-100 rounded-2xl active:scale-90">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
@@ -106,13 +103,22 @@
             <div id="textContainer" class="bg-white rounded-[2rem] p-6 shadow-xl shadow-indigo-900/5 border border-slate-100 flex flex-col min-h-[450px]">
                 <div class="flex justify-between items-center mb-4">
                     <label id="modeLabel" class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Input Content</label>
-                    <div id="playbackOptions" class="hidden flex items-center gap-3 bg-slate-50 p-1.5 rounded-full">
-                        <span class="text-[10px] font-black text-slate-400 pl-2">区切り</span>
-                        <label class="switch"><input type="checkbox" id="autoModeToggle" checked><span class="slider"></span></label>
-                        <span class="text-[10px] font-black text-indigo-600 pr-2">連続</span>
+                    <div id="playbackOptions" class="hidden flex items-center gap-4 bg-slate-50 p-2 rounded-2xl">
+                        <!-- 連続/区切り設定 -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-black text-slate-400 uppercase">区切り</span>
+                            <label class="switch"><input type="checkbox" id="autoModeToggle" checked><span class="slider"></span></label>
+                            <span class="text-[9px] font-black text-indigo-600 uppercase">連続</span>
+                        </div>
+                        <div class="w-px h-4 bg-slate-200"></div>
+                        <!-- リピート設定 (新規追加機能) -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-black text-slate-400 uppercase">1回</span>
+                            <label class="switch"><input type="checkbox" id="repeatToggle"><span class="slider"></span></label>
+                            <span class="text-[9px] font-black text-emerald-600 uppercase">リピート</span>
+                        </div>
                     </div>
                 </div>
-                <!-- Textbox and Reader Area -->
                 <textarea id="textInput" rows="14" class="w-full text-2xl leading-relaxed p-0 border-none focus:ring-0 placeholder:text-slate-200 resize-none chinese-text flex-1" placeholder="ここに従文を貼り付けてください..." oninput="document.getElementById('exportBtn').disabled = true;"></textarea>
                 <div id="readerDisplay" class="hidden w-full text-2xl leading-relaxed p-0 chinese-text break-words whitespace-pre-wrap text-slate-800 flex-1 relative overflow-y-auto"></div>
                 
@@ -120,7 +126,6 @@
                     <div id="editHint" class="hidden text-[10px] font-black text-indigo-400 uppercase tracking-widest italic animate-pulse">テキスト選択で単語辞書</div>
                     <div class="flex-1"></div>
                     <div class="flex gap-2">
-                        <!-- ZIPと個別ファイルの両方に対応 -->
                         <input type="file" id="importFile" multiple accept=".zip,.wav,.txt" class="hidden" />
                         <button id="importBtn" class="px-4 py-2 text-[10px] font-black text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors">読込(ZIP/WAV)</button>
                         <button id="exportBtn" class="px-4 py-2 text-[10px] font-black text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>保存(ZIP)</button>
@@ -263,7 +268,7 @@
 
     <script>
         // --- Configuration & Constants ---
-        const VERSION = "v85.0";
+        const VERSION = "v86.0";
         const MODELS = {
             PRO_TTS: "gemini-2.5-pro-preview-tts",
             FLASH_TTS: "gemini-2.5-flash-preview-tts",
@@ -279,16 +284,15 @@
         let segments = [];
         let vocabList = JSON.parse(localStorage.getItem('crb_pro_vocab_v85') || '[]');
         let audioPlayer = null;
-        let segmentMeta = []; // {start, end}
+        let segmentMeta = []; 
         let isWebSpeechMode = false;
-        let wsUtterance = null;
         let activeDictData = null;
         let isAudioReady = false;
         let isSelecting = false; 
         let db;
-        let currentWavBlob = null; // エクスポート保持用
+        let currentWavBlob = null; 
 
-        // --- IndexedDB Cache Implementation ---
+        // --- IndexedDB Cache ---
         function initDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, 1);
@@ -393,9 +397,7 @@
                 document.getElementById('toggleLogBtn').innerText = panel.classList.contains('minimized') ? 'MAX' : 'MIN';
             };
             
-            const clearBtn = document.getElementById('clearLogBtn');
-            if (clearBtn) clearBtn.onclick = () => { document.getElementById('logContent').innerHTML = ""; log("Logs cleared."); };
-            
+            document.getElementById('clearLogBtn').onclick = () => { document.getElementById('logContent').innerHTML = ""; log("Logs cleared."); };
             document.getElementById('copyLogBtn').onclick = () => {
                 const text = Array.from(document.getElementById('logContent').children).map(el => el.innerText).join('\n');
                 copyToClipboard(text).then(() => showToast("LOG COPIED"));
@@ -488,7 +490,7 @@
             try {
                 const cachedBase64 = await getAudioFromCache(text);
                 if (cachedBase64) {
-                    log(`[CACHE] キャッシュから音声データを読み込みました`, 'success');
+                    log(`[CACHE] キャッシュから読み込みました`, 'success');
                     status.innerText = "LOADING FROM CACHE...";
                     await setupAudioFromBase64(cachedBase64, text);
                     overlay.style.display = 'none';
@@ -499,7 +501,7 @@
                 status.innerText = "PRO TTS REQUESTING...";
                 const result = await requestTTS(MODELS.PRO_TTS, text);
                 const base64 = result.candidates[0].content.parts.find(p => p.inlineData)?.inlineData?.data;
-                if (!base64) throw new Error("Audio data not found in response.");
+                if (!base64) throw new Error("Audio data not found.");
                 
                 await saveAudioToCache(text, base64);
                 await setupAudioFromBase64(base64, text);
@@ -544,11 +546,9 @@
                 const len = binaryString.length;
                 const pcmData = new Uint8Array(len);
                 for (let i = 0; i < len; i++) pcmData[i] = binaryString.charCodeAt(i);
-
                 const header = createWavHeader(len, 24000);
                 const wavBlob = new Blob([header, pcmData], { type: 'audio/wav' });
                 currentWavBlob = wavBlob;
-                
                 return setupAudioFromBlob(wavBlob, originalText, true);
             } catch (e) {
                 log(`[DECODE ERROR] ${e.message}`, 'error');
@@ -560,9 +560,7 @@
             return new Promise((resolve, reject) => {
                 log("[AUDIO] オーディオソース設定中...");
                 const url = URL.createObjectURL(blob);
-                
                 if (audioPlayer) { audioPlayer.pause(); audioPlayer.removeAttribute('src'); }
-                
                 audioPlayer = new Audio();
                 audioPlayer.src = url;
                 
@@ -582,14 +580,8 @@
                     isAudioReady = true;
                     isWebSpeechMode = false;
                     document.getElementById('exportBtn').disabled = false;
-                    
                     if (autoPlay) startPlayerAction();
                     resolve();
-                };
-
-                audioPlayer.onerror = (e) => {
-                    log(`[AUDIO ERROR] ロード失敗: ${audioPlayer.error?.message}`, 'error');
-                    reject(new Error("Audio load error"));
                 };
 
                 audioPlayer.ontimeupdate = () => {
@@ -602,7 +594,7 @@
                             stopPlayerAction();
                             currentIndex = targetIdx;
                             updateUIHighlight();
-                            log(`[STOP] 区切り停止: 次は Seg ${currentIndex}`);
+                            log(`[STOP] 区切り停止: Seg ${currentIndex}`);
                         } else {
                             currentIndex = targetIdx;
                             updateUIHighlight();
@@ -610,127 +602,88 @@
                     }
                 };
 
-                audioPlayer.onended = () => { isPlaying = false; syncPlayerIcons(); log("[FINISH] 再生終了"); };
+                audioPlayer.onended = () => { 
+                    log("[FINISH] 再生終了");
+                    const isRepeat = document.getElementById('repeatToggle').checked;
+                    if (isRepeat) {
+                        log("[LOOP] 最初からリピート再生します");
+                        currentIndex = 0;
+                        updateUIHighlight();
+                        startPlayerAction();
+                    } else {
+                        isPlaying = false; 
+                        syncPlayerIcons(); 
+                    }
+                };
                 audioPlayer.load();
             });
         }
 
-        // --- Export / Import (ZIP Integration) ---
+        // --- Export / Import ---
         document.getElementById('exportBtn').onclick = async () => {
             const text = document.getElementById('textInput').value.trim();
             if (!currentWavBlob || !text) return showToast("保存するデータがありません");
-            
-            log("[EXPORT] ZIPアーカイブの作成を開始します");
+            log("[EXPORT] ZIP作成中...");
             const now = new Date();
-            const ts = now.getFullYear().toString() + 
-                       (now.getMonth()+1).toString().padStart(2, '0') + 
-                       now.getDate().toString().padStart(2, '0') + "_" + 
-                       now.getHours().toString().padStart(2, '0') + 
-                       now.getMinutes().toString().padStart(2, '0') + 
-                       now.getSeconds().toString().padStart(2, '0');
+            const ts = now.getFullYear().toString() + (now.getMonth()+1).toString().padStart(2, '0') + now.getDate().toString().padStart(2, '0') + "_" + now.getHours().toString().padStart(2, '0') + now.getMinutes().toString().padStart(2, '0') + now.getSeconds().toString().padStart(2, '0');
             const dirName = `CRB_${ts}`;
-            
             try {
                 const zip = new JSZip();
                 const folder = zip.folder(dirName);
                 folder.file("text.txt", text);
                 folder.file("audio.wav", currentWavBlob);
-                
                 const zipBlob = await zip.generateAsync({ type: "blob" });
                 const zipUrl = URL.createObjectURL(zipBlob);
-                
-                const a = document.createElement('a');
-                a.href = zipUrl;
-                a.download = `${dirName}.zip`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                
-                log("[EXPORT] ZIPファイルの保存が完了しました", "success");
+                const a = document.createElement('a'); a.href = zipUrl; a.download = `${dirName}.zip`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                log("[EXPORT] 完了", "success");
                 showToast("エクスポート完了");
             } catch (err) {
                 log(`[EXPORT ERROR] ${err.message}`, "error");
-                showToast("エクスポートに失敗しました");
             }
         };
 
         document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
-
         document.getElementById('importFile').onchange = async (e) => {
             const files = Array.from(e.target.files);
             if (files.length === 0) return;
-
-            let textContent = null;
-            let wavBlob = null;
-
+            let textContent = null, wavBlob = null;
             try {
                 if (files.length === 1 && files[0].name.endsWith('.zip')) {
-                    log("[IMPORT] ZIPアーカイブを読み込んでいます...");
+                    log("[IMPORT] ZIP読込中...");
                     const zip = new JSZip();
                     const zipContent = await zip.loadAsync(files[0]);
-                    
                     const txtObj = Object.values(zipContent.files).find(f => !f.dir && f.name.endsWith('.txt'));
                     const wavObj = Object.values(zipContent.files).find(f => !f.dir && f.name.endsWith('.wav'));
-                    
                     if (txtObj && wavObj) {
                         textContent = await txtObj.async("string");
                         const rawBlob = await wavObj.async("blob");
                         wavBlob = new Blob([rawBlob], { type: 'audio/wav' });
-                    } else {
-                        throw new Error("ZIP内にテキストとオーディオが揃っていません");
                     }
                 } else {
                     const txtFile = files.find(f => f.name.endsWith('.txt'));
                     const wFile = files.find(f => f.name.endsWith('.wav'));
-                    if (txtFile && wFile) {
-                        textContent = await txtFile.text();
-                        wavBlob = wFile;
-                    } else {
-                        throw new Error("WAVとTXTの両方、またはZIPファイルを選択してください");
-                    }
+                    if (txtFile && wFile) { textContent = await txtFile.text(); wavBlob = wFile; }
                 }
-
                 if (!textContent || !wavBlob) throw new Error("データの抽出に失敗しました");
-
                 document.getElementById('textInput').value = textContent;
-                log(`[IMPORT] テキスト読込完了: ${textContent.length} 文字`);
-                
-                segments = textContent.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g)
-                    .filter(s => s && (s.trim().length > 0 || s === '\n'));
-                currentIndex = 0;
-                isAudioReady = false;
-                segmentMeta = [];
-
+                segments = textContent.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g).filter(s => s && (s.trim().length > 0 || s === '\n'));
+                currentIndex = 0; isAudioReady = false; segmentMeta = [];
                 const display = document.getElementById('readerDisplay');
                 display.innerHTML = segments.map((s, i) => `<span class="segment" data-idx="${i}">${s}</span>`).join('');
-                
                 display.querySelectorAll('.segment').forEach(el => {
-                    el.onmousedown = () => { isSelecting = false; };
-                    el.onmousemove = (ev) => { if (Math.abs(ev.movementX) > 2 || Math.abs(ev.movementY) > 2) isSelecting = true; };
                     el.onclick = () => {
-                        if (isSelecting) return;
                         const idx = parseInt(el.dataset.idx);
                         if (isPlaying) stopPlayerAction();
-                        currentIndex = idx;
-                        updateUIHighlight();
+                        currentIndex = idx; updateUIHighlight();
                         if (isAudioReady || isWebSpeechMode) startPlayerAction();
                     };
                 });
-                
-                toggleView(true);
-                currentWavBlob = wavBlob;
-                document.getElementById('exportBtn').disabled = false;
-                
+                toggleView(true); currentWavBlob = wavBlob; document.getElementById('exportBtn').disabled = false;
                 await setupAudioFromBlob(wavBlob, textContent, false);
-                log("[IMPORT] インポートと復元が完了しました", 'success');
+                log("[IMPORT] 復元完了", 'success');
                 showToast("読込完了");
-                
-            } catch (err) {
-                log(`[IMPORT ERROR] ${err.message}`, 'error');
-                showToast(err.message);
-            } finally {
-                e.target.value = '';
-            }
+            } catch (err) { log(`[IMPORT ERROR] ${err.message}`, 'error'); showToast(err.message); } finally { e.target.value = ''; }
         };
 
         // --- Playback Actions ---
@@ -738,12 +691,6 @@
             if (isWebSpeechMode) {
                 runWebSpeech();
             } else if (audioPlayer && isAudioReady) {
-                const isContinuous = document.getElementById('autoModeToggle').checked;
-                if (!isContinuous && !isPlaying) {
-                    if (currentIndex >= segments.length - 1 && audioPlayer.currentTime > (segmentMeta[currentIndex]?.start || 0)) {
-                        currentIndex = 0;
-                    }
-                }
                 const speed = parseFloat(document.getElementById('rateRange').value);
                 audioPlayer.playbackRate = speed;
                 const targetTime = segmentMeta[currentIndex]?.start || 0;
@@ -751,28 +698,11 @@
                     audioPlayer.currentTime = targetTime;
                 }
                 audioPlayer.play().then(() => {
-                    isPlaying = true;
-                    syncPlayerIcons();
-                    updateUIHighlight();
-                    log(`[PLAY] 再生中`);
+                    isPlaying = true; syncPlayerIcons(); updateUIHighlight();
                 }).catch(e => {
-                    log(`[PLAY ERROR] ${e.name}: ${e.message}`, 'error');
-                    if (e.name === 'NotSupportedError') {
-                        log("[RECOVER] オーディオの再読み込みを試みます...", "warn");
-                        audioPlayer.load();
-                        audioPlayer.currentTime = targetTime;
-                        audioPlayer.play().then(() => {
-                            isPlaying = true; syncPlayerIcons(); log("[RECOVER] 成功", "success");
-                        }).catch(err => {
-                            log(`[RECOVER FAILED] ${err.message}`, "error");
-                            isPlaying = false; syncPlayerIcons();
-                        });
-                    } else {
-                        isPlaying = false; syncPlayerIcons();
-                    }
+                    log(`[PLAY ERROR] ${e.message}`, 'error');
+                    isPlaying = false; syncPlayerIcons();
                 });
-            } else {
-                log("[WARN] 音声の準備中...", "warn");
             }
         }
 
@@ -784,18 +714,15 @@
         }
 
         function startWebSpeechFallback(text) {
-            isWebSpeechMode = true;
-            isAudioReady = true;
+            isWebSpeechMode = true; isAudioReady = true;
             document.getElementById('exportBtn').disabled = true;
-            log("[FALLBACK] WebSpeechAPIへ切り替えました", "warn");
+            log("[FALLBACK] WebSpeechAPI", "warn");
             runWebSpeech();
         }
 
         function runWebSpeech() {
             window.speechSynthesis.cancel();
-            isPlaying = true;
-            syncPlayerIcons();
-
+            isPlaying = true; syncPlayerIcons();
             const isContinuous = document.getElementById('autoModeToggle').checked;
             const textToSpeak = isContinuous ? segments.slice(currentIndex).join('') : segments[currentIndex];
             if (!textToSpeak) { stopPlayerAction(); return; }
@@ -803,7 +730,6 @@
             const utter = new SpeechSynthesisUtterance(textToSpeak);
             utter.lang = 'zh-CN';
             utter.rate = parseFloat(document.getElementById('rateRange').value);
-
             const offsetInFullText = isContinuous ? segments.slice(0, currentIndex).join('').length : 0;
 
             utter.onboundary = (e) => {
@@ -814,10 +740,7 @@
                     for (let i = 0; i < segments.length; i++) {
                         acc += segments[i].length;
                         if (absPos < acc) {
-                            if (currentIndex !== i) {
-                                currentIndex = i;
-                                updateUIHighlight();
-                            }
+                            if (currentIndex !== i) { currentIndex = i; updateUIHighlight(); }
                             break;
                         }
                     }
@@ -826,18 +749,22 @@
 
             utter.onend = () => {
                 if (isPlaying) {
+                    const isRepeat = document.getElementById('repeatToggle').checked;
                     if (isContinuous) {
-                        currentIndex = segments.length - 1;
-                        updateUIHighlight();
+                        currentIndex = segments.length - 1; updateUIHighlight();
+                        if (isRepeat) {
+                            log("[LOOP] WebSpeech: 最初からリピートします");
+                            currentIndex = 0; updateUIHighlight(); runWebSpeech(); return;
+                        }
                     } else {
-                        if (currentIndex < segments.length - 1) { 
-                            currentIndex++; 
-                            updateUIHighlight(); 
+                        if (currentIndex < segments.length - 1) { currentIndex++; updateUIHighlight(); }
+                        else if (isRepeat) {
+                            log("[LOOP] WebSpeech: 最初からリピートします");
+                            currentIndex = 0; updateUIHighlight(); runWebSpeech(); return;
                         }
                     }
                 }
-                isPlaying = false;
-                syncPlayerIcons();
+                isPlaying = false; syncPlayerIcons();
             };
             window.speechSynthesis.speak(utter);
         }
@@ -851,15 +778,7 @@
             try {
                 log(`[DICT] 解析中: ${word}`);
                 const res = await callGemini(MODELS.DICT, {
-                    contents: [{ parts: [{ text: `以下の中国語単語を分析してJSONで返して。
-                    単語: "${word}"
-                    フォーマット:
-                    {
-                        "pinyin": "ピンイン",
-                        "meaning": "日本語訳",
-                        "english": "英単語を3つまでカンマ区切り",
-                        "exampleCn": "短い中国語の例文"
-                    }` }] }],
+                    contents: [{ parts: [{ text: `以下の中国語単語を分析してJSONで返して。単語: "${word}" フォーマット: {"pinyin": "ピンイン", "meaning": "日本語訳", "english": "英単語3つまで", "exampleCn": "中国語の例文"}` }] }],
                     generationConfig: { responseMimeType: "application/json" }
                 });
                 const data = JSON.parse(res.candidates[0].content.parts[0].text);
@@ -870,49 +789,30 @@
                 document.getElementById('dictEng').innerText = data.english;
                 document.getElementById('dictExCn').innerText = data.exampleCn;
                 log(`[DICT] 完了: ${word}`);
-            } catch (err) {
-                log(`[DICT ERROR] ${err.message}`, 'error');
-                document.getElementById('dictWord').innerText = "解析エラー";
-                document.getElementById('dictPinyin').innerText = "";
-            }
+            } catch (err) { log(`[DICT ERROR] ${err.message}`, 'error'); }
         }
 
         function initSelectionDetection() {
             const trigger = document.getElementById('searchTrigger');
             const displayArea = document.getElementById('readerDisplay');
-            
             const handleSelection = () => {
                 const selection = window.getSelection();
                 const text = selection.toString().trim();
-                
                 if (text && /[\u4e00-\u9fa5]/.test(text)) {
                     const range = selection.getRangeAt(0);
-                    if (!displayArea.contains(range.commonAncestorContainer)) {
-                        trigger.style.display = 'none'; return;
-                    }
+                    if (!displayArea.contains(range.commonAncestorContainer)) { trigger.style.display = 'none'; return; }
                     const rect = range.getBoundingClientRect();
                     trigger.style.display = 'block';
                     trigger.style.top = `${rect.top + window.scrollY}px`;
                     trigger.style.left = `${rect.left + rect.width/2 + window.scrollX}px`;
-                    
-                    trigger.onmousedown = trigger.ontouchstart = (e) => {
-                        e.preventDefault(); e.stopPropagation();
-                        runDictionary(text);
-                        trigger.style.display = 'none';
-                        selection.removeAllRanges();
-                    };
-                } else {
-                    trigger.style.display = 'none';
-                }
+                    trigger.onmousedown = (e) => { e.preventDefault(); runDictionary(text); trigger.style.display = 'none'; selection.removeAllRanges(); };
+                } else { trigger.style.display = 'none'; }
             };
             document.addEventListener('selectionchange', handleSelection);
             document.addEventListener('mouseup', handleSelection);
-            document.addEventListener('touchend', () => setTimeout(handleSelection, 150));
             displayArea.addEventListener('contextmenu', (e) => {
                 const text = window.getSelection().toString().trim();
-                if (text && /[\u4e00-\u9fa5]/.test(text)) {
-                    e.preventDefault(); runDictionary(text);
-                }
+                if (text && /[\u4e00-\u9fa5]/.test(text)) { e.preventDefault(); runDictionary(text); }
             });
         }
 
@@ -949,8 +849,7 @@
             const msgDisplay = document.getElementById('rateLimitMsg');
             const timeMatch = msg.match(/(\d{2}:\d{2}:\d{2})|(\d+s)/);
             timeDisplay.innerText = timeMatch ? `復帰予定時刻: ${timeMatch[0]}` : "数分後に再試行してください";
-            msgDisplay.innerText = msg;
-            modal.classList.remove('hidden');
+            msgDisplay.innerText = msg; modal.classList.remove('hidden');
         }
 
         function showToast(m) {
@@ -961,9 +860,7 @@
         function renderVocabTable() {
             const body = document.getElementById('vocabTableBody');
             const empty = document.getElementById('emptyState');
-            if (vocabList.length === 0) {
-                body.innerHTML = ""; empty.classList.remove('hidden'); return;
-            }
+            if (vocabList.length === 0) { body.innerHTML = ""; empty.classList.remove('hidden'); return; }
             empty.classList.add('hidden');
             body.innerHTML = vocabList.map((v, i) => `
                 <tr class="border-b border-slate-50 hover:bg-slate-50/80 transition-colors">
@@ -974,7 +871,7 @@
                 </tr>`).join('');
         }
 
-        window.removeVocabItem = (idx) => { vocabList.splice(idx, 1); saveVocabData(); log("[VOCAB] 削除完了"); };
+        window.removeVocabItem = (idx) => { vocabList.splice(idx, 1); saveVocabData(); };
         function saveVocabData() { localStorage.setItem('crb_pro_vocab_v85', JSON.stringify(vocabList)); renderVocabTable(); }
 
         // --- Event Listeners ---
@@ -999,27 +896,18 @@
             if (audioPlayer) audioPlayer.playbackRate = v; 
             if (isWebSpeechMode && isPlaying) { window.speechSynthesis.cancel(); runWebSpeech(); }
         };
-        document.getElementById('addVocabBtn').onclick = () => { 
-            if (activeDictData) { vocabList.unshift({...activeDictData}); saveVocabData(); showToast("VOCAB ADDED"); } 
-            document.getElementById('dictModal').classList.add('hidden'); 
-        };
+        document.getElementById('addVocabBtn').onclick = () => { if (activeDictData) { vocabList.unshift({...activeDictData}); saveVocabData(); showToast("VOCAB ADDED"); } document.getElementById('dictModal').classList.add('hidden'); };
         document.getElementById('cancelVocabBtn').onclick = () => document.getElementById('dictModal').classList.add('hidden');
         document.getElementById('closeDictBtn').onclick = () => document.getElementById('dictModal').classList.add('hidden');
-        document.getElementById('clearAllVocab').onclick = () => { if(confirm("リストを全消去しますか？")) { vocabList = []; saveVocabData(); log("[VOCAB] クリア"); } };
+        document.getElementById('clearAllVocab').onclick = () => { if(confirm("リストを全消去しますか？")) { vocabList = []; saveVocabData(); } };
         document.getElementById('exportCSV').onclick = () => {
             const header = "Chinese(Pinyin),Meaning,Example,English\n";
             const body = vocabList.map(v => `"${v.word}(${v.pinyin})","${v.meaning}","${v.exampleCn}","${v.english}"`).join('\n');
-            copyToClipboard(header + body).then(() => showToast("CSV COPIED")).catch(err=>log(`CSV Copy Error: ${err}`,'error'));
+            copyToClipboard(header + body).then(() => showToast("CSV COPIED"));
         };
-
         document.getElementById('openSettingsBtn').onclick = () => { document.getElementById('apiKeyInput').value = userApiKey; document.getElementById('settingsModal').classList.remove('hidden'); };
         document.getElementById('closeSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('hidden');
-        document.getElementById('saveSettingsBtn').onclick = () => { 
-            userApiKey = document.getElementById('apiKeyInput').value.trim(); 
-            localStorage.setItem('crb_gemini_key_v85', userApiKey); 
-            document.getElementById('settingsModal').classList.add('hidden'); 
-            log("[CONFIG] キー保存", 'success'); 
-        };
+        document.getElementById('saveSettingsBtn').onclick = () => { userApiKey = document.getElementById('apiKeyInput').value.trim(); localStorage.setItem('crb_gemini_key_v85', userApiKey); document.getElementById('settingsModal').classList.add('hidden'); };
         document.getElementById('clearTextBtn').onclick = () => { document.getElementById('textInput').value = ""; log("[ACTION] テキスト消去"); };
         document.getElementById('rateLimitOkBtn').onclick = () => { document.getElementById('rateLimitModal').classList.add('hidden'); startWebSpeechFallback(document.getElementById('textInput').value); };
 
