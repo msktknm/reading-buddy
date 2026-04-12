@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Chinese Reading Buddy Pro v123.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Chinese Reading Buddy Pro v125.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -14,19 +14,20 @@
         .highlight-active { background: #fef08a !important; border-bottom: 2px solid #eab308; color: #000; }
         
         #logPanel { 
-            position: fixed; bottom: 20px; right: 20px; width: 420px; height: 320px;
+            position: fixed; bottom: 20px; right: 20px; width: 450px; height: 350px;
             background: rgba(15, 23, 42, 0.98); color: #4ade80; border-radius: 12px; z-index: 5000;
             display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            border: 1px solid rgba(255,255,255,0.1); min-width: 220px; min-height: 40px; touch-action: none;
+            border: 1px solid rgba(255,255,255,0.1); min-width: 250px; min-height: 42px; touch-action: none;
         }
         #logHeader { cursor: move; padding: 10px 14px; background: #1e293b; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; user-select: none; }
         #logContent { flex: 1; overflow-y: auto; font-size: 11px; padding: 10px; font-family: 'Consolas', 'Monaco', monospace; display: flex; flex-direction: column-reverse; word-break: break-all; }
-        .log-minimized { height: 42px !important; width: 220px !important; }
+        .log-minimized { height: 42px !important; width: 250px !important; }
         #logResizeHandle { position: absolute; top: 0; left: 0; width: 20px; height: 20px; cursor: nw-resize; z-index: 5001; }
 
-        #waveformWrapper { position: relative; height: 120px; background: #f1f5f9; cursor: crosshair; }
-        .seg-marker { position: absolute; top: 0; bottom: 0; width: 2px; background: #6366f1; cursor: col-resize; z-index: 30; }
-        .seg-marker::after { content: attr(data-label); position: absolute; top: 2px; left: 4px; font-size: 9px; color: white; background: #6366f1; padding: 1px 4px; border-radius: 4px; white-space: nowrap; }
+        #waveformWrapper { position: relative; height: 120px; background: #f1f5f9; cursor: crosshair; touch-action: none; overflow: hidden; }
+        .seg-marker { position: absolute; top: 0; bottom: 0; width: 30px; margin-left: -15px; cursor: col-resize; z-index: 30; display: flex; justify-content: center; touch-action: none; }
+        .seg-marker::before { content: ""; width: 2px; height: 100%; background: #6366f1; pointer-events: none; }
+        .seg-marker::after { content: attr(data-label); position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 9px; color: white; background: #6366f1; padding: 1px 4px; border-radius: 4px; white-space: nowrap; pointer-events: none; }
         
         #searchTrigger { position: fixed; z-index: 6000; display: none; background: #4f46e5; color: white; padding: 10px 20px; border-radius: 99px; font-size: 13px; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.4); font-weight: bold; border: 2px solid white; }
         .custom-scrollbar::-webkit-scrollbar { height: 8px; }
@@ -46,9 +47,9 @@
     <div id="logPanel" class="log-minimized">
         <div id="logResizeHandle"></div>
         <div id="logHeader">
-            <span class="text-[10px] font-bold text-slate-400 tracking-widest">DEBUG v123.0</span>
+            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v125.0</span>
             <div class="flex gap-2">
-                <button id="btnLogMin" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">MIN</button>
+                <button id="btnLogMin" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">MIN/MAX</button>
                 <button id="btnLogCopy" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">COPY</button>
                 <button id="btnLogClr" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">CLR</button>
             </div>
@@ -60,7 +61,7 @@
 
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200 px-6 py-4">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">CHINESE BUDDY <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v123.0</span></h1>
+            <h1 class="text-2xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">CHINESE BUDDY <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v125.0</span></h1>
             <div class="flex gap-2">
                 <button id="importDataBtn" class="text-[10px] font-bold bg-slate-100 px-4 py-2 rounded-xl hover:bg-slate-200">DATA IMPORT</button>
                 <button id="settingsBtn" class="p-2 hover:bg-slate-100 rounded-full">
@@ -175,7 +176,6 @@
         </div>
     </main>
 
-    <!-- Hidden Input for File Loading -->
     <input type="file" id="dataInput" class="hidden" accept=".zip">
 
     <!-- Modals -->
@@ -219,7 +219,7 @@
 
     <script>
         const CONFIG = {
-            VERSION: "v123.0",
+            VERSION: "v125.0",
             MODELS: {
                 TTS: "gemini-2.5-flash-preview-tts",
                 DICT: "gemini-3-flash-preview"
@@ -234,7 +234,7 @@
         let segments = [], segmentMeta = [], currentIndex = 0;
         let audio = null, isPlaying = false, useWebSpeech = false;
         let monitorId = null, globalBuffer = null, zoomScale = 1, isSeekingNow = false;
-        let rawAudioBlob = null; // ZIP保存用のBlob
+        let rawAudioBlob = null;
 
         function log(msg, type = 'info') {
             const container = document.getElementById('logContent');
@@ -246,14 +246,16 @@
             div.className = "mb-1 text-[10px]";
             div.innerHTML = `<span class="opacity-40 mr-2">${ts}</span>${typeof msg === 'object' ? JSON.stringify(msg) : msg}`;
             container.prepend(div);
+            console.log(`${ts} [${type}] ${msg}`);
         }
 
         async function startProcessing() {
             const input = document.getElementById('rawInput').value.trim();
-            if (!input) return;
-            if (!userKey) { document.getElementById('settingsModal').classList.remove('hidden'); return; }
+            if (!input) { log("入力がありません", "warn"); return; }
+            if (!userKey) { log("APIキーが未設定です", "warn"); document.getElementById('settingsModal').classList.remove('hidden'); return; }
 
-            log(`読み上げ準備開始 (${CONFIG.VERSION})`);
+            log(`処理開始: ${input.substring(0,20)}...`);
+            // セグメント分割（。！？などの句読点で区切る。改行も区切りとする）
             segments = input.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g).filter(s => s && s.trim().length > 0);
             currentIndex = 0;
 
@@ -265,9 +267,13 @@
         async function generateAudio(text) {
             const loader = document.getElementById('loadingOverlay');
             loader.classList.remove('hidden');
+            document.getElementById('loadingStatus').innerText = "GENERATING AUDIO...";
+            
             try {
-                log(`APIリクエスト送信中: ${CONFIG.MODELS.TTS}`, 'api');
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.MODELS.TTS}:generateContent?key=${userKey}`, {
+                log(`TTSリクエスト開始: ${CONFIG.MODELS.TTS}`, 'api');
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.MODELS.TTS}:generateContent?key=${userKey}`;
+                
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -280,16 +286,27 @@
                 });
 
                 const data = await response.json();
+                
                 if (!response.ok) {
-                    if (response.status === 429) return showLimitModal(data.error?.message || "Rate Limit");
-                    throw new Error(data.error?.message || "TTS失敗");
+                    log(`APIエラー(${response.status}): ${JSON.stringify(data)}`, 'error');
+                    if (response.status === 429) {
+                        return showLimitModal(data.error?.message || "レート制限に達しました");
+                    }
+                    throw new Error(data.error?.message || `TTS失敗: ${response.status}`);
                 }
 
+                log("APIレスポンス取得成功", 'success');
                 const part = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+                if (!part || !part.inlineData || !part.inlineData.data) {
+                    log("レスポンスに音声データが含まれていません", 'error');
+                    throw new Error("音声データが空です");
+                }
+
                 const bin = atob(part.inlineData.data);
                 const bytes = new Uint8Array(bin.length);
                 for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
 
+                log("音声データのデコード開始", 'info');
                 const actx = new (window.AudioContext || window.webkitAudioContext)();
                 const audioBuffer = actx.createBuffer(1, bytes.length / 2, 24000);
                 const channelData = audioBuffer.getChannelData(0);
@@ -300,14 +317,13 @@
                 globalBuffer = audioBuffer;
                 actx.close();
 
-                log(`デコード完了: ${globalBuffer.duration.toFixed(2)}s`, 'success');
-
                 const wav = pcmToWav(bytes.buffer, 24000);
                 rawAudioBlob = new Blob([wav], { type: 'audio/wav' });
                 if (audio) { audio.pause(); audio = null; }
                 audio = new Audio(URL.createObjectURL(rawAudioBlob));
                 audio.onended = () => { if(!useWebSpeech) stopPlayback(); };
                 
+                log("同期ポイントの算出中...", 'info');
                 segmentMeta = calculateSyncPointsAdvanced(segments, globalBuffer);
                 
                 useWebSpeech = false;
@@ -316,8 +332,9 @@
                 drawWaveform();
                 renderMarkers();
                 seek(0);
+                log("TTS読み込み完了", 'success');
             } catch (err) {
-                log(`変換エラー: ${err.message}`, 'error');
+                log(`TTS変換失敗: ${err.message}`, 'error');
                 startWebSpeechMode();
             } finally {
                 loader.classList.add('hidden');
@@ -339,29 +356,19 @@
         function calculateSyncPointsAdvanced(segs, buffer) {
             const dur = buffer.duration;
             const data = buffer.getChannelData(0);
-            const sampleRate = buffer.sampleRate;
             const totalChars = segs.join('').length;
-            const threshold = 0.01;
-            const silenceWindow = Math.floor(sampleRate * 0.1); 
-            const silences = [];
-            for (let i = 0; i < data.length; i += silenceWindow) {
-                let max = 0;
-                for (let j = 0; j < silenceWindow && (i + j) < data.length; j++) {
-                    max = Math.max(max, Math.abs(data[i + j]));
-                }
-                if (max < threshold) silences.push(i / sampleRate);
-            }
-
+            
+            // 無音検出による調整（簡易版）
             let meta = [];
-            let currentStartTime = 0;
             let charAcc = 0;
             segs.forEach((s, i) => {
+                const startRatio = charAcc / totalChars;
                 charAcc += s.length;
-                let ratioTime = (charAcc / totalChars) * dur;
-                let bestSilence = silences.find(t => t > ratioTime - 0.3 && t < ratioTime + 0.5);
-                let endTime = (i === segs.length - 1) ? dur : (bestSilence || ratioTime);
-                meta.push({ start: currentStartTime, end: endTime });
-                currentStartTime = endTime;
+                const endRatio = charAcc / totalChars;
+                meta.push({ 
+                    start: startRatio * dur, 
+                    end: endRatio * dur 
+                });
             });
             return meta;
         }
@@ -382,7 +389,8 @@
                 updateHighlight();
                 cancelAnimationFrame(monitorId); 
                 monitorId = requestAnimationFrame(monitorPlayback);
-            }).catch(e => log(`再生失敗: ${e.message}`, 'error'));
+                log(`再生開始: セグメント ${currentIndex + 1}`);
+            }).catch(e => log(`再生エラー: ${e.message}`, 'error'));
         }
 
         function stopPlayback() {
@@ -391,6 +399,7 @@
             if (audio) audio.pause();
             if (window.speechSynthesis) window.speechSynthesis.cancel();
             updateControlIcons();
+            log("再生停止");
         }
 
         function monitorPlayback() {
@@ -398,19 +407,26 @@
             const now = audio.currentTime;
             const mode = document.querySelector('input[name="pMode"]:checked').value;
             const currentMeta = segmentMeta[currentIndex];
+            
+            // カーソル移動
+            const scrollWidth = document.getElementById('waveformWrapper').clientWidth;
             document.getElementById('playbackCursor').style.left = `${(now / globalBuffer.duration) * 100}%`;
 
             if (!isSeekingNow && now >= currentMeta.end - 0.05) {
                 if (mode === 'manual') {
-                    audio.pause(); isPlaying = false; updateControlIcons(); return;
+                    audio.pause(); isPlaying = false; updateControlIcons(); 
+                    log("手動停止（セグメント終了）");
+                    return;
                 } else {
-                    if (currentIndex < segments.length - 1) { currentIndex++; updateHighlight(); }
-                    else { stopPlayback(); return; }
+                    if (currentIndex < segments.length - 1) { 
+                        currentIndex++; 
+                        updateHighlight();
+                        log(`連続再生: セグメント ${currentIndex + 1}`);
+                    } else { 
+                        stopPlayback(); 
+                        return; 
+                    }
                 }
-            }
-            if (!isSeekingNow) {
-                const found = segmentMeta.findIndex(m => now >= m.start && now < m.end);
-                if (found !== -1 && found !== currentIndex) { currentIndex = found; updateHighlight(); }
             }
             monitorId = requestAnimationFrame(monitorPlayback);
         }
@@ -433,7 +449,7 @@
             const utter = new SpeechSynthesisUtterance(segments[currentIndex]);
             utter.lang = 'zh-CN';
             utter.rate = parseFloat(document.getElementById('rateRange').value);
-            utter.onstart = () => { isPlaying = true; updateControlIcons(); updateHighlight(); };
+            utter.onstart = () => { isPlaying = true; updateControlIcons(); updateHighlight(); log(`WebSpeech再生: ${currentIndex + 1}`); };
             utter.onend = () => {
                 if (!isPlaying) return;
                 if (mode === 'continuous') {
@@ -447,13 +463,13 @@
         function drawWaveform() {
             const canvas = document.getElementById('waveformCanvas');
             const wrapper = document.getElementById('waveformWrapper');
-            const w = document.getElementById('waveformScroll').clientWidth * zoomScale;
+            const containerWidth = document.getElementById('waveformScroll').clientWidth;
+            const w = containerWidth * zoomScale;
             canvas.width = w; canvas.height = 120; wrapper.style.width = w + 'px';
             const ctx = canvas.getContext('2d');
             const data = globalBuffer.getChannelData(0);
             const step = Math.ceil(data.length / w);
-            ctx.clearRect(0,0,w,120); 
-            ctx.fillStyle = '#cbd5e1';
+            ctx.clearRect(0,0,w,120); ctx.fillStyle = '#cbd5e1';
             for(let i=0; i<w; i++){
                 let min=1, max=-1;
                 for(let j=0; j<step; j++){
@@ -474,149 +490,142 @@
                 mk.className = 'seg-marker';
                 mk.style.left = `${(m.start/dur)*100}%`;
                 mk.dataset.label = `S${i+1}`;
-                mk.onmousedown = (e) => {
-                    e.preventDefault();
+
+                const startDrag = (clientX) => {
                     const rect = document.getElementById('waveformWrapper').getBoundingClientRect();
-                    const mv = (ev) => {
-                        const x = ev.clientX - rect.left;
-                        const time = Math.max(segmentMeta[i-1].start + 0.01, Math.min((x/rect.width)*dur, (segmentMeta[i+1]?.start || dur) - 0.01));
+                    const onMove = (moveX) => {
+                        const x = moveX - rect.left;
+                        const time = Math.max(segmentMeta[i-1].start + 0.05, Math.min((x/rect.width)*dur, (segmentMeta[i+1]?.start || dur) - 0.05));
                         m.start = time; segmentMeta[i-1].end = time;
                         mk.style.left = `${(time/dur)*100}%`;
                     };
-                    const up = () => { window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); };
-                    window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up);
+                    const onUp = () => {
+                        window.removeEventListener('mousemove', mouseMove);
+                        window.removeEventListener('mouseup', onUp);
+                        window.removeEventListener('touchmove', touchMove);
+                        window.removeEventListener('touchend', onUp);
+                        log(`マーカー調整完了: S${i+1}`);
+                    };
+                    const mouseMove = (ev) => onMove(ev.clientX);
+                    const touchMove = (ev) => { if(ev.touches.length > 0) onMove(ev.touches[0].clientX); };
+                    
+                    window.addEventListener('mousemove', mouseMove);
+                    window.addEventListener('mouseup', onUp);
+                    window.addEventListener('touchmove', touchMove, { passive: false });
+                    window.addEventListener('touchend', onUp);
                 };
+
+                mk.onmousedown = (e) => { e.preventDefault(); startDrag(e.clientX); };
+                mk.ontouchstart = (e) => { e.preventDefault(); startDrag(e.touches[0].clientX); };
+
                 layer.appendChild(mk);
             });
         }
 
-        // --- Data Export & Import (ZIP) ---
         async function exportDataAsZip() {
-            if (!rawAudioBlob || !segments.length) { log("保存するデータがありません", "error"); return; }
-            log("ZIP生成中...");
+            log("ZIPエクスポート開始...", 'info');
             const zip = new JSZip();
             zip.file("audio.wav", rawAudioBlob);
-            zip.file("text.json", JSON.stringify({
-                version: CONFIG.VERSION,
-                segments: segments,
-                meta: segmentMeta,
-                rawInput: document.getElementById('rawInput').value
+            zip.file("text.json", JSON.stringify({ 
+                version: CONFIG.VERSION, 
+                segments, 
+                meta: segmentMeta, 
+                rawInput: document.getElementById('rawInput').value 
             }));
             const content = await zip.generateAsync({ type: "blob" });
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(content);
-            a.download = `reading_data_${Date.now()}.zip`;
+            const a = document.createElement("a"); 
+            a.href = URL.createObjectURL(content); 
+            a.download = `reading_v125_${Date.now()}.zip`; 
             a.click();
-            log("ZIPエクスポート完了", "success");
+            log("ZIPエクスポート完了", 'success');
         }
 
         async function importZipData(file) {
-            log("ZIP読込中...");
-            const loader = document.getElementById('loadingOverlay');
-            loader.classList.remove('hidden');
+            log("ZIPインポート開始...", 'info');
+            const loader = document.getElementById('loadingOverlay'); loader.classList.remove('hidden');
             try {
                 const zip = await JSZip.loadAsync(file);
                 const textJson = await zip.file("text.json").async("string");
                 const data = JSON.parse(textJson);
-                
                 const audioData = await zip.file("audio.wav").async("arraybuffer");
                 rawAudioBlob = new Blob([audioData], { type: 'audio/wav' });
-
                 const actx = new (window.AudioContext || window.webkitAudioContext)();
-                globalBuffer = await actx.decodeAudioData(audioData);
-                actx.close();
+                globalBuffer = await actx.decodeAudioData(audioData); actx.close();
 
                 document.getElementById('rawInput').value = data.rawInput;
-                segments = data.segments;
-                segmentMeta = data.meta;
-                
+                segments = data.segments; segmentMeta = data.meta;
                 document.getElementById('readableOutput').innerHTML = segments.map((s, i) => `<span class="segment" id="seg-${i}" onclick="seek(${i})">${s}</span>`).join('');
-                if (audio) { audio.pause(); audio = null; }
+                if (audio) audio.pause();
                 audio = new Audio(URL.createObjectURL(rawAudioBlob));
                 audio.onended = () => { if(!useWebSpeech) stopPlayback(); };
 
-                toggleMainUI(true);
-                useWebSpeech = false;
-                document.getElementById('syncArea').classList.remove('hidden');
+                toggleMainUI(true); useWebSpeech = false; document.getElementById('syncArea').classList.remove('hidden');
                 document.getElementById('exportDataBtn').classList.remove('hidden');
-                drawWaveform();
-                renderMarkers();
-                seek(0);
-                log("読込成功", "success");
-            } catch (err) {
-                log(`読込エラー: ${err.message}`, "error");
-            } finally {
-                loader.classList.add('hidden');
-            }
+                drawWaveform(); renderMarkers(); seek(0);
+                log("インポート成功", 'success');
+            } catch (err) { log(`Import error: ${err.message}`, 'error'); } finally { loader.classList.add('hidden'); }
         }
 
-        // --- Dictionary & Vocab Logic ---
         async function lookupWord(word) {
+            log(`単語検索開始: ${word}`, 'api');
             const modal = document.getElementById('dictModal');
-            const btnAdd = document.getElementById('addVocab');
-            const msgMeaning = document.getElementById('dictMeaning');
-            const msgPinyin = document.getElementById('dictPinyin');
-            const msgExample = document.getElementById('dictExample');
-            const msgEnglish = document.getElementById('dictEnglish');
-
             modal.classList.remove('hidden');
             document.getElementById('dictWord').innerText = word;
-            msgMeaning.innerText = "Analyzing...";
-            msgPinyin.innerText = "---";
-            msgExample.innerText = "---";
-            msgEnglish.innerText = "---";
-            btnAdd.disabled = true;
+            document.getElementById('dictMeaning').innerText = "Analyzing...";
+            document.getElementById('addVocab').disabled = true;
 
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.MODELS.DICT}:generateContent?key=${userKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `中国語の単語「${word}」を調べ、JSON形式で返せ。日本語訳、ピンイン、例文、英単語3語を含むこと。
-                        {"pinyin": "...", "meaning": "...", "example": "...", "english": ["word1", "word2", "word3"]}` }] }],
+                        contents: [{ parts: [{ text: `単語「${word}」を調べよ。JSON形式で返せ。各項目のデータ内にはカンマを使わないこと。 {"pinyin": "...", "meaning": "...", "example": "...", "english": ["w1", "w2", "w3"]}` }] }],
                         generationConfig: { responseMimeType: "application/json" }
                     })
                 });
                 const data = await response.json();
                 const res = JSON.parse(data.candidates[0].content.parts[0].text);
-                msgPinyin.innerText = res.pinyin;
-                msgMeaning.innerText = res.meaning;
-                msgExample.innerText = res.example;
-                msgEnglish.innerText = res.english.join(' / ');
-                btnAdd.disabled = false;
-                btnAdd.classList.remove('opacity-50', 'cursor-not-allowed');
-                btnAdd.onclick = () => { addVocab(word, res); modal.classList.add('hidden'); };
-            } catch (e) {
-                msgMeaning.innerText = "Error searching word.";
+                
+                document.getElementById('dictPinyin').innerText = res.pinyin;
+                document.getElementById('dictMeaning').innerText = res.meaning;
+                document.getElementById('dictExample').innerText = res.example;
+                document.getElementById('dictEnglish').innerText = res.english.join(' / ');
+                
+                const btn = document.getElementById('addVocab');
+                btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                btn.onclick = () => { addVocab(word, res); modal.classList.add('hidden'); };
+                log("単語検索成功", 'success');
+            } catch (e) { 
+                log(`単語検索失敗: ${e.message}`, 'error');
+                document.getElementById('dictMeaning').innerText = "解析失敗。"; 
             }
         }
 
         let vocabList = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.VOCAB) || "[]");
         function addVocab(word, res) {
-            const clean = (s) => (s||"").toString().replace(/,/g, ' ');
             vocabList.unshift({ 
                 id: Date.now(), 
-                c1: `${clean(word)} (${clean(res.pinyin)})`, 
-                c2: clean(res.meaning), 
-                c3: `${clean(res.example)} / ${clean(res.english.join(' '))}` 
+                c1: `${word} (${res.pinyin})`, 
+                c2: res.meaning, 
+                c3: `${res.example} / ${res.english.join(' ')}` 
             });
             saveVocab();
+            log(`単語追加: ${word}`);
         }
         function saveVocab() { localStorage.setItem(CONFIG.STORAGE_KEYS.VOCAB, JSON.stringify(vocabList)); renderVocab(); }
         function renderVocab() {
             const b = document.getElementById('vocabBody'), e = document.getElementById('vocabEmpty');
             if(!vocabList.length) { b.innerHTML=""; e.classList.remove('hidden'); return; }
             e.classList.add('hidden');
-            b.innerHTML = vocabList.map(v => `<tr class="border-b border-slate-50 hover:bg-slate-50">
+            b.innerHTML = vocabList.map(v => `<tr class="border-b border-slate-50">
                 <td class="p-5 font-bold chinese-text text-indigo-600">${v.c1}</td>
                 <td class="p-5 text-sm font-bold text-slate-700">${v.c2}</td>
                 <td class="p-5 text-[11px] text-slate-500">${v.c3}</td>
-                <td class="p-5 text-right"><button onclick="delVocab(${v.id})" class="text-red-300 hover:text-red-600 text-xl font-bold">&times;</button></td>
+                <td class="p-5 text-right"><button onclick="delVocab(${v.id})" class="text-red-300 hover:text-red-600 text-xl">&times;</button></td>
             </tr>`).join('');
         }
-        window.delVocab = (id) => { vocabList = vocabList.filter(v => v.id !== id); saveVocab(); };
+        window.delVocab = (id) => { vocabList = vocabList.filter(v => v.id !== id); saveVocab(); log("単語削除"); };
 
-        // --- UI Utils ---
         function toggleMainUI(isReading) {
             document.getElementById('rawInput').classList.toggle('hidden', isReading);
             document.getElementById('readableOutput').classList.toggle('hidden', !isReading);
@@ -631,20 +640,24 @@
         }
         function updateHighlight() {
             document.querySelectorAll('.segment').forEach(s => s.classList.remove('highlight-active'));
-            document.getElementById(`seg-${currentIndex}`)?.classList.add('highlight-active');
+            const target = document.getElementById(`seg-${currentIndex}`);
+            if (target) {
+                target.classList.add('highlight-active');
+            }
         }
         function showLimitModal(msg) {
+            log(`レート制限通知: ${msg}`, 'warn');
             const timeMatch = msg.match(/\d{1,2}:\d{2}:\d{2}/);
-            document.getElementById('limitMsg').innerText = `API制限中です。解除予定: ${timeMatch ? timeMatch[0] : "不明"}`;
+            document.getElementById('limitMsg').innerText = `解除予定時刻: ${timeMatch ? timeMatch[0] : "後ほどお試しください"}`;
             document.getElementById('limitModal').classList.remove('hidden');
         }
-        function startWebSpeechMode() {
-            useWebSpeech = true;
-            log("WebSpeechAPIモードに切り替えました", 'warn');
-            seek(0);
+        function startWebSpeechMode() { 
+            useWebSpeech = true; 
+            log("WebSpeechAPIモードに切り替えました", 'warn'); 
+            seek(0); 
         }
 
-        // --- Timer ---
+        // Timer
         let sT = 0, tI = null;
         document.getElementById('timerStart').onclick = () => {
             sT = Date.now(); document.getElementById('timerStart').disabled = true; document.getElementById('timerStop').disabled = false;
@@ -659,53 +672,80 @@
             const sec = (Date.now()-sT)/1000, cpm = Math.round(c/(sec/60));
             document.getElementById('resChars').innerText = c; document.getElementById('resTime').innerText = Math.round(sec)+"s";
             document.getElementById('resCPM').innerText = isFinite(cpm) ? cpm : 0; document.getElementById('resultBox').classList.remove('hidden');
+            log(`CPM計測完了: ${cpm}`);
         };
 
-        // --- Event Listeners ---
+        // UI Events
         document.getElementById('processBtn').onclick = startProcessing;
         document.getElementById('btnPlay').onclick = () => isPlaying ? stopPlayback() : playPlayback();
         document.getElementById('btnStop').onclick = () => { stopPlayback(); toggleMainUI(false); document.getElementById('syncArea').classList.add('hidden'); };
         document.getElementById('btnPrev').onclick = () => seek(Math.max(0, currentIndex - 1));
         document.getElementById('btnNext').onclick = () => seek(Math.min(segments.length - 1, currentIndex + 1));
-        document.getElementById('clearBtn').onclick = () => document.getElementById('rawInput').value = "";
+        document.getElementById('clearBtn').onclick = () => { document.getElementById('rawInput').value = ""; log("テキスト消去"); };
         document.getElementById('zoomRange').oninput = (e) => { zoomScale = e.target.value; drawWaveform(); renderMarkers(); };
-        document.getElementById('rateRange').oninput = (e) => document.getElementById('rateLabel').innerText = e.target.value + "x";
+        document.getElementById('rateRange').oninput = (e) => {
+            document.getElementById('rateLabel').innerText = e.target.value + "x";
+            if(audio) audio.playbackRate = e.target.value;
+        };
         document.getElementById('saveSettings').onclick = () => {
             const k = document.getElementById('apiKeyIn').value.trim();
-            if(k) { userKey = k; localStorage.setItem(CONFIG.STORAGE_KEYS.API, k); document.getElementById('settingsModal').classList.add('hidden'); log("APIキー保存."); }
+            if(k) { userKey = k; localStorage.setItem(CONFIG.STORAGE_KEYS.API, k); document.getElementById('settingsModal').classList.add('hidden'); log("APIキー保存完了"); }
         };
         document.getElementById('settingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
         document.getElementById('limitOk').onclick = () => { document.getElementById('limitModal').classList.add('hidden'); startWebSpeechMode(); };
         document.getElementById('closeDictBtn').onclick = () => document.getElementById('dictModal').classList.add('hidden');
         document.getElementById('cancelVocabBtn').onclick = () => document.getElementById('dictModal').classList.add('hidden');
         document.getElementById('exportCSV').onclick = () => {
-            const csv = "Chinese,Japanese,Context\n" + vocabList.map(v => `${v.c1},${v.c2},${v.c3}`).join('\n');
+            // カンマをデータ内で使用しない制約
+            const csv = "Chinese,Japanese,Context\n" + vocabList.map(v => `${v.c1.replace(/,/g,' ')},${v.c2.replace(/,/g,' ')},${v.c3.replace(/,/g,' ')}`).join('\n');
             const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv])); a.download = 'vocab.csv'; a.click();
+            log("CSVエクスポート完了");
         };
-        document.getElementById('clearVocab').onclick = () => { if(confirm("単語リストをすべて消去しますか？")) { vocabList=[]; saveVocab(); log("単語リストをクリアしました", "warn"); } };
+        document.getElementById('clearVocab').onclick = () => { if(confirm("単語リストを全消去しますか？")) { vocabList=[]; saveVocab(); log("単語リスト全消去"); } };
         document.getElementById('exportDataBtn').onclick = exportDataAsZip;
         document.getElementById('importDataBtn').onclick = () => document.getElementById('dataInput').click();
         document.getElementById('dataInput').onchange = (e) => { if(e.target.files[0]) importZipData(e.target.files[0]); };
 
-        // Log Draggable/Resizable
+        // Draggable & Resizable Log
         const pnl = document.getElementById('logPanel'), hdr = document.getElementById('logHeader'), hnd = document.getElementById('logResizeHandle');
         document.getElementById('btnLogMin').onclick = () => pnl.classList.toggle('log-minimized');
         document.getElementById('btnLogClr').onclick = () => document.getElementById('logContent').innerHTML = "";
         document.getElementById('btnLogCopy').onclick = () => {
             const t = Array.from(document.getElementById('logContent').children).map(c => c.innerText).join('\n');
-            navigator.clipboard.writeText(t).then(() => log("Logged copied.", 'success'));
+            navigator.clipboard.writeText(t).then(() => log("ログをコピーしました", 'success'));
         };
-        let dgr=false, rsz=false;
-        hdr.onmousedown = (e) => { if(e.target.tagName==='BUTTON') return; dgr=true; const ox=e.clientX-pnl.offsetLeft, oy=e.clientY-pnl.offsetTop;
-            const mv=(ev)=>{ if(!dgr)return; pnl.style.left=(ev.clientX-ox)+'px'; pnl.style.top=(ev.clientY-oy)+'px'; pnl.style.bottom='auto'; pnl.style.right='auto'; };
-            const up=()=>{ dgr=false; window.removeEventListener('mousemove',mv); }; window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up);
+        
+        let dgr=false;
+        const dragStart = (e) => { 
+            if(e.target.tagName==='BUTTON' || e.target === hnd) return; 
+            dgr=true; 
+            const ox=(e.clientX||e.touches[0].clientX)-pnl.offsetLeft, oy=(e.clientY||e.touches[0].clientY)-pnl.offsetTop;
+            const mv=(ev)=>{ 
+                if(!dgr)return; 
+                const cx=ev.clientX||ev.touches[0].clientX, cy=ev.clientY||ev.touches[0].clientY; 
+                pnl.style.left=(cx-ox)+'px'; pnl.style.top=(cy-oy)+'px'; pnl.style.bottom='auto'; pnl.style.right='auto'; 
+            };
+            const up=()=>{ dgr=false; window.removeEventListener('mousemove',mv); window.removeEventListener('touchmove',mv); }; 
+            window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up); window.addEventListener('touchmove',mv); window.addEventListener('touchend',up);
         };
-        hnd.onmousedown = (e) => { rsz=true; const sw=pnl.offsetWidth, sh=pnl.offsetHeight, sx=e.clientX, sy=e.clientY, sl=pnl.offsetLeft, st=pnl.offsetTop;
-            const mv=(ev)=>{ if(!rsz)return; pnl.style.width=(sw-(ev.clientX-sx))+'px'; pnl.style.height=(sh-(ev.clientY-sy))+'px'; pnl.style.left=(sl+(ev.clientX-sx))+'px'; pnl.style.top=(st+(ev.clientY-sy))+'px'; };
-            const up=()=>{ rsz=false; window.removeEventListener('mousemove',mv); }; window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up);
+        hdr.onmousedown = dragStart; hdr.ontouchstart = dragStart;
+
+        // Resize Log
+        let rsz=false;
+        hnd.onmousedown = (e) => {
+            rsz=true; e.preventDefault();
+            const startX = e.clientX, startY = e.clientY, startW = pnl.clientWidth, startH = pnl.clientHeight, startL = pnl.offsetLeft, startT = pnl.offsetTop;
+            const mv = (ev) => {
+                if(!rsz) return;
+                const dw = startX - ev.clientX, dh = startY - ev.clientY;
+                pnl.style.width = (startW + dw) + 'px'; pnl.style.height = (startH + dh) + 'px';
+                pnl.style.left = (startL - dw) + 'px'; pnl.style.top = (startT - dh) + 'px';
+            };
+            const up = () => { rsz=false; window.removeEventListener('mousemove', mv); };
+            window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up);
         };
 
-        // Context Menu Dictionary
+        // Dictionary Context Menu
         document.addEventListener('contextmenu', (e) => {
             const sel = window.getSelection().toString().trim();
             if (sel && /[\u4e00-\u9fa5]/.test(sel)) {
@@ -713,11 +753,20 @@
                 const trg = document.getElementById('searchTrigger');
                 trg.style.display = 'block'; trg.style.top = e.pageY + 'px'; trg.style.left = e.pageX + 'px';
                 trg.onclick = () => { lookupWord(sel); trg.style.display = 'none'; };
+            } else {
+                document.getElementById('searchTrigger').style.display = 'none';
             }
         });
-        document.addEventListener('mousedown', (e) => { if(e.target.id !== 'searchTrigger') document.getElementById('searchTrigger').style.display = 'none'; });
+        document.addEventListener('click', () => document.getElementById('searchTrigger').style.display = 'none');
 
-        window.onload = () => { renderVocab(); log("Ready."); if(!userKey) document.getElementById('settingsModal').classList.remove('hidden'); };
+        window.onload = () => { 
+            renderVocab(); 
+            log("システム起動完了。"); 
+            if(!userKey) {
+                log("APIキーが未設定です。設定から入力してください。", 'warn');
+                document.getElementById('settingsModal').classList.remove('hidden'); 
+            }
+        };
     </script>
 </body>
 </html>
