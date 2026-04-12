@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Chinese Reading Buddy Pro v126.0</title>
+    <title>Chinese Reading Buddy Pro v127.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -49,17 +49,16 @@
         .log-minimized { height: 42px !important; width: 250px !important; }
         #logResizeHandle { position: absolute; top: 0; left: 0; width: 24px; height: 24px; cursor: nw-resize; z-index: 5001; }
 
-        /* Waveform with forced Scrollbar for iOS */
+        /* Waveform Scrollbar for iPhone */
         #waveformScroll { 
             width: 100%; 
             overflow-x: auto !important; 
             overflow-y: hidden; 
             border-radius: 1rem; 
             background: #f1f5f9;
-            -webkit-overflow-scrolling: touch; /* Force smooth scrolling on iOS */
+            -webkit-overflow-scrolling: touch; 
             border: 1px solid #e2e8f0;
         }
-        /* Custom scrollbar visible on all devices */
         #waveformScroll::-webkit-scrollbar { height: 10px; display: block; }
         #waveformScroll::-webkit-scrollbar-track { background: #f1f5f9; }
         #waveformScroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f1f5f9; }
@@ -69,7 +68,23 @@
         .seg-marker::before { content: ""; width: 2px; height: 100%; background: #6366f1; pointer-events: none; }
         .seg-marker::after { content: attr(data-label); position: absolute; top: 4px; left: 50%; transform: translateX(-50%); font-size: 9px; color: white; background: #6366f1; padding: 2px 5px; border-radius: 4px; white-space: nowrap; pointer-events: none; font-weight: bold; }
         
-        #searchTrigger { position: fixed; z-index: 6000; display: none; background: #4f46e5; color: white; padding: 12px 24px; border-radius: 99px; font-size: 14px; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.3); font-weight: bold; border: 2px solid white; }
+        /* Floating Search Trigger - Optimized for iOS */
+        #searchTrigger { 
+            position: absolute; 
+            z-index: 9999; 
+            display: none; 
+            background: #4f46e5; 
+            color: white; 
+            padding: 14px 24px; 
+            border-radius: 99px; 
+            font-size: 14px; 
+            cursor: pointer; 
+            box-shadow: 0 12px 30px rgba(0,0,0,0.4); 
+            font-weight: bold; 
+            border: 2px solid white;
+            white-space: nowrap;
+            touch-action: manipulation;
+        }
     </style>
 </head>
 <body class="pb-24">
@@ -84,7 +99,7 @@
     <div id="logPanel" class="log-minimized">
         <div id="logResizeHandle"></div>
         <div id="logHeader">
-            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v126.0</span>
+            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v127.0</span>
             <div class="flex gap-2">
                 <button id="btnLogMin" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">MIN/MAX</button>
                 <button id="btnLogCopy" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">COPY</button>
@@ -98,7 +113,7 @@
 
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200 px-6 py-4">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">CHINESE BUDDY <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v126.0</span></h1>
+            <h1 class="text-2xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">CHINESE BUDDY <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v127.0</span></h1>
             <div class="flex gap-2">
                 <button id="importDataBtn" class="text-[10px] font-bold bg-slate-100 px-4 py-2 rounded-xl hover:bg-slate-200">DATA IMPORT</button>
                 <button id="settingsBtn" class="p-2 hover:bg-slate-100 rounded-full">
@@ -217,10 +232,9 @@
         </div>
     </main>
 
-    <!-- Hidden File Input -->
     <input type="file" id="dataInput" class="hidden" accept=".zip">
 
-    <!-- API Key Modal -->
+    <!-- Modals -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[20000] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-[2.5rem] w-full max-w-sm p-10 space-y-6 shadow-2xl">
             <h3 class="text-xl font-black tracking-tight">API SETTINGS</h3>
@@ -230,7 +244,6 @@
         </div>
     </div>
 
-    <!-- Dict / Word Modal -->
     <div id="dictModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[30000] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-[3rem] w-full max-w-md p-10 space-y-8 shadow-2xl relative border border-white/20">
             <div class="flex justify-between items-start">
@@ -252,7 +265,6 @@
         </div>
     </div>
 
-    <!-- Rate Limit Modal -->
     <div id="limitModal" class="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[40000] hidden flex items-center justify-center p-6 text-center">
         <div class="bg-white rounded-[3rem] w-full max-w-xs p-10 space-y-6 text-center shadow-2xl">
             <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-2xl">⏳</div>
@@ -264,7 +276,7 @@
 
     <script>
         const CONFIG = {
-            VERSION: "v126.0",
+            VERSION: "v127.0",
             MODELS: {
                 TTS: "gemini-2.5-flash-preview-tts",
                 DICT: "gemini-3-flash-preview"
@@ -291,19 +303,17 @@
             div.className = "mb-1 text-[10px]";
             div.innerHTML = `<span class="opacity-40 mr-2">${ts}</span>${typeof msg === 'object' ? JSON.stringify(msg) : msg}`;
             container.prepend(div);
-            console.log(`${ts} [${type}] ${msg}`);
         }
 
+        // Logic for TTS and Audio handling remains same for consistency
         async function startProcessing() {
             const input = document.getElementById('rawInput').value.trim();
             if (!input) { log("テキストがありません", "warn"); return; }
             if (!userKey) { log("APIキー未設定", "warn"); document.getElementById('settingsModal').classList.remove('hidden'); return; }
 
-            log(`開始: ${input.substring(0,30)}...`);
-            // 文章全体の変換のため分割せずに送信（セグメント化は再生制御用のみ）
+            log(`処理開始: ${input.substring(0,20)}...`);
             segments = input.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g).filter(s => s && s.trim().length > 0);
             currentIndex = 0;
-
             document.getElementById('readableOutput').innerHTML = segments.map((s, i) => `<span class="segment" id="seg-${i}" onclick="seek(${i})">${s}</span>`).join('');
             toggleMainUI(true);
             await generateAudio(input);
@@ -312,13 +322,11 @@
         async function generateAudio(text) {
             const loader = document.getElementById('loadingOverlay');
             loader.classList.remove('hidden');
-            document.getElementById('loadingStatus').innerText = "TTS CONVERTING...";
+            document.getElementById('loadingStatus').innerText = "TTS GENERATING...";
             
             try {
-                log(`TTS送信開始: ${CONFIG.MODELS.TTS}`, 'api');
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.MODELS.TTS}:generateContent?key=${userKey}`;
-                
-                const response = await fetch(endpoint, {
+                log(`TTS送信: ${CONFIG.MODELS.TTS}`, 'api');
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.MODELS.TTS}:generateContent?key=${userKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -331,54 +339,37 @@
                 });
 
                 const data = await response.json();
-                
                 if (!response.ok) {
-                    log(`APIエラー: ${JSON.stringify(data)}`, 'error');
-                    if (response.status === 429) {
-                        return showLimitModal(data.error?.message || "Rate limit reached");
-                    }
-                    throw new Error(data.error?.message || "TTS Failed");
+                    if (response.status === 429) return showLimitModal(data.error?.message || "Rate limit reached");
+                    throw new Error(data.error?.message || "TTS API Error");
                 }
 
                 const part = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-                if (!part || !part.inlineData) throw new Error("No audio data returned");
+                if (!part) throw new Error("No audio data");
 
                 const bin = atob(part.inlineData.data);
                 const bytes = new Uint8Array(bin.length);
                 for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
 
                 const actx = new (window.AudioContext || window.webkitAudioContext)();
-                const audioBuffer = actx.createBuffer(1, bytes.length / 2, 24000);
-                const channelData = audioBuffer.getChannelData(0);
-                const dataView = new DataView(bytes.buffer);
-                for (let i = 0; i < channelData.length; i++) {
-                    channelData[i] = dataView.getInt16(i * 2, true) / 32768.0;
-                }
-                globalBuffer = audioBuffer;
+                globalBuffer = await actx.decodeAudioData(pcmToWav(bytes.buffer, 24000));
                 actx.close();
 
-                const wav = pcmToWav(bytes.buffer, 24000);
-                rawAudioBlob = new Blob([wav], { type: 'audio/wav' });
+                rawAudioBlob = new Blob([pcmToWav(bytes.buffer, 24000)], { type: 'audio/wav' });
                 if (audio) { audio.pause(); audio = null; }
                 audio = new Audio(URL.createObjectURL(rawAudioBlob));
                 audio.onended = () => { if(!useWebSpeech) stopPlayback(); };
                 
-                // アルゴリズムによる同期計算
                 segmentMeta = calculateSyncPoints(segments, globalBuffer);
-                
                 useWebSpeech = false;
                 document.getElementById('syncArea').classList.remove('hidden');
                 document.getElementById('exportDataBtn').classList.remove('hidden');
-                drawWaveform();
-                renderMarkers();
-                seek(0);
+                drawWaveform(); renderMarkers(); seek(0);
                 log("音声生成成功", 'success');
             } catch (err) {
                 log(`TTS失敗: ${err.message}`, 'error');
                 startWebSpeechMode();
-            } finally {
-                loader.classList.add('hidden');
-            }
+            } finally { loader.classList.add('hidden'); }
         }
 
         function pcmToWav(pcm, rate) {
@@ -396,8 +387,7 @@
         function calculateSyncPoints(segs, buffer) {
             const dur = buffer.duration;
             const totalLen = segs.join('').length;
-            let meta = [];
-            let currentChars = 0;
+            let meta = [], currentChars = 0;
             segs.forEach(s => {
                 const startRatio = currentChars / totalLen;
                 currentChars += s.length;
@@ -413,20 +403,17 @@
             const meta = segmentMeta[currentIndex];
             if (Math.abs(audio.currentTime - meta.start) > 0.3) {
                 audio.currentTime = meta.start;
-                isSeekingNow = true;
-                setTimeout(() => { isSeekingNow = false; }, 250);
+                isSeekingNow = true; setTimeout(() => { isSeekingNow = false; }, 250);
             }
             audio.playbackRate = parseFloat(document.getElementById('rateRange').value);
             audio.play().then(() => {
                 isPlaying = true; updateControlIcons(); updateHighlight();
-                cancelAnimationFrame(monitorId);
-                monitorId = requestAnimationFrame(monitorPlayback);
+                cancelAnimationFrame(monitorId); monitorId = requestAnimationFrame(monitorPlayback);
             }).catch(e => log(`再生エラー: ${e.message}`, 'error'));
         }
 
         function stopPlayback() {
-            isPlaying = false; 
-            cancelAnimationFrame(monitorId);
+            isPlaying = false; cancelAnimationFrame(monitorId);
             if (audio) audio.pause();
             if (window.speechSynthesis) window.speechSynthesis.cancel();
             updateControlIcons();
@@ -438,22 +425,14 @@
             const mode = document.querySelector('input[name="pMode"]:checked').value;
             const currentMeta = segmentMeta[currentIndex];
             
-            // カーソル移動
-            const wrapperWidth = document.getElementById('waveformWrapper').clientWidth;
             document.getElementById('playbackCursor').style.left = `${(now / globalBuffer.duration) * 100}%`;
 
             if (!isSeekingNow && now >= currentMeta.end - 0.05) {
                 if (mode === 'manual') {
-                    audio.pause(); isPlaying = false; updateControlIcons(); 
-                    return;
+                    audio.pause(); isPlaying = false; updateControlIcons(); return;
                 } else {
-                    if (currentIndex < segments.length - 1) { 
-                        currentIndex++; 
-                        updateHighlight();
-                    } else { 
-                        stopPlayback(); 
-                        return; 
-                    }
+                    if (currentIndex < segments.length - 1) { currentIndex++; updateHighlight(); }
+                    else { stopPlayback(); return; }
                 }
             }
             monitorId = requestAnimationFrame(monitorPlayback);
@@ -492,19 +471,12 @@
             const canvas = document.getElementById('waveformCanvas');
             const wrapper = document.getElementById('waveformWrapper');
             const scrollContainer = document.getElementById('waveformScroll');
-            const baseWidth = scrollContainer.clientWidth;
-            const targetWidth = baseWidth * zoomScale;
-            
-            canvas.width = targetWidth;
-            canvas.height = 120;
+            const targetWidth = scrollContainer.clientWidth * zoomScale;
+            canvas.width = targetWidth; canvas.height = 120;
             wrapper.style.width = targetWidth + 'px';
-            
-            const ctx = canvas.getContext('2d');
-            const data = globalBuffer.getChannelData(0);
+            const ctx = canvas.getContext('2d'), data = globalBuffer.getChannelData(0);
             const step = Math.ceil(data.length / targetWidth);
-            ctx.clearRect(0,0,targetWidth,120); 
-            ctx.fillStyle = '#cbd5e1';
-            
+            ctx.clearRect(0,0,targetWidth,120); ctx.fillStyle = '#cbd5e1';
             for(let i=0; i<targetWidth; i++){
                 let min=1, max=-1;
                 for(let j=0; j<step; j++){
@@ -513,7 +485,6 @@
                 }
                 ctx.fillRect(i, (1+min)*60, 1, Math.max(1, (max-min)*60));
             }
-            log(`波形描画完了: 幅 ${targetWidth}px`, 'info');
         }
 
         function renderMarkers() {
@@ -526,7 +497,6 @@
                 mk.className = 'seg-marker';
                 mk.style.left = `${(m.start/dur)*100}%`;
                 mk.dataset.label = `S${i+1}`;
-
                 const handleInteraction = (clientX) => {
                     const rect = document.getElementById('waveformWrapper').getBoundingClientRect();
                     const move = (moveX) => {
@@ -535,110 +505,49 @@
                         m.start = time; segmentMeta[i-1].end = time;
                         mk.style.left = `${(time/dur)*100}%`;
                     };
-                    const up = () => {
-                        window.removeEventListener('mousemove', onMove);
-                        window.removeEventListener('mouseup', up);
-                        window.removeEventListener('touchmove', onTouchMove);
-                        window.removeEventListener('touchend', up);
-                    };
+                    const up = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', up); window.removeEventListener('touchmove', onTouchMove); window.removeEventListener('touchend', up); };
                     const onMove = (e) => move(e.clientX);
                     const onTouchMove = (e) => move(e.touches[0].clientX);
-                    window.addEventListener('mousemove', onMove);
-                    window.addEventListener('mouseup', up);
-                    window.addEventListener('touchmove', onTouchMove, { passive: false });
-                    window.addEventListener('touchend', up);
+                    window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', up); window.addEventListener('touchmove', onTouchMove, { passive: false }); window.addEventListener('touchend', up);
                 };
-
                 mk.onmousedown = (e) => { e.preventDefault(); handleInteraction(e.clientX); };
                 mk.ontouchstart = (e) => { e.preventDefault(); handleInteraction(e.touches[0].clientX); };
-
                 layer.appendChild(mk);
             });
         }
 
-        async function exportDataAsZip() {
-            log("ZIP生成中...");
-            const zip = new JSZip();
-            zip.file("audio.wav", rawAudioBlob);
-            zip.file("metadata.json", JSON.stringify({ 
-                version: CONFIG.VERSION, 
-                segments, 
-                meta: segmentMeta, 
-                rawInput: document.getElementById('rawInput').value 
-            }));
-            const content = await zip.generateAsync({ type: "blob" });
-            const a = document.createElement("a"); 
-            a.href = URL.createObjectURL(content); 
-            a.download = `crb_data_${Date.now()}.zip`; 
-            a.click();
-            log("エクスポート完了", 'success');
-        }
-
-        async function importZipData(file) {
-            log("ZIP読み込み中...");
-            const loader = document.getElementById('loadingOverlay'); loader.classList.remove('hidden');
-            try {
-                const zip = await JSZip.loadAsync(file);
-                const metaJson = await zip.file("metadata.json").async("string");
-                const data = JSON.parse(metaJson);
-                const audioData = await zip.file("audio.wav").async("arraybuffer");
-                rawAudioBlob = new Blob([audioData], { type: 'audio/wav' });
-                const actx = new (window.AudioContext || window.webkitAudioContext)();
-                globalBuffer = await actx.decodeAudioData(audioData); actx.close();
-
-                document.getElementById('rawInput').value = data.rawInput;
-                segments = data.segments; segmentMeta = data.meta;
-                document.getElementById('readableOutput').innerHTML = segments.map((s, i) => `<span class="segment" id="seg-${i}" onclick="seek(${i})">${s}</span>`).join('');
-                if (audio) audio.pause();
-                audio = new Audio(URL.createObjectURL(rawAudioBlob));
-                audio.onended = () => { if(!useWebSpeech) stopPlayback(); };
-
-                toggleMainUI(true); useWebSpeech = false; 
-                document.getElementById('syncArea').classList.remove('hidden');
-                document.getElementById('exportDataBtn').classList.remove('hidden');
-                drawWaveform(); renderMarkers(); seek(0);
-                log("インポート成功", 'success');
-            } catch (err) { log(`Import error: ${err.message}`, 'error'); } finally { loader.classList.add('hidden'); }
-        }
-
         async function lookupWord(word) {
-            log(`辞書検索: ${word}`, 'api');
+            log(`単語調査: ${word}`, 'api');
             const modal = document.getElementById('dictModal');
             modal.classList.remove('hidden');
             document.getElementById('dictWord').innerText = word;
             document.getElementById('dictMeaning').innerText = "Analyzing...";
             document.getElementById('addVocab').disabled = true;
-
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.MODELS.DICT}:generateContent?key=${userKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `中国語の単語「${word}」の意味、拼音、例文、英単語(3つまで)を調べてください。JSONで出力: {"pinyin": "...", "meaning": "...", "example": "...", "english": ["...", "..."]}` }] }],
+                        contents: [{ parts: [{ text: `調査対象:「${word}」。拼音、日本語訳、例文、英単語(3つ)をJSON出力: {"pinyin": "...", "meaning": "...", "example": "...", "english": ["...", "..."]}` }] }],
                         generationConfig: { responseMimeType: "application/json" }
                     })
                 });
                 const data = await response.json();
                 const res = JSON.parse(data.candidates[0].content.parts[0].text);
-                
                 document.getElementById('dictPinyin').innerText = res.pinyin;
                 document.getElementById('dictMeaning').innerText = res.meaning;
                 document.getElementById('dictExample').innerText = res.example;
                 document.getElementById('dictEnglish').innerText = res.english.join(' / ');
-                
                 const btn = document.getElementById('addVocab');
                 btn.disabled = false; btn.classList.remove('opacity-50');
                 btn.onclick = () => { addVocab(word, res); modal.classList.add('hidden'); };
-            } catch (e) { 
-                log(`辞書エラー: ${e.message}`, 'error');
-                document.getElementById('dictMeaning').innerText = "取得失敗"; 
-            }
+            } catch (e) { log(`調査エラー: ${e.message}`, 'error'); document.getElementById('dictMeaning').innerText = "取得失敗"; }
         }
 
         let vocabList = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.VOCAB) || "[]");
         function addVocab(word, res) {
             vocabList.unshift({ id: Date.now(), c1: `${word} (${res.pinyin})`, c2: res.meaning, c3: `${res.example} / ${res.english.join(' ')}` });
-            saveVocab(); log(`追加: ${word}`);
+            saveVocab(); log(`単語追加: ${word}`, 'success');
         }
         function saveVocab() { localStorage.setItem(CONFIG.STORAGE_KEYS.VOCAB, JSON.stringify(vocabList)); renderVocab(); }
         function renderVocab() {
@@ -675,30 +584,52 @@
             document.getElementById('limitMsg').innerText = `解除時刻: ${timeMatch ? timeMatch[0] : "不明"}`;
             document.getElementById('limitModal').classList.remove('hidden');
         }
-        function startWebSpeechMode() { 
-            useWebSpeech = true; 
-            log("WebSpeechAPIモード移行", 'warn'); 
-            seek(0); 
+        function startWebSpeechMode() { useWebSpeech = true; log("WebSpeechモードへ移行", 'warn'); seek(0); }
+
+        // iOS Selection Fixing Logic
+        const trigger = document.getElementById('searchTrigger');
+        function handleSelection() {
+            const selection = window.getSelection();
+            const text = selection.toString().trim();
+            if (text && /[\u4e00-\u9fa5]/.test(text)) {
+                try {
+                    const range = selection.getRangeAt(0);
+                    const rect = range.getBoundingClientRect();
+                    // iOS safari context: scroll Y might affect. use client Rect + page scroll
+                    trigger.style.display = 'block';
+                    trigger.style.top = (window.scrollY + rect.top - 60) + 'px'; // Show above selection
+                    trigger.style.left = (window.scrollX + rect.left + (rect.width / 2) - 80) + 'px';
+                    trigger.onclick = (e) => {
+                        e.preventDefault();
+                        lookupWord(text);
+                        trigger.style.display = 'none';
+                        selection.removeAllRanges();
+                    };
+                } catch (e) {
+                    // Fallback to simpler positioning if range fails
+                }
+            } else {
+                trigger.style.display = 'none';
+            }
         }
 
-        // Timer Logic
-        let sT = 0, tI = null;
-        document.getElementById('timerStart').onclick = () => {
-            sT = Date.now(); document.getElementById('timerStart').disabled = true; document.getElementById('timerStop').disabled = false;
-            tI = setInterval(() => {
-                const el = Date.now()-sT, m=Math.floor(el/60000), s=Math.floor((el%60000)/1000), ms=Math.floor((el%1000)/100);
-                document.getElementById('timerDisplay').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}.${ms}`;
-            }, 100);
-        };
-        document.getElementById('timerStop').onclick = () => {
-            clearInterval(tI); document.getElementById('timerStart').disabled = false; document.getElementById('timerStop').disabled = true;
-            const c = (document.getElementById('rawInput').value.match(/[\u4e00-\u9fa5]/g) || []).length;
-            const sec = (Date.now()-sT)/1000, cpm = Math.round(c/(sec/60));
-            document.getElementById('resChars').innerText = c; document.getElementById('resTime').innerText = Math.round(sec)+"s";
-            document.getElementById('resCPM').innerText = isFinite(cpm) ? cpm : 0; 
-            document.getElementById('resultBox').classList.remove('hidden');
-            log(`CPM結果: ${cpm}`);
-        };
+        // Multiple listeners for iOS/Android/PC compatibility
+        document.addEventListener('selectionchange', () => {
+            // Delay slightly for iOS selection handles to settle
+            setTimeout(handleSelection, 100);
+        });
+
+        // Traditional context menu for PC
+        document.addEventListener('contextmenu', (e) => {
+            const sel = window.getSelection().toString().trim();
+            if (sel && /[\u4e00-\u9fa5]/.test(sel)) {
+                e.preventDefault();
+                trigger.style.display = 'block';
+                trigger.style.top = e.pageY + 'px';
+                trigger.style.left = e.pageX + 'px';
+                trigger.onclick = () => { lookupWord(sel); trigger.style.display = 'none'; };
+            }
+        });
 
         // UI Events
         document.getElementById('processBtn').onclick = startProcessing;
@@ -706,7 +637,7 @@
         document.getElementById('btnStop').onclick = () => { stopPlayback(); toggleMainUI(false); document.getElementById('syncArea').classList.add('hidden'); };
         document.getElementById('btnPrev').onclick = () => seek(Math.max(0, currentIndex - 1));
         document.getElementById('btnNext').onclick = () => seek(Math.min(segments.length - 1, currentIndex + 1));
-        document.getElementById('clearBtn').onclick = () => document.getElementById('rawInput').value = "";
+        document.getElementById('clearBtn').onclick = () => { document.getElementById('rawInput').value = ""; log("テキスト消去"); };
         document.getElementById('zoomRange').oninput = (e) => { zoomScale = e.target.value; drawWaveform(); renderMarkers(); };
         document.getElementById('rateRange').oninput = (e) => {
             const val = e.target.value;
@@ -715,7 +646,7 @@
         };
         document.getElementById('saveSettings').onclick = () => {
             const k = document.getElementById('apiKeyIn').value.trim();
-            if(k) { userKey = k; localStorage.setItem(CONFIG.STORAGE_KEYS.API, k); document.getElementById('settingsModal').classList.add('hidden'); log("APIキー保存"); }
+            if(k) { userKey = k; localStorage.setItem(CONFIG.STORAGE_KEYS.API, k); document.getElementById('settingsModal').classList.add('hidden'); log("APIキー更新"); }
         };
         document.getElementById('settingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
         document.getElementById('limitOk').onclick = () => { document.getElementById('limitModal').classList.add('hidden'); startWebSpeechMode(); };
@@ -724,13 +655,46 @@
         document.getElementById('exportCSV').onclick = () => {
             const csv = "Chinese,Japanese,Context\n" + vocabList.map(v => `${v.c1.replace(/,/g,' ')},${v.c2.replace(/,/g,' ')},${v.c3.replace(/,/g,' ')}`).join('\n');
             const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'})); a.download = 'vocab.csv'; a.click();
+            log("CSVエクスポート");
         };
-        document.getElementById('clearVocab').onclick = () => { if(confirm("消去しますか？")) { vocabList=[]; saveVocab(); } };
-        document.getElementById('exportDataBtn').onclick = exportDataAsZip;
-        document.getElementById('importDataBtn').onclick = () => document.getElementById('dataInput').click();
-        document.getElementById('dataInput').onchange = (e) => { if(e.target.files[0]) importZipData(e.target.files[0]); };
+        document.getElementById('clearVocab').onclick = () => { if(confirm("全単語を消去しますか？")) { vocabList=[]; saveVocab(); } };
 
-        // Draggable & Resizable Log Control
+        // Export/Import
+        document.getElementById('exportDataBtn').onclick = async () => {
+            log("ZIPエクスポート準備中...");
+            const zip = new JSZip();
+            zip.file("audio.wav", rawAudioBlob);
+            zip.file("metadata.json", JSON.stringify({ version: CONFIG.VERSION, segments, meta: segmentMeta, rawInput: document.getElementById('rawInput').value }));
+            const content = await zip.generateAsync({ type: "blob" });
+            const a = document.createElement("a"); a.href = URL.createObjectURL(content); a.download = `crb_v127_${Date.now()}.zip`; a.click();
+            log("ZIPエクスポート完了", 'success');
+        };
+        document.getElementById('importDataBtn').onclick = () => document.getElementById('dataInput').click();
+        document.getElementById('dataInput').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            log("データ読込開始...");
+            try {
+                const zip = await JSZip.loadAsync(file);
+                const meta = JSON.parse(await zip.file("metadata.json").async("string"));
+                const audioBuf = await zip.file("audio.wav").async("arraybuffer");
+                rawAudioBlob = new Blob([audioBuf], { type: 'audio/wav' });
+                const actx = new (window.AudioContext || window.webkitAudioContext)();
+                globalBuffer = await actx.decodeAudioData(audioBuf); actx.close();
+                document.getElementById('rawInput').value = meta.rawInput;
+                segments = meta.segments; segmentMeta = meta.meta;
+                document.getElementById('readableOutput').innerHTML = segments.map((s, i) => `<span class="segment" id="seg-${i}" onclick="seek(${i})">${s}</span>`).join('');
+                if (audio) audio.pause();
+                audio = new Audio(URL.createObjectURL(rawAudioBlob)); audio.onended = () => { if(!useWebSpeech) stopPlayback(); };
+                toggleMainUI(true); useWebSpeech = false;
+                document.getElementById('syncArea').classList.remove('hidden');
+                document.getElementById('exportDataBtn').classList.remove('hidden');
+                drawWaveform(); renderMarkers(); seek(0);
+                log("データ読込成功", 'success');
+            } catch (err) { log(`読込失敗: ${err.message}`, 'error'); }
+        };
+
+        // Log Panel Logic
         const pnl = document.getElementById('logPanel'), hdr = document.getElementById('logHeader'), hnd = document.getElementById('logResizeHandle');
         document.getElementById('btnLogMin').onclick = () => pnl.classList.toggle('log-minimized');
         document.getElementById('btnLogClr').onclick = () => document.getElementById('logContent').innerHTML = "";
@@ -738,55 +702,39 @@
             const t = Array.from(document.getElementById('logContent').children).map(c => c.innerText).join('\n');
             navigator.clipboard.writeText(t).then(() => log("ログをコピーしました", 'success'));
         };
-        
-        let dgr=false;
+        let dgr=false, rsz=false;
         const startDrag = (e) => { 
             if(e.target.tagName==='BUTTON' || e.target === hnd) return; 
             dgr=true; 
             const ox=(e.clientX||e.touches[0].clientX)-pnl.offsetLeft, oy=(e.clientY||e.touches[0].clientY)-pnl.offsetTop;
-            const mv=(ev)=>{ 
-                if(!dgr)return; 
-                const cx=ev.clientX||ev.touches[0].clientX, cy=ev.clientY||ev.touches[0].clientY; 
-                pnl.style.left=(cx-ox)+'px'; pnl.style.top=(cy-oy)+'px'; pnl.style.bottom='auto'; pnl.style.right='auto'; 
-            };
+            const mv=(ev)=>{ if(!dgr)return; const cx=ev.clientX||ev.touches[0].clientX, cy=ev.clientY||ev.touches[0].clientY; pnl.style.left=(cx-ox)+'px'; pnl.style.top=(cy-oy)+'px'; pnl.style.bottom='auto'; pnl.style.right='auto'; };
             const up=()=>{ dgr=false; window.removeEventListener('mousemove',mv); window.removeEventListener('touchmove',mv); }; 
             window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up); window.addEventListener('touchmove',mv); window.addEventListener('touchend',up);
         };
         hdr.onmousedown = startDrag; hdr.ontouchstart = startDrag;
-
-        let rsz=false;
         hnd.onmousedown = (e) => {
             rsz=true; e.preventDefault();
             const startX = e.clientX, startY = e.clientY, startW = pnl.clientWidth, startH = pnl.clientHeight, startL = pnl.offsetLeft, startT = pnl.offsetTop;
-            const mv = (ev) => {
-                if(!rsz) return;
-                const dw = startX - ev.clientX, dh = startY - ev.clientY;
-                pnl.style.width = (startW + dw) + 'px'; pnl.style.height = (startH + dh) + 'px';
-                pnl.style.left = (startL - dw) + 'px'; pnl.style.top = (startT - dh) + 'px';
-            };
+            const mv = (ev) => { if(!rsz) return; const dw = startX - ev.clientX, dh = startY - ev.clientY; pnl.style.width = (startW + dw) + 'px'; pnl.style.height = (startH + dh) + 'px'; pnl.style.left = (startL - dw) + 'px'; pnl.style.top = (startT - dh) + 'px'; };
             const up = () => { rsz=false; window.removeEventListener('mousemove', mv); };
             window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up);
         };
 
-        // Dictionary Context
-        document.addEventListener('contextmenu', (e) => {
-            const sel = window.getSelection().toString().trim();
-            if (sel && /[\u4e00-\u9fa5]/.test(sel)) {
-                e.preventDefault();
-                const trg = document.getElementById('searchTrigger');
-                trg.style.display = 'block'; trg.style.top = e.pageY + 'px'; trg.style.left = e.pageX + 'px';
-                trg.onclick = () => { lookupWord(sel); trg.style.display = 'none'; };
-            } else {
-                document.getElementById('searchTrigger').style.display = 'none';
-            }
-        });
-        document.addEventListener('click', () => document.getElementById('searchTrigger').style.display = 'none');
-
-        window.onload = () => { 
-            renderVocab(); 
-            log("Ready."); 
-            if(!userKey) document.getElementById('settingsModal').classList.remove('hidden'); 
+        // Timer Logic
+        let sT = 0, tI = null;
+        document.getElementById('timerStart').onclick = () => {
+            sT = Date.now(); document.getElementById('timerStart').disabled = true; document.getElementById('timerStop').disabled = false;
+            tI = setInterval(() => { const el = Date.now()-sT, m=Math.floor(el/60000), s=Math.floor((el%60000)/1000), ms=Math.floor((el%1000)/100); document.getElementById('timerDisplay').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}.${ms}`; }, 100);
         };
+        document.getElementById('timerStop').onclick = () => {
+            clearInterval(tI); document.getElementById('timerStart').disabled = false; document.getElementById('timerStop').disabled = true;
+            const c = (document.getElementById('rawInput').value.match(/[\u4e00-\u9fa5]/g) || []).length;
+            const sec = (Date.now()-sT)/1000, cpm = Math.round(c/(sec/60));
+            document.getElementById('resChars').innerText = c; document.getElementById('resTime').innerText = Math.round(sec)+"s"; document.getElementById('resCPM').innerText = isFinite(cpm) ? cpm : 0; 
+            document.getElementById('resultBox').classList.remove('hidden');
+        };
+
+        window.onload = () => { renderVocab(); log("System Initialized."); if(!userKey) document.getElementById('settingsModal').classList.remove('hidden'); };
     </script>
 </body>
 </html>
