@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Chinese Reading Buddy Pro v127.0</title>
+    <title>Chinese Reading Buddy Pro v128.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -99,7 +99,7 @@
     <div id="logPanel" class="log-minimized">
         <div id="logResizeHandle"></div>
         <div id="logHeader">
-            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v127.0</span>
+            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v128.0</span>
             <div class="flex gap-2">
                 <button id="btnLogMin" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">MIN/MAX</button>
                 <button id="btnLogCopy" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">COPY</button>
@@ -113,7 +113,7 @@
 
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200 px-6 py-4">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">CHINESE BUDDY <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v127.0</span></h1>
+            <h1 class="text-2xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">CHINESE BUDDY <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v128.0</span></h1>
             <div class="flex gap-2">
                 <button id="importDataBtn" class="text-[10px] font-bold bg-slate-100 px-4 py-2 rounded-xl hover:bg-slate-200">DATA IMPORT</button>
                 <button id="settingsBtn" class="p-2 hover:bg-slate-100 rounded-full">
@@ -136,6 +136,9 @@
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer group">
                             <input type="radio" name="pMode" value="manual" class="accent-indigo-600"> <span class="text-[11px] font-bold group-hover:text-indigo-600">手動</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer group border-l pl-4 border-slate-200">
+                            <input type="checkbox" id="repeatMode" class="accent-indigo-600"> <span class="text-[11px] font-bold group-hover:text-indigo-600">リピート</span>
                         </label>
                     </div>
                 </div>
@@ -276,14 +279,14 @@
 
     <script>
         const CONFIG = {
-            VERSION: "v127.0",
+            VERSION: "v128.0",
             MODELS: {
                 TTS: "gemini-2.5-flash-preview-tts",
                 DICT: "gemini-3-flash-preview"
             },
             STORAGE_KEYS: {
-                API: "crb_v123_api",
-                VOCAB: "crb_v123_vocab"
+                API: "crb_v128_api",
+                VOCAB: "crb_v128_vocab"
             }
         };
 
@@ -305,7 +308,6 @@
             container.prepend(div);
         }
 
-        // Logic for TTS and Audio handling remains same for consistency
         async function startProcessing() {
             const input = document.getElementById('rawInput').value.trim();
             if (!input) { log("テキストがありません", "warn"); return; }
@@ -358,7 +360,18 @@
                 rawAudioBlob = new Blob([pcmToWav(bytes.buffer, 24000)], { type: 'audio/wav' });
                 if (audio) { audio.pause(); audio = null; }
                 audio = new Audio(URL.createObjectURL(rawAudioBlob));
-                audio.onended = () => { if(!useWebSpeech) stopPlayback(); };
+                audio.onended = () => { 
+                    if(!useWebSpeech) {
+                        const isRepeat = document.getElementById('repeatMode').checked;
+                        const mode = document.querySelector('input[name="pMode"]:checked').value;
+                        if (isRepeat && mode === 'continuous') {
+                            log("リピート再生");
+                            seek(0);
+                        } else {
+                            stopPlayback(); 
+                        }
+                    }
+                };
                 
                 segmentMeta = calculateSyncPoints(segments, globalBuffer);
                 useWebSpeech = false;
@@ -429,10 +442,34 @@
 
             if (!isSeekingNow && now >= currentMeta.end - 0.05) {
                 if (mode === 'manual') {
-                    audio.pause(); isPlaying = false; updateControlIcons(); return;
+                    audio.pause(); isPlaying = false; updateControlIcons();
+                    if (currentIndex === segments.length - 1 && document.getElementById('repeatMode').checked) {
+                        log("リピート待機（手動）");
+                        currentIndex = 0;
+                        audio.currentTime = segmentMeta[0].start;
+                        updateHighlight();
+                        document.getElementById('playbackCursor').style.left = `0%`;
+                    }
+                    return;
                 } else {
-                    if (currentIndex < segments.length - 1) { currentIndex++; updateHighlight(); }
-                    else { stopPlayback(); return; }
+                    if (currentIndex < segments.length - 1) { 
+                        currentIndex++; updateHighlight(); 
+                    } else { 
+                        if (document.getElementById('repeatMode').checked) {
+                            log("リピート再生（連続）");
+                            seek(0);
+                        } else {
+                            stopPlayback(); 
+                        }
+                        return; 
+                    }
+                }
+            }
+            
+            if (!isSeekingNow) {
+                const found = segmentMeta.findIndex(m => now >= m.start && now < m.end);
+                if (found !== -1 && found !== currentIndex) { 
+                    currentIndex = found; updateHighlight(); 
                 }
             }
             monitorId = requestAnimationFrame(monitorPlayback);
@@ -460,9 +497,21 @@
             utter.onend = () => {
                 if (!isPlaying) return;
                 if (mode === 'continuous') {
-                    if (currentIndex < segments.length - 1) { currentIndex++; playWebSpeech(); }
-                    else stopPlayback();
-                } else { isPlaying = false; updateControlIcons(); }
+                    if (currentIndex < segments.length - 1) { 
+                        currentIndex++; playWebSpeech(); 
+                    } else {
+                        if (document.getElementById('repeatMode').checked) {
+                            currentIndex = 0; playWebSpeech();
+                        } else {
+                            stopPlayback();
+                        }
+                    }
+                } else { 
+                    isPlaying = false; updateControlIcons(); 
+                    if (currentIndex >= segments.length - 1 && document.getElementById('repeatMode').checked) {
+                        currentIndex = 0; updateHighlight();
+                    }
+                }
             };
             window.speechSynthesis.speak(utter);
         }
@@ -516,6 +565,49 @@
             });
         }
 
+        async function exportDataAsZip() {
+            log("ZIP生成中...");
+            const zip = new JSZip();
+            zip.file("audio.wav", rawAudioBlob);
+            zip.file("metadata.json", JSON.stringify({ version: CONFIG.VERSION, segments, meta: segmentMeta, rawInput: document.getElementById('rawInput').value }));
+            const content = await zip.generateAsync({ type: "blob" });
+            const a = document.createElement("a"); a.href = URL.createObjectURL(content); a.download = `crb_v128_${Date.now()}.zip`; a.click();
+            log("エクスポート完了", 'success');
+        }
+
+        async function importZipData(file) {
+            log("ZIP読込開始...");
+            const loader = document.getElementById('loadingOverlay'); loader.classList.remove('hidden');
+            try {
+                const zip = await JSZip.loadAsync(file);
+                const metaJson = await zip.file("metadata.json").async("string");
+                const data = JSON.parse(metaJson);
+                const audioData = await zip.file("audio.wav").async("arraybuffer");
+                rawAudioBlob = new Blob([audioData], { type: 'audio/wav' });
+                const actx = new (window.AudioContext || window.webkitAudioContext)();
+                globalBuffer = await actx.decodeAudioData(audioData); actx.close();
+
+                document.getElementById('rawInput').value = data.rawInput;
+                segments = data.segments; segmentMeta = data.meta;
+                document.getElementById('readableOutput').innerHTML = segments.map((s, i) => `<span class="segment" id="seg-${i}" onclick="seek(${i})">${s}</span>`).join('');
+                if (audio) audio.pause();
+                audio = new Audio(URL.createObjectURL(rawAudioBlob)); 
+                audio.onended = () => { 
+                    if(!useWebSpeech) {
+                        const isRepeat = document.getElementById('repeatMode').checked;
+                        const mode = document.querySelector('input[name="pMode"]:checked').value;
+                        if (isRepeat && mode === 'continuous') { seek(0); } else { stopPlayback(); }
+                    }
+                };
+
+                toggleMainUI(true); useWebSpeech = false;
+                document.getElementById('syncArea').classList.remove('hidden');
+                document.getElementById('exportDataBtn').classList.remove('hidden');
+                drawWaveform(); renderMarkers(); seek(0);
+                log("データ読込成功", 'success');
+            } catch (err) { log(`読込失敗: ${err.message}`, 'error'); } finally { loader.classList.add('hidden'); }
+        }
+
         async function lookupWord(word) {
             log(`単語調査: ${word}`, 'api');
             const modal = document.getElementById('dictModal');
@@ -561,7 +653,7 @@
                 <td class="p-5 text-right"><button onclick="delVocab(${v.id})" class="text-red-300 hover:text-red-600 text-xl">&times;</button></td>
             </tr>`).join('');
         }
-        window.delVocab = (id) => { vocabList = vocabList.filter(v => v.id !== id); saveVocab(); };
+        window.delVocab = (id) => { vocabList = vocabList.filter(v => v.id !== id); saveVocab(); log("単語削除"); };
 
         function toggleMainUI(isReading) {
             document.getElementById('rawInput').classList.toggle('hidden', isReading);
@@ -569,6 +661,7 @@
             document.getElementById('processBtn').classList.toggle('hidden', isReading);
             document.getElementById('playerUI').classList.toggle('hidden', !isReading);
             document.getElementById('playModes').classList.toggle('hidden', !isReading);
+            if(!isReading) document.getElementById('exportDataBtn').classList.add('hidden');
         }
         function updateControlIcons() {
             document.getElementById('iconPlay').classList.toggle('hidden', isPlaying);
@@ -581,55 +674,10 @@
         }
         function showLimitModal(msg) {
             const timeMatch = msg.match(/\d{1,2}:\d{2}:\d{2}/);
-            document.getElementById('limitMsg').innerText = `解除時刻: ${timeMatch ? timeMatch[0] : "不明"}`;
+            document.getElementById('limitMsg').innerText = `解除予定: ${timeMatch ? timeMatch[0] : "不明"}`;
             document.getElementById('limitModal').classList.remove('hidden');
         }
         function startWebSpeechMode() { useWebSpeech = true; log("WebSpeechモードへ移行", 'warn'); seek(0); }
-
-        // iOS Selection Fixing Logic
-        const trigger = document.getElementById('searchTrigger');
-        function handleSelection() {
-            const selection = window.getSelection();
-            const text = selection.toString().trim();
-            if (text && /[\u4e00-\u9fa5]/.test(text)) {
-                try {
-                    const range = selection.getRangeAt(0);
-                    const rect = range.getBoundingClientRect();
-                    // iOS safari context: scroll Y might affect. use client Rect + page scroll
-                    trigger.style.display = 'block';
-                    trigger.style.top = (window.scrollY + rect.top - 60) + 'px'; // Show above selection
-                    trigger.style.left = (window.scrollX + rect.left + (rect.width / 2) - 80) + 'px';
-                    trigger.onclick = (e) => {
-                        e.preventDefault();
-                        lookupWord(text);
-                        trigger.style.display = 'none';
-                        selection.removeAllRanges();
-                    };
-                } catch (e) {
-                    // Fallback to simpler positioning if range fails
-                }
-            } else {
-                trigger.style.display = 'none';
-            }
-        }
-
-        // Multiple listeners for iOS/Android/PC compatibility
-        document.addEventListener('selectionchange', () => {
-            // Delay slightly for iOS selection handles to settle
-            setTimeout(handleSelection, 100);
-        });
-
-        // Traditional context menu for PC
-        document.addEventListener('contextmenu', (e) => {
-            const sel = window.getSelection().toString().trim();
-            if (sel && /[\u4e00-\u9fa5]/.test(sel)) {
-                e.preventDefault();
-                trigger.style.display = 'block';
-                trigger.style.top = e.pageY + 'px';
-                trigger.style.left = e.pageX + 'px';
-                trigger.onclick = () => { lookupWord(sel); trigger.style.display = 'none'; };
-            }
-        });
 
         // UI Events
         document.getElementById('processBtn').onclick = startProcessing;
@@ -637,7 +685,7 @@
         document.getElementById('btnStop').onclick = () => { stopPlayback(); toggleMainUI(false); document.getElementById('syncArea').classList.add('hidden'); };
         document.getElementById('btnPrev').onclick = () => seek(Math.max(0, currentIndex - 1));
         document.getElementById('btnNext').onclick = () => seek(Math.min(segments.length - 1, currentIndex + 1));
-        document.getElementById('clearBtn').onclick = () => { document.getElementById('rawInput').value = ""; log("テキスト消去"); };
+        document.getElementById('clearBtn').onclick = () => document.getElementById('rawInput').value = "";
         document.getElementById('zoomRange').oninput = (e) => { zoomScale = e.target.value; drawWaveform(); renderMarkers(); };
         document.getElementById('rateRange').oninput = (e) => {
             const val = e.target.value;
@@ -646,7 +694,7 @@
         };
         document.getElementById('saveSettings').onclick = () => {
             const k = document.getElementById('apiKeyIn').value.trim();
-            if(k) { userKey = k; localStorage.setItem(CONFIG.STORAGE_KEYS.API, k); document.getElementById('settingsModal').classList.add('hidden'); log("APIキー更新"); }
+            if(k) { userKey = k; localStorage.setItem(CONFIG.STORAGE_KEYS.API, k); document.getElementById('settingsModal').classList.add('hidden'); log("APIキー保存"); }
         };
         document.getElementById('settingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
         document.getElementById('limitOk').onclick = () => { document.getElementById('limitModal').classList.add('hidden'); startWebSpeechMode(); };
@@ -658,43 +706,11 @@
             log("CSVエクスポート");
         };
         document.getElementById('clearVocab').onclick = () => { if(confirm("全単語を消去しますか？")) { vocabList=[]; saveVocab(); } };
-
-        // Export/Import
-        document.getElementById('exportDataBtn').onclick = async () => {
-            log("ZIPエクスポート準備中...");
-            const zip = new JSZip();
-            zip.file("audio.wav", rawAudioBlob);
-            zip.file("metadata.json", JSON.stringify({ version: CONFIG.VERSION, segments, meta: segmentMeta, rawInput: document.getElementById('rawInput').value }));
-            const content = await zip.generateAsync({ type: "blob" });
-            const a = document.createElement("a"); a.href = URL.createObjectURL(content); a.download = `crb_v127_${Date.now()}.zip`; a.click();
-            log("ZIPエクスポート完了", 'success');
-        };
+        document.getElementById('exportDataBtn').onclick = exportDataAsZip;
         document.getElementById('importDataBtn').onclick = () => document.getElementById('dataInput').click();
-        document.getElementById('dataInput').onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            log("データ読込開始...");
-            try {
-                const zip = await JSZip.loadAsync(file);
-                const meta = JSON.parse(await zip.file("metadata.json").async("string"));
-                const audioBuf = await zip.file("audio.wav").async("arraybuffer");
-                rawAudioBlob = new Blob([audioBuf], { type: 'audio/wav' });
-                const actx = new (window.AudioContext || window.webkitAudioContext)();
-                globalBuffer = await actx.decodeAudioData(audioBuf); actx.close();
-                document.getElementById('rawInput').value = meta.rawInput;
-                segments = meta.segments; segmentMeta = meta.meta;
-                document.getElementById('readableOutput').innerHTML = segments.map((s, i) => `<span class="segment" id="seg-${i}" onclick="seek(${i})">${s}</span>`).join('');
-                if (audio) audio.pause();
-                audio = new Audio(URL.createObjectURL(rawAudioBlob)); audio.onended = () => { if(!useWebSpeech) stopPlayback(); };
-                toggleMainUI(true); useWebSpeech = false;
-                document.getElementById('syncArea').classList.remove('hidden');
-                document.getElementById('exportDataBtn').classList.remove('hidden');
-                drawWaveform(); renderMarkers(); seek(0);
-                log("データ読込成功", 'success');
-            } catch (err) { log(`読込失敗: ${err.message}`, 'error'); }
-        };
+        document.getElementById('dataInput').onchange = (e) => { if(e.target.files[0]) importZipData(e.target.files[0]); };
 
-        // Log Panel Logic
+        // Log Draggable/Resizable
         const pnl = document.getElementById('logPanel'), hdr = document.getElementById('logHeader'), hnd = document.getElementById('logResizeHandle');
         document.getElementById('btnLogMin').onclick = () => pnl.classList.toggle('log-minimized');
         document.getElementById('btnLogClr').onclick = () => document.getElementById('logContent').innerHTML = "";
@@ -707,7 +723,11 @@
             if(e.target.tagName==='BUTTON' || e.target === hnd) return; 
             dgr=true; 
             const ox=(e.clientX||e.touches[0].clientX)-pnl.offsetLeft, oy=(e.clientY||e.touches[0].clientY)-pnl.offsetTop;
-            const mv=(ev)=>{ if(!dgr)return; const cx=ev.clientX||ev.touches[0].clientX, cy=ev.clientY||ev.touches[0].clientY; pnl.style.left=(cx-ox)+'px'; pnl.style.top=(cy-oy)+'px'; pnl.style.bottom='auto'; pnl.style.right='auto'; };
+            const mv=(ev)=>{ 
+                if(!dgr)return; 
+                const cx=ev.clientX||ev.touches[0].clientX, cy=ev.clientY||ev.touches[0].clientY; 
+                pnl.style.left=(cx-ox)+'px'; pnl.style.top=(cy-oy)+'px'; pnl.style.bottom='auto'; pnl.style.right='auto'; 
+            };
             const up=()=>{ dgr=false; window.removeEventListener('mousemove',mv); window.removeEventListener('touchmove',mv); }; 
             window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up); window.addEventListener('touchmove',mv); window.addEventListener('touchend',up);
         };
@@ -720,7 +740,7 @@
             window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up);
         };
 
-        // Timer Logic
+        // Timer
         let sT = 0, tI = null;
         document.getElementById('timerStart').onclick = () => {
             sT = Date.now(); document.getElementById('timerStart').disabled = true; document.getElementById('timerStop').disabled = false;
@@ -734,7 +754,21 @@
             document.getElementById('resultBox').classList.remove('hidden');
         };
 
-        window.onload = () => { renderVocab(); log("System Initialized."); if(!userKey) document.getElementById('settingsModal').classList.remove('hidden'); };
+        // Context Menu Dictionary
+        document.addEventListener('contextmenu', (e) => {
+            const sel = window.getSelection().toString().trim();
+            if (sel && /[\u4e00-\u9fa5]/.test(sel)) {
+                e.preventDefault();
+                const trg = document.getElementById('searchTrigger');
+                trg.style.display = 'block'; trg.style.top = e.pageY + 'px'; trg.style.left = e.pageX + 'px';
+                trg.onclick = () => { lookupWord(sel); trg.style.display = 'none'; };
+            } else {
+                document.getElementById('searchTrigger').style.display = 'none';
+            }
+        });
+        document.addEventListener('click', () => document.getElementById('searchTrigger').style.display = 'none');
+
+        window.onload = () => { renderVocab(); log("Ready."); if(!userKey) document.getElementById('settingsModal').classList.remove('hidden'); };
     </script>
 </body>
 </html>
