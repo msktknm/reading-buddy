@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Chinese Reading Buddy Pro v128.0</title>
+    <title>Chinese Reading Buddy Pro v129.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -99,7 +99,7 @@
     <div id="logPanel" class="log-minimized">
         <div id="logResizeHandle"></div>
         <div id="logHeader">
-            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v128.0</span>
+            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v129.0</span>
             <div class="flex gap-2">
                 <button id="btnLogMin" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">MIN/MAX</button>
                 <button id="btnLogCopy" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">COPY</button>
@@ -113,7 +113,7 @@
 
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200 px-6 py-4">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">CHINESE BUDDY <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v128.0</span></h1>
+            <h1 class="text-2xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">CHINESE BUDDY <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v129.0</span></h1>
             <div class="flex gap-2">
                 <button id="importDataBtn" class="text-[10px] font-bold bg-slate-100 px-4 py-2 rounded-xl hover:bg-slate-200">DATA IMPORT</button>
                 <button id="settingsBtn" class="p-2 hover:bg-slate-100 rounded-full">
@@ -279,14 +279,14 @@
 
     <script>
         const CONFIG = {
-            VERSION: "v128.0",
+            VERSION: "v129.0",
             MODELS: {
                 TTS: "gemini-2.5-flash-preview-tts",
                 DICT: "gemini-3-flash-preview"
             },
             STORAGE_KEYS: {
-                API: "crb_v128_api",
-                VOCAB: "crb_v128_vocab"
+                API: "crb_v129_api",
+                VOCAB: "crb_v129_vocab"
             }
         };
 
@@ -571,7 +571,7 @@
             zip.file("audio.wav", rawAudioBlob);
             zip.file("metadata.json", JSON.stringify({ version: CONFIG.VERSION, segments, meta: segmentMeta, rawInput: document.getElementById('rawInput').value }));
             const content = await zip.generateAsync({ type: "blob" });
-            const a = document.createElement("a"); a.href = URL.createObjectURL(content); a.download = `crb_v128_${Date.now()}.zip`; a.click();
+            const a = document.createElement("a"); a.href = URL.createObjectURL(content); a.download = `crb_v129_${Date.now()}.zip`; a.click();
             log("エクスポート完了", 'success');
         }
 
@@ -754,19 +754,54 @@
             document.getElementById('resultBox').classList.remove('hidden');
         };
 
-        // Context Menu Dictionary
+        // iOS and Desktop Selection Trigger Logic
+        const trg = document.getElementById('searchTrigger');
+        function handleSelection() {
+            const sel = window.getSelection();
+            const txt = sel.toString().trim();
+            if (txt && /[\u4e00-\u9fa5]/.test(txt)) {
+                try {
+                    const r = sel.getRangeAt(0).getBoundingClientRect();
+                    trg.style.display = 'block';
+                    trg.style.top = (r.top + window.scrollY - 50) + 'px';
+                    trg.style.left = (r.left + window.scrollX + (r.width / 2) - 80) + 'px';
+                    
+                    const executeLookup = (e) => { 
+                        e.preventDefault(); 
+                        lookupWord(txt); 
+                        trg.style.display = 'none'; 
+                        sel.removeAllRanges(); 
+                    };
+                    trg.onclick = executeLookup;
+                    trg.ontouchend = executeLookup;
+                } catch (e) {}
+            } else {
+                trg.style.display = 'none';
+            }
+        }
+
+        document.addEventListener('selectionchange', () => {
+            // iOS Safari の selectionchange の挙動に合わせるため少し遅延させる
+            setTimeout(handleSelection, 150);
+        });
+
         document.addEventListener('contextmenu', (e) => {
             const sel = window.getSelection().toString().trim();
             if (sel && /[\u4e00-\u9fa5]/.test(sel)) {
                 e.preventDefault();
-                const trg = document.getElementById('searchTrigger');
-                trg.style.display = 'block'; trg.style.top = e.pageY + 'px'; trg.style.left = e.pageX + 'px';
+                trg.style.display = 'block';
+                trg.style.top = e.pageY + 'px';
+                trg.style.left = e.pageX + 'px';
                 trg.onclick = () => { lookupWord(sel); trg.style.display = 'none'; };
-            } else {
-                document.getElementById('searchTrigger').style.display = 'none';
+                trg.ontouchend = () => { lookupWord(sel); trg.style.display = 'none'; };
             }
         });
-        document.addEventListener('click', () => document.getElementById('searchTrigger').style.display = 'none');
+
+        const hideTrigger = (e) => {
+            if(e.target.id !== 'searchTrigger') trg.style.display = 'none';
+        };
+        document.addEventListener('mousedown', hideTrigger);
+        document.addEventListener('touchstart', hideTrigger);
 
         window.onload = () => { renderVocab(); log("Ready."); if(!userKey) document.getElementById('settingsModal').classList.remove('hidden'); };
     </script>
