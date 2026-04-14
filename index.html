@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Chinese Reading Buddy Pro v202.0</title>
+    <title>Chinese Reading Buddy Pro v203.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -99,7 +99,7 @@
     <div id="logPanel" class="log-minimized">
         <div id="logResizeHandle"></div>
         <div id="logHeader">
-            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v202.0</span>
+            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v203.0</span>
             <div class="flex gap-2">
                 <button id="btnLogMin" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">MIN/MAX</button>
                 <button id="btnLogCopy" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">COPY</button>
@@ -113,7 +113,7 @@
 
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200 px-6 py-4">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">CHINESE BUDDY <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v202.0</span></h1>
+            <h1 class="text-2xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">CHINESE BUDDY <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v203.0</span></h1>
             <div class="flex gap-2">
                 <button id="importAudioBtn" class="text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors">AUDIO IMPORT</button>
                 <button id="importDataBtn" class="text-[10px] font-bold bg-slate-100 px-4 py-2 rounded-xl hover:bg-slate-200">DATA IMPORT</button>
@@ -282,14 +282,14 @@
 
     <script>
         const CONFIG = {
-            VERSION: "v202.0",
+            VERSION: "v203.0",
             MODELS: {
                 TTS: "gemini-2.5-flash-preview-tts",
-                DICT: "gemini-3-flash-preview" // 文字起こしもこれを使用
+                DICT: "gemini-3-flash-preview"
             },
             STORAGE_KEYS: {
-                API: "crb_v202_api",
-                VOCAB: "crb_v202_vocab"
+                API: "crb_v203_api",
+                VOCAB: "crb_v203_vocab"
             }
         };
 
@@ -301,6 +301,7 @@
 
         function log(msg, type = 'info') {
             const container = document.getElementById('logContent');
+            if (!container) return;
             const now = new Date();
             const ts = `[${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}]`;
             const div = document.createElement('div');
@@ -411,7 +412,7 @@
                 document.getElementById('rawInput').value = cleanText;
                 log(`文字起こし成功: ${cleanText.substring(0, 20)}...`, 'success');
 
-                segments = cleanText.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g).filter(s => s && s.trim().length > 0);
+                segments = (cleanText.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g) || [cleanText]).filter(s => s && s.trim().length > 0);
                 currentIndex = 0;
                 document.getElementById('readableOutput').innerHTML = segments.map((s, i) => `<span class="segment" id="seg-${i}" onclick="seek(${i})">${s}</span>`).join('');
 
@@ -453,7 +454,7 @@
             if (!userKey) { log("APIキー未設定", "warn"); document.getElementById('settingsModal').classList.remove('hidden'); return; }
 
             log(`テキスト処理開始: ${input.substring(0,20)}...`);
-            segments = input.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g).filter(s => s && s.trim().length > 0);
+            segments = (input.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g) || [input]).filter(s => s && s.trim().length > 0);
             currentIndex = 0;
             document.getElementById('readableOutput').innerHTML = segments.map((s, i) => `<span class="segment" id="seg-${i}" onclick="seek(${i})">${s}</span>`).join('');
             toggleMainUI(true);
@@ -722,7 +723,7 @@
             zip.file("audio.wav", rawAudioBlob);
             zip.file("metadata.json", JSON.stringify({ version: CONFIG.VERSION, segments, meta: segmentMeta, rawInput: document.getElementById('rawInput').value }));
             const content = await zip.generateAsync({ type: "blob" });
-            const a = document.createElement("a"); a.href = URL.createObjectURL(content); a.download = `crb_v202_${Date.now()}.zip`; a.click();
+            const a = document.createElement("a"); a.href = URL.createObjectURL(content); a.download = `crb_v203_${Date.now()}.zip`; a.click();
             log("エクスポート完了", 'success');
         }
 
@@ -735,11 +736,15 @@
                 const data = JSON.parse(metaJson);
                 const audioData = await zip.file("audio.wav").async("arraybuffer");
                 rawAudioBlob = new Blob([audioData], { type: 'audio/wav' });
+                
                 const actx = new (window.AudioContext || window.webkitAudioContext)();
-                globalBuffer = await actx.decodeAudioData(audioData); actx.close();
+                globalBuffer = await actx.decodeAudioData(audioData.slice(0)); 
+                actx.close();
 
-                document.getElementById('rawInput').value = data.rawInput;
-                segments = data.segments; segmentMeta = data.meta;
+                document.getElementById('rawInput').value = data.rawInput || "";
+                segments = data.segments || []; 
+                segmentMeta = data.meta || [];
+                
                 document.getElementById('readableOutput').innerHTML = segments.map((s, i) => `<span class="segment" id="seg-${i}" onclick="seek(${i})">${s}</span>`).join('');
                 if (audio) audio.pause();
                 audio = new Audio(URL.createObjectURL(rawAudioBlob)); 
@@ -787,7 +792,13 @@
             } catch (e) { log(`調査エラー: ${e.message}`, 'error'); document.getElementById('dictMeaning').innerText = "取得失敗"; }
         }
 
-        let vocabList = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.VOCAB) || "[]");
+        let vocabList = [];
+        try {
+            vocabList = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.VOCAB) || "[]");
+        } catch(e) {
+            vocabList = [];
+        }
+
         function addVocab(word, res) {
             vocabList.unshift({ id: Date.now(), c1: `${word} (${res.pinyin})`, c2: res.meaning, c3: `${res.example} / ${res.english.join(' ')}` });
             saveVocab(); log(`単語追加: ${word}`, 'success');
@@ -831,6 +842,7 @@
         function startWebSpeechMode() { useWebSpeech = true; log("WebSpeechモードへ移行", 'warn'); seek(0); }
 
         // UI Events
+        document.getElementById('processBtn').onclick = startProcessing;
         document.getElementById('btnPlay').onclick = () => isPlaying ? stopPlayback() : playPlayback();
         document.getElementById('btnStop').onclick = () => { stopPlayback(); toggleMainUI(false); document.getElementById('syncArea').classList.add('hidden'); };
         document.getElementById('btnPrev').onclick = () => seek(Math.max(0, currentIndex - 1));
@@ -858,6 +870,7 @@
         };
         document.getElementById('clearVocab').onclick = () => { if(confirm("全単語を消去しますか？")) { vocabList=[]; saveVocab(); } };
         document.getElementById('exportDataBtn').onclick = exportDataAsZip;
+        
         document.getElementById('importDataBtn').onclick = () => document.getElementById('dataInput').click();
         document.getElementById('dataInput').onchange = (e) => { 
             if(e.target.files[0]) importZipData(e.target.files[0]); 
