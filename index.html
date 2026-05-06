@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Language Buddy v301.0</title>
+    <title>Language Buddy v302.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -99,7 +99,7 @@
     <div id="logPanel" class="log-minimized">
         <div id="logResizeHandle"></div>
         <div id="logHeader">
-            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v301.0</span>
+            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v302.0</span>
             <div class="flex gap-2">
                 <button id="btnLogMin" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">MIN/MAX</button>
                 <button id="btnLogCopy" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">COPY</button>
@@ -115,7 +115,7 @@
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200 px-4 py-3 sm:px-6 sm:py-4">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <h1 class="text-xl sm:text-2xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">
-                Language Buddy <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v301.0</span>
+                Language Buddy <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v302.0</span>
             </h1>
             <button id="settingsBtn" class="p-2 hover:bg-slate-100 rounded-full">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
@@ -291,7 +291,7 @@
 
     <script>
         const CONFIG = {
-            VERSION: "v301.0",
+            VERSION: "v302.0",
             MODELS: {
                 TTS: "gemini-2.5-flash-preview-tts",
                 DICT: "gemini-3-flash-preview"
@@ -418,7 +418,7 @@
         document.getElementById('audioInput').onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            log(`音声読込: ${file.name}`, 'info');
+            log(`音声ファイル読込開始: ${file.name}`, 'info');
             const loader = document.getElementById('loadingOverlay');
             document.getElementById('loadingStatus').innerText = "TRANSCRIBING AUDIO...";
             loader.classList.remove('hidden');
@@ -485,15 +485,14 @@
             }
         };
 
-        // --- TTS Processing ---
-        document.getElementById('processBtn').onclick = async () => {
+        // --- Traditional Text to Speech Processing ---
+        async function startProcessing() {
             const input = document.getElementById('rawInput').value.trim();
             if (!input) { log("テキストがありません", "warn"); return; }
             if (!userKey) { log("APIキー未設定", "warn"); document.getElementById('settingsModal').classList.remove('hidden'); return; }
 
             log(`テキスト処理開始: ${input.substring(0,20)}...`);
             
-            // 修正箇所: detectLanguageとsegmentTextの呼び出しを追加
             const lang = detectLanguage(input);
             segments = segmentText(input, lang);
             currentIndex = 0;
@@ -501,7 +500,7 @@
             document.getElementById('readableOutput').innerHTML = segments.map((s, i) => `<span class="segment" id="seg-${i}" onclick="seek(${i})">${s}</span>`).join('');
             toggleMainUI(true);
             await generateAudio(input, lang);
-        };
+        }
 
         async function generateAudio(text, lang) {
             const loader = document.getElementById('loadingOverlay');
@@ -549,7 +548,11 @@
                     if(!useWebSpeech) {
                         const isRepeat = document.getElementById('repeatMode').checked;
                         const mode = document.querySelector('input[name="pMode"]:checked').value;
-                        if (isRepeat && mode === 'continuous') { seek(0); } else { stopPlayback(); }
+                        if (isRepeat && mode === 'continuous') {
+                            seek(0);
+                        } else {
+                            stopPlayback(); 
+                        }
                     }
                 };
                 
@@ -661,10 +664,12 @@
         }
 
         function seek(idx) {
-            currentIndex = idx; updateHighlight();
+            currentIndex = idx;
+            updateHighlight();
             if (useWebSpeech) playWebSpeech();
             else if (audio) {
-                isSeekingNow = true; audio.currentTime = segmentMeta[currentIndex].start;
+                isSeekingNow = true;
+                audio.currentTime = segmentMeta[currentIndex].start;
                 setTimeout(() => { isSeekingNow = false; }, 250);
                 playPlayback();
             }
@@ -849,23 +854,18 @@
             b.innerHTML = vocabList.map(v => `<tr class="border-b border-slate-50">
                 <td class="p-4 font-bold lang-text text-indigo-600">${v.word} <span class="text-xs text-slate-400 font-normal ml-1">(${v.col1})</span></td>
                 <td class="p-4 text-sm font-bold text-slate-700">${v.col2}</td>
-                <td class="p-4 text-[11px] text-slate-500">${v.col3}</td>
+                <td class="p-4 text-[11px] text-slate-500">${v.c3}</td>
                 <td class="p-4 text-center"><button onclick="delVocab(${v.id})" class="text-red-300 hover:text-red-600 text-xl font-bold">&times;</button></td>
             </tr>`).join('');
         }
         window.delVocab = (id) => { vocabList = vocabList.filter(v => v.id !== id); saveVocab(); log("単語削除"); };
-        document.getElementById('exportCSV').onclick = () => {
-            const clean = (s) => (s||"").toString().replace(/[,"]/g,' ').replace(/\n/g,' ');
-            const csv = "Word,Pronunciation/Pinyin,Translation,Context/Synonyms\n" + vocabList.map(v => `${clean(v.word)},${clean(v.col1)},${clean(v.col2)},${clean(v.col3)}`).join('\n');
-            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'})); a.download = 'vocab.csv'; a.click();
-            log("CSVエクスポート");
-        };
-        document.getElementById('clearVocab').onclick = () => { if(confirm("全単語を消去しますか？")) { vocabList=[]; saveVocab(); } };
 
         function toggleMainUI(isReading) {
             document.getElementById('rawInput').classList.toggle('hidden', isReading);
             document.getElementById('readableOutput').classList.toggle('hidden', !isReading);
             document.getElementById('processBtn').classList.toggle('hidden', isReading);
+            
+            // playerUI is moved into rawInput's bottom area in layout
             document.getElementById('playerUI').classList.toggle('hidden', !isReading);
             document.getElementById('playModes').classList.toggle('hidden', !isReading);
             if(!isReading) document.getElementById('exportDataBtn').classList.add('hidden');
@@ -888,35 +888,79 @@
         function startWebSpeechMode() { useWebSpeech = true; log("WebSpeechモードへ移行", 'warn'); seek(0); }
 
         // UI Events
-        document.getElementById('btnPlay').onclick = () => isPlaying ? stopPlayback() : playPlayback();
-        document.getElementById('btnStop').onclick = () => { stopPlayback(); toggleMainUI(false); document.getElementById('syncArea').classList.add('hidden'); document.getElementById('exportDataBtn').classList.add('hidden'); };
-        document.getElementById('btnPrev').onclick = () => seek(Math.max(0, currentIndex - 1));
-        document.getElementById('btnNext').onclick = () => seek(Math.min(segments.length - 1, currentIndex + 1));
-        document.getElementById('clearBtn').onclick = () => { document.getElementById('rawInput').value = ""; log("テキスト消去"); };
-        document.getElementById('zoomRange').oninput = (e) => { zoomScale = e.target.value; drawWaveform(); renderMarkers(); };
-        document.getElementById('rateRange').oninput = (e) => {
-            const val = e.target.value; document.getElementById('rateLabel').innerText = val + "x";
-            if(audio) audio.playbackRate = val;
+        document.getElementById('processBtn').onclick = startProcessing;
+        
+        document.getElementById('btnPlay').onclick = () => {
+            if (isPlaying) {
+                stopPlayback();
+            } else {
+                playPlayback();
+            }
         };
+
+        document.getElementById('btnStop').onclick = () => { 
+            stopPlayback(); 
+            toggleMainUI(false); 
+            document.getElementById('syncArea').classList.add('hidden'); 
+        };
+
+        document.getElementById('btnPrev').onclick = () => {
+            const nextIdx = Math.max(0, currentIndex - 1);
+            seek(nextIdx);
+        };
+
+        document.getElementById('btnNext').onclick = () => {
+            const nextIdx = Math.min(segments.length - 1, currentIndex + 1);
+            seek(nextIdx);
+        };
+
+        document.getElementById('clearBtn').onclick = () => { 
+            document.getElementById('rawInput').value = ""; 
+            log("テキストを消去しました"); 
+        };
+
+        document.getElementById('zoomRange').oninput = (e) => { 
+            zoomScale = e.target.value; 
+            drawWaveform(); 
+            renderMarkers(); 
+        };
+
+        document.getElementById('rateRange').oninput = (e) => { 
+            document.getElementById('rateLabel').innerText = e.target.value + "x"; 
+        };
+
         document.getElementById('saveSettings').onclick = () => {
             const k = document.getElementById('apiKeyIn').value.trim();
             if(k) { userKey = k; localStorage.setItem(CONFIG.STORAGE_KEYS.API, k); document.getElementById('settingsModal').classList.add('hidden'); log("APIキー保存"); }
         };
+
         document.getElementById('settingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
         document.getElementById('limitOk').onclick = () => { document.getElementById('limitModal').classList.add('hidden'); startWebSpeechMode(); };
         document.getElementById('closeDictBtn').onclick = () => document.getElementById('dictModal').classList.add('hidden');
-        document.getElementById('cancelVocabBtn').onclick = () => document.getElementById('dictModal').classList.add('hidden');
+        document.getElementById('cancelVocabBtn').onclick = () => { document.getElementById('dictModal').classList.add('hidden'); log("辞書追加をキャンセルしました"); };
 
-        // Log Draggable/Resizable
+        document.getElementById('exportCSV').onclick = () => {
+            if(!vocabList.length) return;
+            const clean = (s) => (s||"").toString().replace(/[,"]/g,' ').replace(/\n/g,' ');
+            const csv = "Word,Pronunciation/Pinyin,Translation,Context/Synonyms\n" + vocabList.map(v => `${clean(v.word)},${clean(v.col1)},${clean(v.col2)},${clean(v.col3)}`).join('\n');
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+            a.download = `language_vocab_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+            log("CSVを出力しました");
+        };
+        document.getElementById('clearVocab').onclick = () => { if(confirm("リストを全消去しますか？")) { vocabList=[]; saveVocab(); log("リストをクリアしました"); } };
+
+        // Log Panel (Drag/Resize)
         const pnl = document.getElementById('logPanel'), hdr = document.getElementById('logHeader'), hnd = document.getElementById('logResizeHandle');
         document.getElementById('btnLogMin').onclick = () => pnl.classList.toggle('log-minimized');
         document.getElementById('btnLogClr').onclick = () => document.getElementById('logContent').innerHTML = "";
         document.getElementById('btnLogCopy').onclick = () => {
             const t = Array.from(document.getElementById('logContent').children).map(c => c.innerText).join('\n');
-            navigator.clipboard.writeText(t).then(() => log("ログをコピーしました", 'success'));
+            const el = document.createElement("textarea"); el.value = t; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+            log("ログをコピーしました", 'success');
         };
-        let dgr=false, rsz=false;
-        const startDrag = (e) => { 
+        
+        let dgr=false;
+        const dragStart = (e) => { 
             if(e.target.tagName==='BUTTON' || e.target === hnd) return; 
             dgr=true; 
             const ox=(e.clientX||e.touches[0].clientX)-pnl.offsetLeft, oy=(e.clientY||e.touches[0].clientY)-pnl.offsetTop;
@@ -928,11 +972,18 @@
             const up=()=>{ dgr=false; window.removeEventListener('mousemove',mv); window.removeEventListener('touchmove',mv); }; 
             window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up); window.addEventListener('touchmove',mv); window.addEventListener('touchend',up);
         };
-        hdr.onmousedown = startDrag; hdr.ontouchstart = startDrag;
+        hdr.onmousedown = dragStart; hdr.ontouchstart = dragStart;
+
+        let rsz=false;
         hnd.onmousedown = (e) => {
             rsz=true; e.preventDefault();
             const startX = e.clientX, startY = e.clientY, startW = pnl.clientWidth, startH = pnl.clientHeight, startL = pnl.offsetLeft, startT = pnl.offsetTop;
-            const mv = (ev) => { if(!rsz) return; const dw = startX - ev.clientX, dh = startY - ev.clientY; pnl.style.width = (startW + dw) + 'px'; pnl.style.height = (startH + dh) + 'px'; pnl.style.left = (startL - dw) + 'px'; pnl.style.top = (startT - dh) + 'px'; };
+            const mv = (ev) => {
+                if(!rsz) return;
+                const dw = startX - ev.clientX, dh = startY - ev.clientY;
+                pnl.style.width = (startW + dw) + 'px'; pnl.style.height = (startH + dh) + 'px';
+                pnl.style.left = (startL - dw) + 'px'; pnl.style.top = (startT - dh) + 'px';
+            };
             const up = () => { rsz=false; window.removeEventListener('mousemove', mv); };
             window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up);
         };
@@ -941,7 +992,10 @@
         let sT = 0, tI = null;
         document.getElementById('timerStart').onclick = () => {
             sT = Date.now(); document.getElementById('timerStart').disabled = true; document.getElementById('timerStop').disabled = false;
-            tI = setInterval(() => { const el = Date.now()-sT, m=Math.floor(el/60000), s=Math.floor((el%60000)/1000), ms=Math.floor((el%1000)/100); document.getElementById('timerDisplay').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}.${ms}`; }, 100);
+            tI = setInterval(() => {
+                const el = Date.now()-sT, m=Math.floor(el/60000), s=Math.floor((el%60000)/1000), ms=Math.floor((el%1000)/100);
+                document.getElementById('timerDisplay').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}.${ms}`;
+            }, 100);
         };
         document.getElementById('timerStop').onclick = () => {
             clearInterval(tI); document.getElementById('timerStart').disabled = false; document.getElementById('timerStop').disabled = true;
@@ -957,7 +1011,7 @@
             document.getElementById('resultBox').classList.remove('hidden');
         };
 
-        // iOS and Desktop Selection Trigger Logic
+        // Context Menu Dictionary
         const trg = document.getElementById('searchTrigger');
         function handleSelection() {
             const sel = window.getSelection();
@@ -997,11 +1051,13 @@
             }
         });
 
-        const hideTrigger = (e) => { if(e.target.id !== 'searchTrigger') trg.style.display = 'none'; };
+        const hideTrigger = (e) => {
+            if(e.target.id !== 'searchTrigger') trg.style.display = 'none';
+        };
         document.addEventListener('mousedown', hideTrigger);
         document.addEventListener('touchstart', hideTrigger);
 
-        window.onload = () => { renderVocab(); log("Ready."); if(!userKey) document.getElementById('settingsModal').classList.remove('hidden'); };
+        window.onload = () => { renderVocab(); log("System Ready."); if(!userKey) document.getElementById('settingsModal').classList.remove('hidden'); };
     </script>
 </body>
 </html>
