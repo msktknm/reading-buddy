@@ -3,493 +3,812 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Language Buddy v305.0</title>
+    <title>Language Buddy v1.00</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@800&display=swap');
         
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sar: env(safe-area-inset-right);
+            --sab: env(safe-area-inset-bottom);
+            --sal: env(safe-area-inset-left);
+        }
+
         body { 
             font-family: 'Noto Sans JP', sans-serif; 
-            background: #f8fafc; color: #1e293b; overflow-x: hidden;
+            background: #f8fafc; 
+            color: #1e293b; 
+            overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
         }
-        .lang-text { font-family: 'Noto Sans SC', serif; line-height: 2.2; }
-        .segment { transition: all 0.2s; border-radius: 4px; padding: 2px 4px; cursor: pointer; border-bottom: 2px solid transparent; display: inline; }
-        .highlight-active { background: #fef08a !important; border-bottom: 2px solid #eab308; color: #000; }
-        
-        /* Log Panel */
-        #logPanel { 
-            position: fixed; bottom: 20px; right: 20px; width: 400px; height: 300px;
-            background: rgba(15, 23, 42, 0.95); color: #4ade80; border-radius: 12px; z-index: 5000;
-            display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            min-width: 250px; min-height: 42px; touch-action: none; overflow: hidden;
-        }
-        #logHeader { cursor: move; padding: 10px; background: #1e293b; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; user-select: none; }
-        #logContent { flex: 1; overflow-y: auto; font-size: 10px; padding: 10px; font-family: monospace; display: flex; flex-direction: column-reverse; word-break: break-all; }
-        .log-minimized { height: 42px !important; width: 250px !important; }
-        #logResizeHandle { position: absolute; top: 0; left: 0; width: 24px; height: 24px; cursor: nw-resize; z-index: 5001; }
 
-        /* Waveform */
-        #waveformScroll { width: 100%; overflow-x: auto !important; overflow-y: hidden; border-radius: 1rem; background: #f1f5f9; -webkit-overflow-scrolling: touch; border: 1px solid #e2e8f0; }
-        #waveformScroll::-webkit-scrollbar { height: 10px; display: block; }
-        #waveformScroll::-webkit-scrollbar-track { background: #f1f5f9; }
-        #waveformScroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        #waveformWrapper { position: relative; height: 120px; min-width: 100%; touch-action: pan-x; }
-        .seg-marker { position: absolute; top: 0; bottom: 0; width: 30px; margin-left: -15px; cursor: col-resize; z-index: 30; display: flex; justify-content: center; touch-action: none; }
-        .seg-marker::before { content: ""; width: 2px; height: 100%; background: #6366f1; pointer-events: none; }
-        .seg-marker::after { content: attr(data-label); position: absolute; top: 4px; left: 50%; transform: translateX(-50%); font-size: 10px; color: white; background: #6366f1; padding: 2px 6px; border-radius: 4px; pointer-events: none; font-weight: bold; }
-        
-        #searchTrigger { position: absolute; z-index: 9999; display: none; background: #4f46e5; color: white; padding: 12px 20px; border-radius: 99px; font-size: 14px; cursor: pointer; font-weight: bold; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        .lang-text { line-height: 2.2; }
+        .segment { 
+            transition: all 0.2s; 
+            border-bottom: 2px solid transparent; 
+            padding: 2px 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline;
+        }
+        .segment:hover { background: #e0e7ff; }
+        .segment.active { 
+            background: #fbbf24; 
+            border-bottom-color: #f59e0b;
+            color: #000;
+        }
+
+        .waveform-container::-webkit-scrollbar { height: 4px; }
+        .waveform-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .recording { animation: pulse-red 1.5s infinite; }
+
+        #logWindow { z-index: 9999; backdrop-filter: blur(8px); }
+        .drag-handle { cursor: move; }
     </style>
 </head>
-<body class="pb-20">
-
-    <div id="loadingOverlay" class="fixed inset-0 bg-white/95 z-[10000] hidden flex-col items-center justify-center text-center">
-        <div class="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-        <div id="loadingStatus" class="text-xs font-bold text-indigo-600">Processing...</div>
-    </div>
-
-    <!-- 4. Log Panel -->
-    <div id="logPanel" class="log-minimized">
-        <div id="logResizeHandle"></div>
-        <div id="logHeader">
-            <span class="text-[10px] font-bold text-slate-400">LOG v305.0</span>
-            <div class="flex gap-2">
-                <button id="btnLogMin" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded text-white">MIN/MAX</button>
-                <button id="btnLogCopy" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded text-white">COPY</button>
-                <button id="btnLogClr" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded text-white">CLR</button>
-            </div>
-        </div>
-        <div id="logContent"></div>
-    </div>
-
-    <div id="searchTrigger">その単語を調べますか？</div>
+<body class="p-4 pb-20 select-none">
 
     <!-- 5.1 機能名、バージョン、設定メニュー -->
-    <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b px-4 py-3">
-        <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-black text-indigo-600" style="font-family: 'Syne', sans-serif;">
-                Language Buddy <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1">v305.0</span>
-            </h1>
-            <button id="settingsBtn" class="text-xl p-2 hover:bg-slate-100 rounded-full">⚙️</button>
-        </div>
-    </nav>
+    <header class="max-w-4xl mx-auto mb-4 flex justify-between items-center pt-[--sat]">
+        <h1 class="text-2xl font-black text-indigo-900 tracking-tighter italic">LANGUAGE BUDDY <span class="text-sm font-normal text-slate-400">v1.00</span></h1>
+        <button onclick="toggleSettings()" class="p-2 bg-slate-200 rounded-full hover:bg-slate-300 transition shadow-sm">⚙️</button>
+    </header>
 
-    <main class="max-w-4xl mx-auto p-4 space-y-6 flex flex-col">
-        <!-- 5.2 ファイル保存、モードラジオボタン -->
-        <div class="bg-white rounded-2xl shadow-sm border p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+    <main class="max-w-4xl mx-auto space-y-4">
+        
+        <!-- 5.2 ファイル保存・再生モード -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-4 items-center justify-between">
             <div class="flex gap-2">
-                <button id="importAudioBtn" class="text-[11px] font-bold bg-blue-50 text-blue-600 border border-blue-200 px-3 py-2 rounded-xl">AUDIO IMPORT</button>
-                <button id="importDataBtn" class="text-[11px] font-bold bg-slate-50 border px-3 py-2 rounded-xl">DATA IMPORT</button>
-                <button id="exportDataBtn" class="hidden text-[11px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-200 px-3 py-2 rounded-xl">DATA EXPORT</button>
+                <button id="exportBtn" onclick="exportData()" class="hidden px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg hover:bg-indigo-700 transition">保存 (ZIP)</button>
+                <button onclick="document.getElementById('fileInput').click()" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200 transition">読み込み</button>
             </div>
-            <div class="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border">
-                <label class="flex items-center gap-1 text-[11px] font-bold cursor-pointer"><input type="radio" name="pMode" value="continuous" checked class="accent-indigo-600"> 連続</label>
-                <label class="flex items-center gap-1 text-[11px] font-bold cursor-pointer"><input type="radio" name="pMode" value="manual" class="accent-indigo-600"> 手動</label>
-                <label class="flex items-center gap-1 text-[11px] font-bold cursor-pointer border-l pl-3"><input type="checkbox" id="repeatMode" class="accent-indigo-600"> リピート</label>
-            </div>
-        </div>
-
-        <!-- 5.3 計測開始ボタン、再生速度バー -->
-        <div class="bg-white rounded-2xl shadow-sm border p-4 flex flex-col sm:flex-row items-center gap-4">
-            <button id="timerStart" class="bg-emerald-500 text-white w-full sm:w-auto px-8 py-3 rounded-xl font-bold active:scale-95 disabled:opacity-50">⏱ 計測START</button>
-            <div class="flex-1 w-full flex items-center gap-3 bg-slate-50 px-4 py-3 rounded-xl border">
-                <span class="text-[10px] font-bold text-slate-400">RATE</span>
-                <input type="range" id="rateRange" min="0.5" max="2.0" step="0.1" value="1.0" class="flex-1 h-2 bg-slate-200 rounded-lg accent-indigo-600">
-                <span id="rateLabel" class="text-sm font-black text-indigo-600 w-8 text-right">1.0x</span>
-            </div>
-        </div>
-
-        <!-- 5.4 テキスト貼り付けウインドウ -->
-        <div class="bg-white rounded-2xl shadow-sm border p-6 min-h-[350px] flex flex-col">
-            <div class="flex justify-between items-center mb-4">
-                <span class="text-[10px] font-bold text-slate-400">READER AREA</span>
-                <span id="langIndicator" class="text-[10px] font-bold bg-slate-100 px-3 py-1 rounded-full hidden">Auto</span>
-            </div>
-            <textarea id="rawInput" class="w-full flex-1 text-xl lang-text border-none focus:ring-0 placeholder:text-slate-300 resize-none bg-transparent" placeholder="テキストを貼り付けるか、AUDIO IMPORT から音声を読み込んでください..."></textarea>
-            <div id="readableOutput" class="hidden w-full flex-1 text-xl lang-text whitespace-pre-wrap break-words select-text"></div>
-            
-            <div class="mt-4 pt-4 border-t flex justify-between items-center">
-                <button id="clearBtn" class="text-[11px] font-bold text-slate-400 hover:text-slate-600 px-4 py-2">消去</button>
-                <div id="playerUI" class="hidden flex items-center gap-4">
-                    <button id="btnPrev" class="w-10 h-10 bg-slate-50 rounded-full border">⏮</button>
-                    <button id="btnPlay" class="w-14 h-14 bg-indigo-600 text-white rounded-full text-xl shadow-lg flex items-center justify-center">▶</button>
-                    <button id="btnStop" class="w-10 h-10 bg-slate-800 text-white rounded-full flex items-center justify-center">⏹</button>
-                    <button id="btnNext" class="w-10 h-10 bg-slate-50 rounded-full border">⏭</button>
+            <div class="flex items-center gap-4 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                <div class="flex items-center gap-2">
+                    <label class="flex items-center gap-1 text-xs font-bold text-slate-500"><input type="radio" name="playMode" value="continuous" checked> 連続再生</label>
+                    <label class="flex items-center gap-1 text-xs font-bold text-slate-500"><input type="radio" name="playMode" value="manual"> 手動再生</label>
                 </div>
-                <button id="processBtn" class="bg-indigo-600 text-white font-bold px-8 py-3 rounded-xl shadow-lg active:scale-95">読み上げ変換</button>
+                <div class="h-4 w-[1px] bg-slate-200"></div>
+                <label class="flex items-center gap-1 text-xs font-bold text-slate-500"><input type="checkbox" id="repeatMode"> リピート</label>
             </div>
         </div>
 
-        <!-- 5.5 計測停止ボタン -->
-        <div class="bg-white rounded-2xl shadow-sm border p-3">
-            <button id="timerStop" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold active:scale-95 disabled:opacity-50" disabled>⏹ 計測STOP</button>
-        </div>
-
-        <!-- 5.6 計測結果表示 -->
-        <div id="resultBox" class="bg-indigo-600 rounded-2xl p-6 text-white shadow-xl flex flex-col items-center">
-            <div id="timerDisplay" class="text-4xl font-black tabular-nums mb-4" style="font-family: 'Syne', sans-serif;">00:00.0</div>
-            <div class="grid grid-cols-3 w-full text-center gap-3">
-                <div class="bg-white/10 p-3 rounded-xl"><p id="lblChars" class="text-[10px] font-bold opacity-70">COUNT</p><p id="resChars" class="text-2xl font-black">0</p></div>
-                <div class="bg-white/10 p-3 rounded-xl"><p class="text-[10px] font-bold opacity-70">TIME</p><p id="resTime" class="text-2xl font-black">0s</p></div>
-                <div class="bg-white/10 p-3 rounded-xl"><p id="lblSpeed" class="text-[10px] font-bold opacity-70">SPEED</p><p id="resSpeed" class="text-2xl font-black">0</p></div>
-            </div>
-        </div>
-
-        <!-- 5.7 波形シークバー -->
-        <div id="syncArea" class="hidden bg-white rounded-2xl shadow-sm border p-5 space-y-4">
-            <div class="flex justify-between items-center">
-                <span class="text-[10px] font-bold text-slate-400">WAVEFORM ADJUST</span>
-                <div class="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-full border">
-                    <span class="text-[10px] font-bold">ZOOM</span>
-                    <input type="range" id="zoomRange" min="1" max="30" step="1" value="1" class="w-20">
-                </div>
-            </div>
-            <div id="waveformScroll" class="w-full overflow-x-auto overflow-y-hidden rounded-xl border bg-slate-50">
-                <div id="waveformWrapper">
-                    <canvas id="waveformCanvas" class="absolute inset-0 w-full h-full"></canvas>
-                    <div id="markerLayer" class="absolute inset-0 z-30"></div>
-                    <div id="playbackCursor" class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-40 pointer-events-none"></div>
+        <!-- 5.3 計測開始・速度調整 -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+            <div class="flex gap-2 items-center">
+                <button id="startTimerBtn" onclick="startTimer()" class="flex-1 py-3 bg-emerald-500 text-white rounded-xl font-bold shadow-lg shadow-emerald-100 hover:bg-emerald-600 transition">計測開始</button>
+                <div class="w-1/3 space-y-1">
+                    <div class="flex justify-between text-[10px] font-bold text-slate-400"><span>SPEED</span><span id="speedVal">1.0x</span></div>
+                    <input type="range" id="speedRange" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
                 </div>
             </div>
         </div>
 
-        <!-- 5.8 & 5.9 単語帳 -->
-        <div class="bg-white rounded-3xl shadow-sm border p-6 flex flex-col gap-4">
-            <div class="flex justify-between items-center">
-                <h2 class="text-lg font-black italic uppercase">Vocab List</h2>
+        <!-- 5.4 テキスト貼り付け -->
+        <div class="relative group">
+            <div id="inputView" class="w-full min-h-[200px] p-4 bg-white border-2 border-dashed border-slate-200 rounded-2xl focus-within:border-indigo-400 transition-all">
+                <textarea id="rawText" class="w-full h-40 focus:outline-none resize-none bg-transparent" placeholder="テキストを貼り付けてください (英語/中国語 自動判別)"></textarea>
+                <div class="flex justify-end gap-2 mt-2">
+                    <button onclick="document.getElementById('rawText').value=''" class="text-xs text-slate-400 hover:text-red-500">テキスト消去</button>
+                    <button id="processBtn" onclick="generateSpeech()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold shadow-md hover:bg-indigo-700 transition">解析 & 音声生成</button>
+                </div>
+            </div>
+            <div id="readView" class="hidden w-full min-h-[200px] p-6 bg-white border border-slate-100 rounded-2xl shadow-inner lang-text overflow-y-auto max-h-[50vh]">
+                <!-- Segments will appear here -->
+            </div>
+        </div>
+
+        <!-- 5.5 計測停止 -->
+        <button id="stopTimerBtn" onclick="stopTimer()" class="hidden w-full py-3 bg-rose-500 text-white rounded-xl font-bold shadow-lg shadow-rose-100 hover:bg-rose-600 transition">計測停止</button>
+
+        <!-- 5.6 統計表示 -->
+        <div id="statPanel" class="hidden grid grid-cols-3 gap-4">
+            <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100 text-center">
+                <div id="countLabel" class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Count</div>
+                <div id="totalCount" class="text-xl font-black text-indigo-700">-</div>
+            </div>
+            <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100 text-center">
+                <div class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Time</div>
+                <div id="elapsedTime" class="text-xl font-black text-indigo-700">0.0s</div>
+            </div>
+            <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100 text-center">
+                <div id="speedMetricLabel" class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">CPM/WPM</div>
+                <div id="speedMetric" class="text-xl font-black text-indigo-700">-</div>
+            </div>
+        </div>
+
+        <!-- 5.7 オーディオ波形シークバー -->
+        <div id="playerControls" class="hidden space-y-2">
+            <div class="flex justify-between items-center px-1">
+                <span id="currentTime" class="text-[10px] font-bold text-slate-400">0:00</span>
+                <div class="flex gap-4">
+                    <button id="prevSeg" class="text-slate-400 hover:text-indigo-600">⏮</button>
+                    <button id="playPauseBtn" class="text-indigo-600 text-xl font-bold">▶️</button>
+                    <button id="nextSeg" class="text-slate-400 hover:text-indigo-600">⏭</button>
+                </div>
+                <span id="durationTime" class="text-[10px] font-bold text-slate-400">0:00</span>
+            </div>
+            <div class="bg-slate-900 rounded-xl p-2 relative overflow-hidden">
+                <div id="waveformScroll" class="waveform-container overflow-x-auto h-24 relative select-none">
+                    <canvas id="waveCanvas" class="h-full"></canvas>
+                    <div id="markers" class="absolute inset-0 pointer-events-none"></div>
+                    <div id="playhead" class="absolute top-0 bottom-0 w-0.5 bg-yellow-400 pointer-events-none z-10"></div>
+                </div>
+                <div class="flex justify-end gap-2 mt-1">
+                    <button onclick="changeZoom(0.8)" class="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Zoom -</button>
+                    <button onclick="changeZoom(1.2)" class="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Zoom +</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5.8 単語帳CSV・クリアボタン -->
+        <!-- 5.9 単語リスト -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-4 border-b flex justify-between items-center bg-slate-50/50">
+                <h3 class="font-bold text-sm text-slate-600">Vocabulary List</h3>
                 <div class="flex gap-2">
-                    <button id="exportCSV" class="text-[10px] font-bold bg-slate-50 border px-3 py-2 rounded-lg">CSV EXPORT</button>
-                    <button id="clearVocab" class="text-[10px] font-bold bg-red-50 text-red-500 px-3 py-2 rounded-lg">CLEAR ALL</button>
+                    <button onclick="exportCSV()" class="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg font-bold border border-indigo-100 hover:bg-indigo-100 transition">CSV保存</button>
+                    <button onclick="clearVocab()" class="text-xs bg-rose-50 text-rose-600 px-3 py-1 rounded-lg font-bold border border-rose-100 hover:bg-rose-100 transition">クリア</button>
                 </div>
             </div>
-            <div class="overflow-x-auto border rounded-xl">
-                <table class="w-full text-left min-w-[600px]">
-                    <thead class="bg-slate-50 border-b">
-                        <tr class="text-[10px] font-bold text-slate-400 uppercase">
-                            <th id="thWord" class="p-3">Word / Pinyin</th><th class="p-3">Translation</th><th id="thExample" class="p-3">Example / Synonyms</th><th class="p-3 w-10">Del</th>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 border-b text-[10px] text-slate-400 uppercase tracking-wider">
+                        <tr>
+                            <th class="p-3 font-bold">Word / Pinyin</th>
+                            <th class="p-3 font-bold">Japanese</th>
+                            <th class="p-3 font-bold">Examples / Others</th>
+                            <th class="p-3 w-10 text-center">Del</th>
                         </tr>
                     </thead>
-                    <tbody id="vocabBody"></tbody>
+                    <tbody id="vocabBody" class="divide-y divide-slate-100"></tbody>
                 </table>
-                <div id="vocabEmpty" class="p-10 text-center text-slate-300 text-sm italic">Vocabulary is empty.</div>
+                <div id="vocabEmpty" class="p-10 text-center text-slate-300 text-sm italic">No words added yet.</div>
             </div>
         </div>
     </main>
 
-    <input type="file" id="audioInput" class="hidden" accept="audio/*">
-    <input type="file" id="dataInput" class="hidden" accept=".zip">
-
-    <!-- Modals -->
-    <div id="settingsModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur z-[20000] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl w-full max-w-sm p-8 space-y-6">
-            <h3 class="text-xl font-bold">API SETTINGS</h3>
-            <input type="password" id="apiKeyIn" class="w-full p-4 bg-slate-50 border rounded-xl focus:ring-2" placeholder="Gemini API Key...">
-            <button id="saveSettings" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold">SAVE & START</button>
-        </div>
-    </div>
-
-    <div id="dictModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur z-[30000] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl w-full max-w-md p-6 space-y-4">
-            <div class="flex justify-between items-start">
-                <h2 id="dictWord" class="text-3xl font-black text-indigo-600">---</h2>
-                <button id="closeDictBtn" class="text-2xl text-slate-400">&times;</button>
-            </div>
-            <p id="dictCol1" class="text-sm font-bold text-slate-400">---</p>
-            <div class="bg-indigo-50 p-4 rounded-xl border"><p id="dictCol2" class="font-bold text-indigo-900">Loading...</p></div>
-            <div id="dictCol3_ex" class="text-sm p-4 bg-slate-50 rounded-xl">---</div>
-            <div id="dictCol3_syn" class="text-[10px] p-3 bg-slate-100 rounded-xl font-mono">---</div>
-            <div class="flex gap-3 pt-2">
-                <button id="addVocab" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold opacity-50" disabled>追加</button>
-                <button id="cancelVocabBtn" class="flex-1 bg-slate-100 py-3 rounded-xl font-bold">キャンセル</button>
+    <!-- ログウィンドウ (5. レイアウト要件) -->
+    <div id="logWindow" class="fixed bottom-4 right-4 w-64 h-10 transition-all overflow-hidden bg-slate-900 shadow-2xl rounded-xl border border-slate-700 flex flex-col">
+        <div class="drag-handle bg-slate-800 p-2 flex justify-between items-center shrink-0">
+            <span class="text-[10px] font-bold text-slate-400">SYSTEM LOG</span>
+            <div class="flex gap-1">
+                <button onclick="copyLog()" class="text-[10px] text-slate-500 hover:text-white px-1">Copy</button>
+                <button onclick="toggleLog()" id="logToggleBtn" class="text-[10px] text-slate-500 hover:text-white px-1">Expand</button>
             </div>
         </div>
+        <div id="logContent" class="p-2 text-[10px] font-mono text-emerald-400 overflow-y-auto grow whitespace-pre-wrap"></div>
+        <div class="bg-slate-800 h-1 cursor-ns-resize" id="logResizer"></div>
     </div>
 
-    <div id="limitModal" class="fixed inset-0 bg-slate-900/90 z-[40000] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-xs w-full text-center space-y-4">
-            <div class="text-4xl">⏳</div><h3 class="text-xl font-bold">Rate Limit</h3>
-            <p id="limitMsg" class="text-sm text-slate-500"></p>
-            <button id="limitOk" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">OK (WebSpeech)</button>
+    <!-- 単語調べトリガー -->
+    <div id="searchTrigger" class="fixed hidden bg-indigo-600 text-white px-3 py-1.5 rounded-full shadow-xl font-bold text-xs cursor-pointer hover:scale-105 transition-transform z-[10000]">この単語を調べますか？</div>
+
+    <!-- 設定モーダル -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-[20000]">
+        <div class="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl">
+            <h2 class="text-2xl font-black mb-2">Settings</h2>
+            <p class="text-sm text-slate-500 mb-6">Gemini API Key を入力してください。</p>
+            <input type="password" id="apiKeyInput" class="w-full p-4 bg-slate-100 rounded-2xl mb-4 focus:ring-2 ring-indigo-500 outline-none transition-all" placeholder="AIZA...">
+            <button onclick="saveSettings()" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg hover:bg-indigo-700 transition">保存して開始</button>
         </div>
     </div>
+
+    <input type="file" id="fileInput" class="hidden" accept=".zip">
+    <audio id="audioEngine" class="hidden"></audio>
 
     <script>
+        // -------------------------------------------------------------------------
+        // Core State & Config
+        // -------------------------------------------------------------------------
         const $ = id => document.getElementById(id);
         const CONFIG = {
-            VERSION: "v305.0",
-            MODELS: { TTS: "gemini-2.5-flash-preview-tts", DICT: "gemini-3-flash-preview" },
-            KEYS: { API: "lb_api_key", VOCAB: "lb_vocab" }
+            MODELS: {
+                TEXT: 'gemini-3-flash-preview',
+                TTS: 'gemini-2.5-flash-preview-tts'
+            },
+            STORAGE_KEYS: {
+                API: 'lb_api_key_v1',
+                VOCAB: 'lb_vocab_v1'
+            }
         };
 
-        let userKey = localStorage.getItem(CONFIG.KEYS.API) || "";
-        let segments = [], segmentMeta = [], currentIndex = 0;
-        let audio = null, isPlaying = false, useWebSpeech = false;
-        let monitorId = null, globalBuffer = null, zoomScale = 1, isSeekingNow = false;
-        let rawAudioBlob = null, currentLang = 'zh';
+        let userKey = localStorage.getItem(CONFIG.STORAGE_KEYS.API) || "";
+        let segments = [];
+        let vocabList = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.VOCAB) || "[]");
+        let audioBuffer = null;
+        let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let timerStart = 0;
+        let timerInterval = null;
+        let zoomLevel = 1.0;
+        let isWebSpeechMode = false;
+        let currentLanguage = 'zh'; // 'zh' or 'en'
 
-        function log(msg, type = 'info') {
-            const c = $('logContent'); if(!c) return;
-            const d = new Date(), ts = `[${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}:${d.getSeconds().toString().padStart(2,'0')}]`;
-            const div = document.createElement('div');
-            div.className = "mb-1 text-[10px]"; div.style.color = { error:'#f87171', api:'#818cf8', success:'#34d399' }[type] || '#4ade80';
-            div.innerHTML = `<span class="opacity-40">${ts}</span> ${typeof msg==='object'?JSON.stringify(msg):msg}`;
-            c.prepend(div); console.log(`${ts} [${type}]`, msg);
+        // -------------------------------------------------------------------------
+        // Logging
+        // -------------------------------------------------------------------------
+        function log(msg) {
+            const now = new Date();
+            const ts = `[${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}]`;
+            const content = $('logContent');
+            content.textContent += `${ts} ${msg}\n`;
+            content.scrollTop = content.scrollHeight;
         }
-        function loading(show, text="Processing...") { $('loadingOverlay').classList.toggle('hidden', !show); $('loadingStatus').innerText = text; }
 
+        function toggleLog() {
+            const win = $('logWindow');
+            const isMin = win.clientHeight < 50;
+            win.style.height = isMin ? '300px' : '40px';
+            win.style.width = isMin ? '400px' : '160px';
+            $('logToggleBtn').textContent = isMin ? 'Collapse' : 'Expand';
+        }
+
+        function copyLog() {
+            navigator.clipboard.writeText($('logContent').textContent);
+            log("Log copied to clipboard.");
+        }
+
+        // -------------------------------------------------------------------------
+        // Language & Segmentation Logic
+        // -------------------------------------------------------------------------
         function detectLanguage(text) {
-            const zh = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
-            const en = (text.match(/[a-zA-Z]/g) || []).length;
-            currentLang = zh > en ? 'zh' : 'en';
-            if($('langIndicator')){ $('langIndicator').innerText = currentLang === 'zh' ? 'Chinese' : 'English'; $('langIndicator').classList.remove('hidden'); }
-            if($('lblChars')){ $('lblChars').innerText = currentLang === 'zh' ? 'Chars' : 'Words'; }
-            if($('lblSpeed')){ $('lblSpeed').innerText = currentLang === 'zh' ? 'CPM' : 'WPM'; }
-            if($('thWord')){ $('thWord').innerText = currentLang === 'zh' ? 'Chinese (Pinyin)' : 'English (Pronun.)'; }
-            if($('thExample')){ $('thExample').innerText = currentLang === 'zh' ? 'Example / English' : 'Example / Chinese'; }
-            log(`言語判定: ${currentLang}`, 'info'); return currentLang;
+            const zhMatch = text.match(/[\u4e00-\u9fa5]/g) || [];
+            const enMatch = text.match(/[a-zA-Z]/g) || [];
+            return zhMatch.length > enMatch.length * 0.3 ? 'zh' : 'en';
         }
 
         function segmentText(text, lang) {
-            let res = [];
+            const segs = [];
             if (lang === 'zh') {
-                const parts = text.match(/([^，。！？；：\n、\s]+[，。！？；：\n、\s]*)|([\n]+)/g) || [text];
-                parts.forEach(p => { if(p.length > 30) { const m = p.match(/.{1,30}(?:\s|$)|.{1,30}/g); if(m) res.push(...m); } else res.push(p); });
-            } else {
-                const parts = text.match(/([^,.!?;:\n]+[,.!?;:\n]*)|([\n]+)/g) || [text];
+                // 中国語: 句読点、30文字目安
+                const parts = text.split(/([，。！？；：\n])/);
+                let buffer = "";
                 parts.forEach(p => {
-                    const w = p.trim().split(/\s+/);
-                    if(w.length > 20) { let c=[]; for(let i=0; i<w.length; i++){ c.push(w[i]); if(c.length>=20 || i===w.length-1){ res.push(c.join(' ')+(i===w.length-1&&p.match(/[,.!?;:\n]+$/)?p.match(/[,.!?;:\n]+$/)[0]:' ')); c=[]; } } } 
-                    else res.push(p);
+                    if(!p) return;
+                    buffer += p;
+                    if (/[。！？\n]/.test(p) || buffer.length >= 30) {
+                        segs.push(buffer.trim());
+                        buffer = "";
+                    }
                 });
+                if(buffer) segs.push(buffer.trim());
+            } else {
+                // 英語: ピリオド等、20単語目安
+                const sentences = text.split(/([.!?\n])/);
+                let buffer = "";
+                sentences.forEach(s => {
+                    if(!s) return;
+                    buffer += s;
+                    const wordCount = buffer.trim().split(/\s+/).length;
+                    if (/[.!?\n]/.test(s) || wordCount >= 20) {
+                        segs.push(buffer.trim());
+                        buffer = "";
+                    }
+                });
+                if(buffer) segs.push(buffer.trim());
             }
-            return res.filter(s => s && s.trim().length > 0);
+            return segs.filter(s => s.length > 0);
         }
 
-        function bufferToWav(buffer) {
-            const nc = buffer.numberOfChannels, sr = buffer.sampleRate;
-            let res = nc===2 ? (() => { const c1=buffer.getChannelData(0), c2=buffer.getChannelData(1), r=new Float32Array(c1.length*2); for(let i=0;i<c1.length;i++){r[i*2]=c1[i];r[i*2+1]=c2[i];} return r; })() : buffer.getChannelData(0);
-            const wav = new ArrayBuffer(44 + res.length*2), v = new DataView(wav);
-            const wS = (o, s) => { for(let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); };
-            wS(0,'RIFF'); v.setUint32(4, 36+res.length*2, true); wS(8,'WAVE'); wS(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,nc,true);
-            v.setUint32(24,sr,true); v.setUint32(28,sr*nc*2,true); v.setUint16(32,nc*2,true); v.setUint16(34,16,true); wS(36,'data'); v.setUint32(40,res.length*2,true);
-            for(let i=0,o=44; i<res.length; i++,o+=2) { let s = Math.max(-1, Math.min(1, res[i])); v.setInt16(o, s<0?s*0x8000:s*0x7FFF, true); }
-            return new Blob([v], {type:'audio/wav'});
-        }
+        // -------------------------------------------------------------------------
+        // API Calls
+        // -------------------------------------------------------------------------
+        async function callGemini(payload, model = CONFIG.MODELS.TEXT) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userKey}`;
+            let retries = 0;
+            const delays = [1000, 2000, 4000, 8000, 16000];
 
-        function calcSyncPoints(segs, buffer) {
-            const dur = buffer.duration, total = segs.join('').length, data = buffer.getChannelData(0), sr = buffer.sampleRate, win = Math.floor(sr*0.1);
-            let sil = []; for(let i=0; i<data.length; i+=win) { let m=0; for(let j=0; j<win && i+j<data.length; j++) m=Math.max(m, Math.abs(data[i+j])); if(m<0.02) sil.push(i/sr); }
-            let meta=[], acc=0, cur=0;
-            segs.forEach((s,i) => { acc+=s.length; let rt=(acc/total)*dur, bs=sil.find(t=>t>rt-0.5 && t<rt+0.5), end=(i===segs.length-1)?dur:(bs||rt); meta.push({start:cur, end}); cur=end; });
-            return meta;
-        }
-
-        async function processTTS() {
-            const text = $('rawInput').value.trim();
-            if(!text) return log("No text", "warn");
-            if(!userKey) return $('settingsModal').classList.remove('hidden');
-            const lang = detectLanguage(text); segments = segmentText(text, lang); currentIndex = 0;
-            $('readableOutput').innerHTML = segments.map((s,i) => `<span class="segment" id="seg-${i}">${s}</span>`).join('');
-            toggleMainUI(true); loading(true, "TTS生成中...");
-            try {
-                log(`TTS送信: ${CONFIG.MODELS.TTS}`, 'api');
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.MODELS.TTS}:generateContent?key=${userKey}`, {
-                    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text}]}], generationConfig:{responseModalities:["AUDIO"], speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:lang==='zh'?'Kore':'Aoede'}}}}})
-                });
-                const data = await res.json();
-                if(!res.ok) {
-                    if(res.status===429) { const tm=data.error?.message.match(/\d{2}:\d{2}:\d{2}/); $('limitMsg').innerText=`解除予定: ${tm?tm[0]:"不明"}`; $('limitModal').classList.remove('hidden'); throw new Error("RATE_LIMIT"); }
-                    throw new Error(data.error?.message||"API Error");
+            while (retries < 5) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await response.json();
+                    
+                    if (response.status === 429) {
+                        if (model === CONFIG.MODELS.TTS) {
+                            const errorMsg = data.error?.message || "";
+                            const timeMatch = errorMsg.match(/(\d{2}:\d{2}:\d{2})/);
+                            throw { type: 'TTS_LIMIT', resumeAt: timeMatch ? timeMatch[0] : "しばらく経ってから" };
+                        }
+                        await new Promise(r => setTimeout(r, delays[retries++]));
+                        continue;
+                    }
+                    if (!response.ok) throw new Error(data.error?.message || "API Request Failed");
+                    return data;
+                } catch (e) {
+                    if (e.type === 'TTS_LIMIT') throw e;
+                    if (retries >= 4) throw e;
+                    await new Promise(r => setTimeout(r, delays[retries++]));
                 }
-                const pt = data.candidates?.[0]?.content?.parts?.find(p=>p.inlineData); if(!pt) throw new Error("No audio");
-                const bin = atob(pt.inlineData.data), bytes = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-                
-                const ab = new ArrayBuffer(44+bytes.length), v = new DataView(ab);
-                const wS = (o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
-                wS(0,'RIFF'); v.setUint32(4,36+bytes.length,true); wS(8,'WAVE'); wS(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
-                v.setUint32(24,24000,true); v.setUint32(28,48000,true); v.setUint16(32,2,true); v.setUint16(34,16,true); wS(36,'data'); v.setUint32(40,bytes.length,true);
-                new Uint8Array(ab,44).set(bytes);
-
-                const actx = new (window.AudioContext||window.webkitAudioContext)(); globalBuffer = await actx.decodeAudioData(ab.slice(0)); actx.close();
-                rawAudioBlob = new Blob([ab], {type:'audio/wav'}); setupAudioPlayer();
-                log("TTS生成成功", 'success');
-            } catch(e) { if(e.message!=="RATE_LIMIT"){ log(`TTS失敗:${e.message}`,'error'); startWebSpeechMode(); } } finally { loading(false); }
-        }
-
-        async function handleAudioImport(file) {
-            loading(true, "文字起こし中...");
-            try {
-                if(!userKey) throw new Error("APIキー未設定");
-                const ab = await file.arrayBuffer(), b64 = btoa(new Uint8Array(ab).reduce((d,b)=>d+String.fromCharCode(b),'')), mime = file.type||(file.name.endsWith('.mp3')?'audio/mp3':'audio/wav');
-                const actx = new (window.AudioContext||window.webkitAudioContext)(); globalBuffer = await actx.decodeAudioData(ab.slice(0)); actx.close();
-                rawAudioBlob = bufferToWav(globalBuffer);
-                log(`文字起こしAPI: ${CONFIG.MODELS.DICT}`, 'api');
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.MODELS.DICT}:generateContent?key=${userKey}`, {
-                    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:"この音声の言語を自動認識し正確に文字起こしせよ。出力はテキストのみ。"}, {inlineData:{mimeType:mime,data:b64}}]}]})
-                });
-                const data = await res.json(); if(!res.ok) throw new Error(data.error?.message);
-                const txt = data.candidates?.[0]?.content?.parts?.[0]?.text; if(!txt) throw new Error("結果空");
-                $('rawInput').value = txt.trim(); const lang = detectLanguage(txt.trim()); segments = segmentText(txt.trim(), lang); currentIndex = 0;
-                $('readableOutput').innerHTML = segments.map((s,i) => `<span class="segment" id="seg-${i}">${s}</span>`).join('');
-                toggleMainUI(true); setupAudioPlayer(); log("インポート・文字起こし成功", 'success');
-            } catch(e) { log(`インポート失敗:${e.message}`, 'error'); } finally { loading(false); $('audioInput').value=''; }
-        }
-
-        function setupAudioPlayer() {
-            if(audio) audio.pause();
-            audio = new Audio(URL.createObjectURL(rawAudioBlob));
-            audio.onended = () => {
-                if(!useWebSpeech) {
-                    if($('repeatMode').checked && document.querySelector('input[name="pMode"]:checked').value==='continuous') seek(0); else stopPlayback();
-                }
-            };
-            segmentMeta = calcSyncPoints(segments, globalBuffer);
-            useWebSpeech = false; $('syncArea').classList.remove('hidden'); $('exportDataBtn').classList.remove('hidden');
-            drawWaveform(); renderMarkers(); seek(0);
-        }
-
-        function playPlayback() {
-            if(useWebSpeech) return playWebSpeech();
-            if(!audio) return;
-            const m = segmentMeta[currentIndex]; if(Math.abs(audio.currentTime - m.start) > 0.3) { audio.currentTime = m.start; isSeekingNow = true; setTimeout(()=>isSeekingNow=false, 250); }
-            audio.playbackRate = parseFloat($('rateRange').value);
-            audio.play().then(() => { isPlaying=true; updateUI(); cancelAnimationFrame(monitorId); monitorId=requestAnimationFrame(monitorPlayback); }).catch(e=>log(`再生エラー:${e.message}`,'error'));
-        }
-
-        function stopPlayback() { isPlaying=false; cancelAnimationFrame(monitorId); if(audio) audio.pause(); window.speechSynthesis.cancel(); updateUI(); }
-
-        function monitorPlayback() {
-            if(!isPlaying || !audio || useWebSpeech) return;
-            const now = audio.currentTime, mode = document.querySelector('input[name="pMode"]:checked').value, m = segmentMeta[currentIndex];
-            $('playbackCursor').style.left = `${(now/globalBuffer.duration)*100}%`;
-            if(!isSeekingNow && now >= m.end - 0.05) {
-                if(mode==='manual') { audio.pause(); isPlaying=false; updateUI(); return; }
-                else { if(currentIndex < segments.length-1) { currentIndex++; updateUI(); } else { if($('repeatMode').checked) seek(0); else stopPlayback(); return; } }
             }
-            if(!isSeekingNow && mode==='continuous') { const f = segmentMeta.findIndex(x=>now>=x.start && now<x.end); if(f!==-1 && f!==currentIndex) { currentIndex=f; updateUI(); } }
-            monitorId = requestAnimationFrame(monitorPlayback);
         }
 
-        function seek(idx) { currentIndex = idx; updateUI(); if(useWebSpeech) playWebSpeech(); else if(audio) { isSeekingNow=true; audio.currentTime=segmentMeta[idx].start; setTimeout(()=>isSeekingNow=false,250); playPlayback(); } }
+        // -------------------------------------------------------------------------
+        // Audio & TTS
+        // -------------------------------------------------------------------------
+        async function generateSpeech() {
+            const text = $('rawText').value.trim();
+            if (!text || !userKey) return;
 
-        function playWebSpeech() {
-            window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(segments[currentIndex]), m = document.querySelector('input[name="pMode"]:checked').value;
-            u.lang = currentLang==='zh'?'zh-CN':'en-US'; u.rate = parseFloat($('rateRange').value);
-            u.onstart = ()=>{isPlaying=true; updateUI();};
-            u.onend = ()=>{ if(!isPlaying)return; if(m==='continuous') { if(currentIndex<segments.length-1){currentIndex++;playWebSpeech();} else { if($('repeatMode').checked){currentIndex=0;playWebSpeech();}else stopPlayback();} } else { isPlaying=false; updateUI(); } };
-            window.speechSynthesis.speak(u);
+            log("Analyzing language...");
+            currentLanguage = detectLanguage(text);
+            log(`Detected: ${currentLanguage === 'zh' ? 'Chinese' : 'English'}`);
+
+            segments = segmentText(text, currentLanguage).map((t, i) => ({ id: i, text: t, start: 0, end: 0 }));
+            renderSegments();
+            toggleUI(true);
+
+            try {
+                log(`Requesting TTS for ${text.length} chars...`);
+                const voice = currentLanguage === 'zh' ? "Kore" : "Puck";
+                const payload = {
+                    contents: [{ parts: [{ text: text }] }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }
+                    }
+                };
+
+                const result = await callGemini(payload, CONFIG.MODELS.TTS);
+                const audioBase64 = result.candidates[0].content.parts[0].inlineData.data;
+                const buffer = base64ToArrayBuffer(audioBase64);
+                await initAudio(buffer);
+                autoAlign();
+                log("Audio ready.");
+            } catch (e) {
+                if (e.type === 'TTS_LIMIT') {
+                    const ok = confirm(`レート制限に達しました。復帰時刻: ${e.resumeAt}\nWebSpeechAPIモードに切り替えますか？`);
+                    if (ok) {
+                        isWebSpeechMode = true;
+                        log("Switched to WebSpeechAPI Mode.");
+                    }
+                } else {
+                    log("Error: " + e.message);
+                }
+            }
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const bin = atob(base64);
+            const len = bin.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+            return bytes.buffer;
+        }
+
+        async function initAudio(buffer) {
+            const decoded = await audioCtx.decodeAudioData(buffer.slice(0));
+            audioBuffer = decoded;
+            const wav = bufferToWav(decoded);
+            const blob = new Blob([wav], { type: 'audio/wav' });
+            $('audioEngine').src = URL.createObjectURL(blob);
+            drawWaveform();
+            $('playerControls').classList.remove('hidden');
+            $('exportBtn').classList.remove('hidden');
+        }
+
+        function autoAlign() {
+            if (!audioBuffer) return;
+            const totalDur = audioBuffer.duration;
+            const totalUnits = currentLanguage === 'zh' 
+                ? segments.reduce((a, b) => a + b.text.length, 0)
+                : segments.reduce((a, b) => a + b.text.split(/\s+/).length, 0);
+
+            let current = 0;
+            segments.forEach(s => {
+                const units = currentLanguage === 'zh' ? s.text.length : s.text.split(/\s+/).length;
+                const ratio = units / totalUnits;
+                s.start = current;
+                s.end = current + (totalDur * ratio);
+                current = s.end;
+            });
+            renderMarkers();
+        }
+
+        // -------------------------------------------------------------------------
+        // Visualization & UI
+        // -------------------------------------------------------------------------
+        function renderSegments() {
+            const container = $('readView');
+            container.innerHTML = segments.map(s => `<span id="seg-${s.id}" class="segment" onclick="playFromSegment(${s.id})">${s.text}</span>`).join(' ');
+        }
+
+        function toggleUI(isReading) {
+            $('inputView').classList.toggle('hidden', isReading);
+            $('readView').classList.toggle('hidden', !isReading);
+            $('processBtn').classList.toggle('hidden', isReading);
         }
 
         function drawWaveform() {
-            const cv = $('waveformCanvas'), wr = $('waveformWrapper'), sc = $('waveformScroll'), tw = sc.clientWidth * zoomScale;
-            cv.width = tw; cv.height = 120; wr.style.width = tw+'px';
-            const ctx = cv.getContext('2d'), d = globalBuffer.getChannelData(0), step = Math.ceil(d.length/tw);
-            ctx.clearRect(0,0,tw,120); ctx.fillStyle = '#cbd5e1';
-            for(let i=0; i<tw; i++) { let min=1, max=-1; for(let j=0; j<step; j++){ let v=d[i*step+j]; if(v<min)min=v; if(v>max)max=v; } ctx.fillRect(i, (1+min)*60, 1, Math.max(1,(max-min)*60)); }
+            const canvas = $('waveCanvas');
+            const ctx = canvas.getContext('2d');
+            const data = audioBuffer.getChannelData(0);
+            const step = Math.ceil(data.length / (window.innerWidth * 5 * zoomLevel));
+            canvas.width = data.length / step;
+            canvas.height = 100;
+            
+            ctx.fillStyle = '#4f46e5';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < canvas.width; i++) {
+                let min = 1.0, max = -1.0;
+                for (let j = 0; j < step; j++) {
+                    const datum = data[(i * step) + j];
+                    if (datum < min) min = datum;
+                    if (datum > max) max = datum;
+                }
+                ctx.fillRect(i, (1 + min) * 50, 1, Math.max(1, (max - min) * 50));
+            }
+            $('durationTime').textContent = formatTime(audioBuffer.duration);
         }
 
         function renderMarkers() {
-            const lay = $('markerLayer'); layer.innerHTML = ""; const dur = globalBuffer.duration;
-            segmentMeta.forEach((m, i) => { if(i===0)return; const d = document.createElement('div'); d.className='seg-marker'; d.style.left=`${(m.start/dur)*100}%`; d.dataset.label=`S${i+1}`;
-                const hd = (cx) => { const r = $('waveformWrapper').getBoundingClientRect(); const mv = (mx) => { const t=Math.max(segmentMeta[i-1].start+0.05, Math.min(((mx-r.left)/r.width)*dur, (segmentMeta[i+1]?.start||dur)-0.05)); m.start=t; segmentMeta[i-1].end=t; d.style.left=`${(t/dur)*100}%`; };
-                    const up = ()=>{ window.removeEventListener('mousemove', onM); window.removeEventListener('mouseup', up); window.removeEventListener('touchmove', onT); window.removeEventListener('touchend', up); };
-                    const onM = e=>mv(e.clientX), onT = e=>mv(e.touches[0].clientX); window.addEventListener('mousemove', onM); window.addEventListener('mouseup', up); window.addEventListener('touchmove', onT, {passive:false}); window.addEventListener('touchend', up);
-                }; d.onmousedown = e=>{e.preventDefault(); e.stopPropagation(); hd(e.clientX);}; d.ontouchstart = e=>{e.preventDefault(); e.stopPropagation(); hd(e.touches[0].clientX);}; lay.appendChild(d);
+            const container = $('markers');
+            container.innerHTML = '';
+            const totalDur = audioBuffer.duration;
+            const canvasWidth = $('waveCanvas').width;
+
+            segments.forEach((s, i) => {
+                const x = (s.start / totalDur) * canvasWidth;
+                const marker = document.createElement('div');
+                marker.className = "absolute top-0 bottom-0 border-l-2 border-yellow-500 cursor-ew-resize pointer-events-auto z-20 group";
+                marker.style.left = `${x}px`;
+                marker.innerHTML = `<span class="bg-yellow-500 text-[8px] px-1 rounded-r text-black font-bold opacity-0 group-hover:opacity-100">${i+1}</span>`;
+                
+                // Dragging logic
+                let isDragging = false;
+                marker.onmousedown = (e) => { isDragging = true; e.stopPropagation(); };
+                window.onmousemove = (e) => {
+                    if (!isDragging) return;
+                    const rect = $('waveformScroll').getBoundingClientRect();
+                    const newX = e.clientX - rect.left + $('waveformScroll').scrollLeft;
+                    const newTime = (newX / canvasWidth) * totalDur;
+                    s.start = Math.max(0, newTime);
+                    if (i > 0) segments[i-1].end = s.start;
+                    marker.style.left = `${newX}px`;
+                };
+                window.onmouseup = () => { if(isDragging) { isDragging = false; renderMarkers(); } };
+                container.appendChild(marker);
             });
-            // Segments binding
-            document.querySelectorAll('.segment').forEach((s,i) => s.onclick = () => seek(i));
         }
 
-        async function lookupWord(w) {
-            log(`辞書: ${w}`, 'api'); const m=$('dictModal'); m.classList.remove('hidden'); $('dictWord').innerText=w; $('dictCol2').innerText="Analyzing..."; $('addVocab').disabled=true;
-            const pm = currentLang==='zh' ? `中国語「${w}」。純粋なJSONのみ出力(マークダウン禁止): {"col1":"拼音","col2":"日本語訳","col3":"中国語例文","syn":["英単語1","英単語2","英単語3"]} ※カンマ不使用` : `英語「${w}」。純粋なJSONのみ出力(マークダウン禁止): {"col1":"発音記号","col2":"日本語訳","col3":"英語例文","syn":["中国語1","中国語2","中国語3"]} ※カンマ不使用`;
+        function changeZoom(m) {
+            zoomLevel *= m;
+            if(audioBuffer) { drawWaveform(); renderMarkers(); }
+        }
+
+        // -------------------------------------------------------------------------
+        // Playback Logic
+        // -------------------------------------------------------------------------
+        function playFromSegment(id) {
+            const s = segments[id];
+            const audio = $('audioEngine');
+            audio.currentTime = s.start;
+            audio.play();
+            highlight(id);
+        }
+
+        function highlight(id) {
+            document.querySelectorAll('.segment').forEach(el => el.classList.remove('active'));
+            const el = $(`seg-${id}`);
+            if(el) el.classList.add('active');
+        }
+
+        $('audioEngine').ontimeupdate = () => {
+            const time = $('audioEngine').currentTime;
+            $('currentTime').textContent = formatTime(time);
+            const canvasWidth = $('waveCanvas').width;
+            $('playhead').style.left = `${(time / audioBuffer.duration) * canvasWidth}px`;
+
+            const seg = segments.find(s => time >= s.start && time < s.end);
+            if(seg) highlight(seg.id);
+
+            const mode = document.querySelector('input[name="playMode"]:checked').value;
+            if (mode === 'manual' && seg && time >= seg.end - 0.1) {
+                $('audioEngine').pause();
+            }
+        };
+
+        $('audioEngine').onended = () => {
+            if ($('repeatMode').checked) {
+                $('audioEngine').currentTime = 0;
+                $('audioEngine').play();
+            }
+        };
+
+        $('playPauseBtn').onclick = () => {
+            const audio = $('audioEngine');
+            if (audio.paused) audio.play(); else audio.pause();
+        };
+
+        $('prevSeg').onclick = () => {
+            const time = $('audioEngine').currentTime;
+            const idx = segments.findIndex(s => time >= s.start && time < s.end);
+            if(idx > 0) playFromSegment(idx - 1);
+        };
+
+        $('nextSeg').onclick = () => {
+            const time = $('audioEngine').currentTime;
+            const idx = segments.findIndex(s => time >= s.start && time < s.end);
+            if(idx < segments.length - 1) playFromSegment(idx + 1);
+        };
+
+        $('speedRange').oninput = (e) => {
+            const val = parseFloat(e.target.value);
+            $('speedVal').textContent = val.toFixed(1) + "x";
+            $('audioEngine').playbackRate = val;
+        };
+
+        // -------------------------------------------------------------------------
+        // Timer & Stats (2. 要件)
+        // -------------------------------------------------------------------------
+        function startTimer() {
+            timerStart = Date.now();
+            $('startTimerBtn').classList.add('hidden');
+            $('stopTimerBtn').classList.remove('hidden');
+            $('statPanel').classList.remove('hidden');
+            log("Timer started.");
+            
+            timerInterval = setInterval(() => {
+                const elapsed = (Date.now() - timerStart) / 1000;
+                $('elapsedTime').textContent = elapsed.toFixed(1) + "s";
+            }, 100);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            const elapsed = (Date.now() - timerStart) / 1000;
+            const text = $('rawText').value.trim();
+            const lang = detectLanguage(text);
+
+            let count = 0;
+            let metricLabel = "";
+            let metricValue = 0;
+
+            if (lang === 'zh') {
+                count = text.replace(/\s/g, '').length;
+                metricLabel = "CPM";
+                metricValue = Math.round(count / (elapsed / 60));
+                $('countLabel').textContent = "Characters";
+            } else {
+                count = text.trim().split(/\s+/).length;
+                metricLabel = "WPM";
+                metricValue = Math.round(count / (elapsed / 60));
+                $('countLabel').textContent = "Words";
+            }
+
+            $('totalCount').textContent = count;
+            $('speedMetricLabel').textContent = metricLabel;
+            $('speedMetric').textContent = metricValue || 0;
+            
+            $('startTimerBtn').classList.remove('hidden');
+            $('stopTimerBtn').classList.add('hidden');
+            log(`Stopped. ${count} ${lang === 'zh' ? 'chars' : 'words'}, ${metricValue} ${metricLabel}`);
+        }
+
+        // -------------------------------------------------------------------------
+        // Vocabulary Lookup (3. 要件)
+        // -------------------------------------------------------------------------
+        async function lookupWord(word) {
+            if(!userKey) return;
+            log(`Searching: ${word}...`);
+            
+            const prompt = currentLanguage === 'zh'
+                ? `Analyze the Chinese word "${word}". Return JSON: { "col1": "Word(Pinyin)", "col2": "Japanese Meaning", "col3": "One example sentence and up to 3 synonymous English words" }`
+                : `Analyze the English word "${word}". Return JSON: { "col1": "Word", "col2": "Japanese Meaning", "col3": "One example sentence and up to 3 synonymous Chinese words" }`;
+
             try {
-                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.MODELS.DICT}:generateContent?key=${userKey}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:pm}]}],generationConfig:{responseMimeType:"application/json"}}) });
-                const dt = await r.json(); if(!r.ok) throw new Error(dt.error?.message);
-                const txt = dt.candidates[0].content.parts[0].text, jm = txt.match(/\{[\s\S]*\}/); if(!jm) throw new Error("JSON形式外");
-                const res = JSON.parse(jm[0]); $('dictCol1').innerText=res.col1||'-'; $('dictCol2').innerText=res.col2||'-'; $('dictCol3_ex').innerText=res.col3||'-'; $('dictCol3_syn').innerText=(res.syn||[]).join(' / ')||'-';
-                $('addVocab').disabled=false; $('addVocab').classList.remove('opacity-50'); $('addVocab').onclick=()=>{ addVocab(w, res); m.classList.add('hidden'); };
-            } catch(e) { log(`辞書失敗:${e.message}`, 'error'); $('dictCol2').innerText="エラー"; }
+                const data = await callGemini({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { 
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                col1: { type: "STRING" },
+                                col2: { type: "STRING" },
+                                col3: { type: "STRING" }
+                            }
+                        }
+                    }
+                });
+
+                const result = JSON.parse(data.candidates[0].content.parts[0].text);
+                if (confirm(`リストに追加しますか？\n\n${result.col1}\n${result.col2}\n${result.col3}`)) {
+                    vocabList.unshift({ id: Date.now(), ...result });
+                    saveVocab();
+                }
+            } catch (e) {
+                log("Lookup Error: " + e.message);
+            }
         }
 
-        let vocabList = []; try{ vocabList=JSON.parse(localStorage.getItem(CONFIG.KEYS.VOCAB)||"[]"); }catch(e){}
-        function addVocab(w, r) { vocabList.unshift({id:Date.now(), word:w, col1:r.col1, col2:r.col2, col3:`${r.col3} / ${(r.syn||[]).join(' ')}`}); saveVocab(); }
-        function saveVocab() { localStorage.setItem(CONFIG.KEYS.VOCAB, JSON.stringify(vocabList)); renderVocab(); }
+        function saveVocab() {
+            localStorage.setItem(CONFIG.STORAGE_KEYS.VOCAB, JSON.stringify(vocabList));
+            renderVocab();
+        }
+
         function renderVocab() {
-            const b = $('vocabBody'), e = $('vocabEmpty');
-            if(!vocabList.length) { if(b) b.innerHTML=""; if(e) e.classList.remove('hidden'); return; }
-            if(e) e.classList.add('hidden');
-            if(b) b.innerHTML = vocabList.map(v=>`<tr class="border-b"><td class="p-3 font-bold lang-text text-indigo-600">${v.word} <span class="text-[10px] text-slate-400 font-normal">(${v.col1})</span></td><td class="p-3 text-sm font-bold">${v.col2}</td><td class="p-3 text-[11px] text-slate-500">${v.col3}</td><td class="p-3 text-center"><button onclick="delVocab(${v.id})" class="text-red-300 hover:text-red-500 font-bold">&times;</button></td></tr>`).join('');
+            const body = $('vocabBody');
+            const empty = $('vocabEmpty');
+            if (vocabList.length === 0) {
+                body.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+            body.innerHTML = vocabList.map(v => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 text-sm font-bold text-indigo-600">${v.col1}</td>
+                    <td class="p-3 text-sm">${v.col2}</td>
+                    <td class="p-3 text-[10px] text-slate-500 italic">${v.col3}</td>
+                    <td class="p-3 text-center"><button onclick="deleteVocab(${v.id})" class="text-rose-300 hover:text-rose-600 font-bold">×</button></td>
+                </tr>
+            `).join('');
         }
-        window.delVocab = id => { vocabList = vocabList.filter(v=>v.id!==id); saveVocab(); };
 
-        function toggleMainUI(r) { $('rawInput').classList.toggle('hidden', r); $('readableOutput').classList.toggle('hidden', !r); $('processBtn').classList.toggle('hidden', r); $('playerUI').classList.toggle('hidden', !r); $('playModes').classList.toggle('hidden', !r); if(!r) $('exportDataBtn').classList.add('hidden'); }
-        function updateUI() { $('btnPlay').innerText = isPlaying ? "||" : "▶"; document.querySelectorAll('.segment').forEach(s=>s.classList.remove('highlight-active')); const t=$(`seg-${currentIndex}`); if(t) t.classList.add('highlight-active'); }
-        function startWebSpeechMode() { useWebSpeech=true; log("WebSpeechモード", 'warn'); seek(0); }
+        function deleteVocab(id) {
+            vocabList = vocabList.filter(v => v.id !== id);
+            saveVocab();
+        }
+
+        function clearVocab() {
+            if(confirm("全消去しますか？")) { vocabList = []; saveVocab(); }
+        }
+
+        function exportCSV() {
+            let csv = "Word,Meaning,Details\n";
+            vocabList.forEach(v => {
+                // Remove commas for CSV safety per requirement
+                const c1 = v.col1.replace(/,/g, ' ');
+                const c2 = v.col2.replace(/,/g, ' ');
+                const c3 = v.col3.replace(/,/g, ' ');
+                csv += `${c1},${c2},${c3}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `vocab_${Date.now()}.csv`; a.click();
+        }
+
+        // -------------------------------------------------------------------------
+        // Data Handling (ZIP)
+        // -------------------------------------------------------------------------
+        async function exportData() {
+            log("Creating ZIP...");
+            const zip = new JSZip();
+            const audioBlob = await fetch($('audioEngine').src).then(r => r.blob());
+            zip.file("audio.wav", audioBlob);
+            zip.file("project.json", JSON.stringify({
+                version: "1.00",
+                text: $('rawText').value,
+                lang: currentLanguage,
+                segments: segments
+            }));
+            const content = await zip.generateAsync({ type: "blob" });
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url; a.download = `language_buddy_${Date.now()}.zip`; a.click();
+            log("Export complete.");
+        }
+
+        $('fileInput').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            log("Loading ZIP...");
+            const zip = await JSZip.loadAsync(file);
+            const jsonStr = await zip.file("project.json").async("string");
+            const data = JSON.parse(jsonStr);
+            
+            $('rawText').value = data.text;
+            currentLanguage = data.lang || 'zh';
+            segments = data.segments;
+            
+            const audioBlob = await zip.file("audio.wav").async("blob");
+            const audioBuffer = await audioBlob.arrayBuffer();
+            await initAudio(audioBuffer);
+            
+            toggleUI(true);
+            renderSegments();
+            renderMarkers();
+            log("Project Loaded.");
+        };
+
+        // -------------------------------------------------------------------------
+        // Utils & Event Listeners
+        // -------------------------------------------------------------------------
+        function toggleSettings() { $('settingsModal').classList.toggle('hidden'); }
+        function saveSettings() {
+            const key = $('apiKeyInput').value.trim();
+            if(key) {
+                userKey = key;
+                localStorage.setItem(CONFIG.STORAGE_KEYS.API, key);
+                toggleSettings();
+                log("API Key updated.");
+            }
+        }
+
+        function formatTime(s) {
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${m}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        // Right-click lookup (3. 要件)
+        const trg = $('searchTrigger');
+        document.addEventListener('selectionchange', () => {
+            const sel = window.getSelection().toString().trim();
+            if (sel && sel.length < 20) {
+                const range = window.getSelection().getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                trg.style.display = 'block';
+                trg.style.top = (rect.top + window.scrollY - 35) + 'px';
+                trg.style.left = (rect.left + window.scrollX) + 'px';
+                trg.onmousedown = (e) => {
+                    e.preventDefault();
+                    lookupWord(sel);
+                    trg.style.display = 'none';
+                };
+            } else {
+                trg.style.display = 'none';
+            }
+        });
+
+        // Draggable Log (4. 要件)
+        let isDragging = false, dragX, dragY;
+        const logWin = $('logWindow');
+        logWin.querySelector('.drag-handle').onmousedown = e => {
+            isDragging = true;
+            dragX = e.clientX - logWin.offsetLeft;
+            dragY = e.clientY - logWin.offsetTop;
+        };
+        window.onmousemove = e => {
+            if(!isDragging) return;
+            logWin.style.left = (e.clientX - dragX) + 'px';
+            logWin.style.top = (e.clientY - dragY) + 'px';
+            logWin.style.bottom = 'auto'; logWin.style.right = 'auto';
+        };
+        window.onmouseup = () => isDragging = false;
+
+        // WAV Encoding helper
+        function bufferToWav(abuffer) {
+            let numOfChan = abuffer.numberOfChannels,
+                length = abuffer.length * numOfChan * 2 + 44,
+                buffer = new ArrayBuffer(length),
+                view = new DataView(buffer),
+                channels = [], i, sample,
+                offset = 0, pos = 0;
+            function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+            function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+            setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157);
+            setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
+            setUint32(abuffer.sampleRate); setUint32(abuffer.sampleRate * 2 * numOfChan);
+            setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164); setUint32(length - pos - 4);
+            for(i=0; i<abuffer.numberOfChannels; i++) channels.push(abuffer.getChannelData(i));
+            while(pos < abuffer.length) {
+                for(i=0; i<numOfChan; i++) {
+                    sample = Math.max(-1, Math.min(1, channels[i][pos]));
+                    sample = (sample < 0 ? sample * 0x8000 : sample * 0x7FFF);
+                    view.setInt16(44 + offset, sample, true);
+                    offset += 2;
+                }
+                pos++;
+            }
+            return buffer;
+        }
 
         window.onload = () => {
-            const on = (id, e, cb) => { const el = $(id); if(el) el.addEventListener(e, cb); };
-            on('processBtn', 'click', processTTS);
-            on('btnPlay', 'click', () => isPlaying ? stopPlayback() : playPlayback());
-            on('btnStop', 'click', () => { stopPlayback(); toggleMainUI(false); $('syncArea').classList.add('hidden'); });
-            on('btnPrev', 'click', () => seek(Math.max(0, currentIndex - 1)));
-            on('btnNext', 'click', () => { if(currentIndex < segments.length-1) seek(currentIndex + 1); });
-            on('clearBtn', 'click', () => { $('rawInput').value = ""; log("クリア"); });
-            on('zoomRange', 'input', e => { zoomScale=e.target.value; if(globalBuffer) { drawWaveform(); renderMarkers(); } });
-            on('rateRange', 'input', e => { $('rateLabel').innerText=e.target.value+"x"; if(audio) audio.playbackRate=e.target.value; });
-            on('saveSettings', 'click', () => { const k=$('apiKeyIn').value.trim(); if(k){userKey=k; localStorage.setItem(CONFIG.KEYS.API, k); $('settingsModal').classList.add('hidden'); log("Key Saved");} });
-            on('settingsBtn', 'click', () => $('settingsModal').classList.remove('hidden'));
-            on('limitOk', 'click', () => { $('limitModal').classList.add('hidden'); startWebSpeechMode(); });
-            on('closeDictBtn', 'click', () => $('dictModal').classList.add('hidden'));
-            on('cancelVocabBtn', 'click', () => $('dictModal').classList.add('hidden'));
-            on('exportCSV', 'click', () => { const cl=s=>(s||"").toString().replace(/[,"]/g,' ').replace(/\n/g,' '); const csv="Word,Pinyin/Pron,Translation,Context\n"+vocabList.map(v=>`${cl(v.word)},${cl(v.col1)},${cl(v.col2)},${cl(v.col3)}`).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vocab.csv'; a.click(); });
-            on('clearVocab', 'click', () => { if(confirm("全消去しますか？")){vocabList=[];saveVocab();} });
-            on('importAudioBtn', 'click', () => $('audioInput').click());
-            on('audioInput', 'change', e => { if(e.target.files[0]) handleAudioImport(e.target.files[0]); });
-            on('importDataBtn', 'click', () => $('dataInput').click());
-            on('dataInput', 'change', async e => {
-                if(!e.target.files[0]) return; loading(true, "ZIP読込中...");
-                try {
-                    const zip = await JSZip.loadAsync(e.target.files[0]);
-                    const meta = JSON.parse(await zip.file("metadata.json").async("string"));
-                    const ab = await zip.file("audio.wav").async("arraybuffer");
-                    rawAudioBlob = new Blob([ab], {type:'audio/wav'});
-                    const actx = new (window.AudioContext||window.webkitAudioContext)(); globalBuffer = await actx.decodeAudioData(ab.slice(0)); actx.close();
-                    $('rawInput').value = meta.rawInput || ""; currentLang = meta.lang || detectLanguage(meta.rawInput||""); detectLanguage(meta.rawInput||"");
-                    segments = meta.segments||[]; segmentMeta = meta.meta||[];
-                    $('readableOutput').innerHTML = segments.map((s,i) => `<span class="segment" id="seg-${i}">${s}</span>`).join('');
-                    setupAudioPlayer(); log("ZIP読込成功", 'success');
-                } catch(err) { log(`読込失敗: ${err.message}`, 'error'); } finally { loading(false); $('dataInput').value=''; }
-            });
-            on('exportDataBtn', 'click', async () => {
-                log("ZIP作成中..."); const zip = new JSZip(); zip.file("audio.wav", rawAudioBlob); zip.file("metadata.json", JSON.stringify({version:CONFIG.VERSION, lang:currentLang, segments, meta:segmentMeta, rawInput:$('rawInput').value}));
-                const a=document.createElement("a"); a.href=URL.createObjectURL(await zip.generateAsync({type:"blob"})); a.download=`lb_data_${Date.now()}.zip`; a.click(); log("ZIP完了", 'success');
-            });
-
-            // Timer
-            let sT=0, tI=null;
-            on('timerStart', 'click', () => { sT=Date.now(); $('timerStart').disabled=true; $('timerStop').disabled=false; tI=setInterval(()=>{const d=Date.now()-sT, m=Math.floor(d/60000).toString().padStart(2,'0'), s=Math.floor((d%60000)/1000).toString().padStart(2,'0'); $('timerDisplay').innerText=`${m}:${s}.${Math.floor((d%1000)/100)}`;},100); });
-            on('timerStop', 'click', () => { clearInterval(tI); $('timerStart').disabled=false; $('timerStop').disabled=true; const txt=$('rawInput').value, c=currentLang==='zh'?(txt.match(/[\u4e00-\u9fa5]/g)||[]).length:txt.trim().split(/\s+/).filter(w=>w.match(/[a-zA-Z]/)).length, sec=(Date.now()-sT)/1000, sp=Math.round(c/(sec/60)); $('resChars').innerText=c; $('resTime').innerText=Math.round(sec)+"s"; $('resSpeed').innerText=isFinite(sp)?sp:0; $('resultBox').classList.remove('hidden'); });
-
-            // Selection
-            const trg = $('searchTrigger');
-            const hSel = () => { const s=window.getSelection(), txt=s.toString().trim(); if(txt&&/[\u4e00-\u9fa5a-zA-Z]/.test(txt)){try{const r=s.getRangeAt(0).getBoundingClientRect(); trg.style.display='block'; trg.style.top=(r.top+window.scrollY-50)+'px'; trg.style.left=(r.left+window.scrollX+(r.width/2)-50)+'px'; const ex=e=>{e.preventDefault(); lookupWord(txt); trg.style.display='none'; s.removeAllRanges();}; trg.onclick=ex; trg.ontouchend=ex;}catch(e){}}else trg.style.display='none'; };
-            document.addEventListener('selectionchange', () => setTimeout(hSel, 150));
-            document.addEventListener('contextmenu', e => { const s=window.getSelection().toString().trim(); if(s&&/[\u4e00-\u9fa5a-zA-Z]/.test(s)){e.preventDefault(); trg.style.display='block'; trg.style.top=e.pageY+'px'; trg.style.left=e.pageX+'px'; const ex=ev=>{ev.preventDefault(); lookupWord(s); trg.style.display='none';}; trg.onclick=ex; trg.ontouchend=ex; }});
-            const hdT = e => { if(e.target.id!=='searchTrigger') trg.style.display='none'; }; document.addEventListener('mousedown', hdT); document.addEventListener('touchstart', hdT);
-
-            // Log Panel dragging/resizing
-            const pnl=$('logPanel'), hdr=$('logHeader'), hnd=$('logResizeHandle');
-            on('btnLogMin', 'click', ()=>pnl.classList.toggle('log-minimized'));
-            on('btnLogClr', 'click', ()=>$('logContent').innerHTML="");
-            on('btnLogCopy', 'click', ()=>{navigator.clipboard.writeText(Array.from($('logContent').children).map(c=>c.innerText).join('\n'));log("Copied");});
-            let dgr=false; const stD = e => { if(e.target.tagName==='BUTTON'||e.target===hnd)return; dgr=true; const ox=(e.clientX||e.touches[0].clientX)-pnl.offsetLeft, oy=(e.clientY||e.touches[0].clientY)-pnl.offsetTop; const mv=ev=>{if(!dgr)return; pnl.style.left=(ev.clientX||ev.touches[0].clientX)-ox+'px'; pnl.style.top=(ev.clientY||ev.touches[0].clientY)-oy+'px'; pnl.style.bottom='auto'; pnl.style.right='auto';}; const up=()=>{dgr=false; window.removeEventListener('mousemove',mv); window.removeEventListener('touchmove',mv);}; window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up); window.addEventListener('touchmove',mv, {passive:false}); window.addEventListener('touchend',up); };
-            hdr.onmousedown=stD; hdr.ontouchstart=stD;
-            let rsz=false; hnd.onmousedown=e=>{ rsz=true; e.preventDefault(); const sx=e.clientX, sy=e.clientY, sw=pnl.clientWidth, sh=pnl.clientHeight, sl=pnl.offsetLeft, st=pnl.offsetTop; const mv=ev=>{if(!rsz)return; pnl.style.width=(sw+(sx-ev.clientX))+'px'; pnl.style.height=(sh+(sy-ev.clientY))+'px'; pnl.style.left=(sl-(sx-ev.clientX))+'px'; pnl.style.top=(st-(sy-ev.clientY))+'px';}; const up=()=>{rsz=false; window.removeEventListener('mousemove',mv);}; window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up); };
-
-            renderVocab(); log("Ready v305.0"); if(!userKey) $('settingsModal').classList.remove('hidden');
+            renderVocab();
+            log("Language Buddy v1.00 initialized.");
+            if(!userKey) toggleSettings();
         };
     </script>
 </body>
