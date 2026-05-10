@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Language Buddy v1.00</title>
+    <title>Language Buddy v4.01</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -99,7 +99,7 @@
     <div id="logPanel" class="log-minimized">
         <div id="logResizeHandle"></div>
         <div id="logHeader">
-            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v1.00</span>
+            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v4.01</span>
             <div class="flex gap-2">
                 <button id="btnLogMin" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">MIN/MAX</button>
                 <button id="btnLogCopy" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">COPY</button>
@@ -115,7 +115,7 @@
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200 px-6 py-4">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <h1 class="text-2xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">
-                LANGUAGE BUDDY <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v1.00</span>
+                LANGUAGE BUDDY <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v4.01</span>
             </h1>
             <div class="flex gap-2 items-center">
                 <button id="settingsBtn" class="p-2 hover:bg-slate-100 rounded-full text-slate-500">
@@ -162,7 +162,7 @@
         <!-- 5.4 テキスト貼り付け用ウインドウ (と各種コントロール) -->
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-6 sm:p-8 flex flex-col min-h-[400px]">
             <div class="flex-1 relative flex flex-col">
-                <textarea id="rawInput" class="w-full flex-1 text-2xl chinese-text border-none focus:ring-0 placeholder:text-slate-300 resize-none bg-transparent" placeholder="英語か中国語のテキストをここに貼り付けるか、上の AUDIO IMPORT から音声を読み込んでください..."></textarea>
+                <textarea id="rawInput" class="w-full flex-1 text-2xl chinese-text border-none focus:ring-0 placeholder:text-slate-300 resize-none bg-transparent" placeholder="テキストをここに貼り付けるか、上の AUDIO IMPORT から音声を読み込んでください..."></textarea>
                 <div id="readableOutput" class="hidden w-full flex-1 text-2xl chinese-text whitespace-pre-wrap break-words select-text"></div>
             </div>
             
@@ -183,7 +183,7 @@
             </div>
         </div>
 
-        <!-- 5.5 計測停止ボタン & 5.6 単語数、速度、CPM/WPM表示 -->
+        <!-- 5.5 計測停止ボタン & 5.6 単語数、速度、CPM表示 -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center gap-4 md:col-span-1">
                 <div id="timerDisplay" class="text-4xl font-black text-slate-700 tabular-nums tracking-tight" style="font-family: 'Syne', sans-serif;">00:00.0</div>
@@ -285,14 +285,13 @@
         <div class="bg-white rounded-[3rem] w-full max-w-xs p-10 space-y-6 text-center shadow-2xl">
             <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-2xl">⏳</div>
             <h3 class="text-xl font-black text-slate-800">Rate Limit!</h3>
-            <p id="limitMsg" class="text-sm text-slate-500"></p>
-            <button id="limitOk" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold uppercase text-[11px] active:scale-95 transition-all">OK (WebSpeechモードへ)</button>
+            <p id="limitMsg" class="text-sm text-slate-500"></p> <button id="limitOk" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold uppercase text-[11px] active:scale-95 transition-all">OK (WebSpeechモードへ)</button>
         </div>
     </div>
 
     <script>
         const CONFIG = {
-            VERSION: "v1.00",
+            VERSION: "v4.01",
             MODELS: {
                 TTS: "gemini-2.5-flash-preview-tts",
                 DICT: "gemini-3-flash-preview"
@@ -660,42 +659,51 @@
         function monitorPlayback() {
             if (!isPlaying || !audio || useWebSpeech) return;
             const now = audio.currentTime;
-            const mode = document.querySelector('input[name="pMode"]:checked').value;
-            const currentMeta = segmentMeta[currentIndex];
-            
-            document.getElementById('playbackCursor').style.left = `${(now / globalBuffer.duration) * 100}%`;
+            const pMode = document.querySelector('input[name="pMode"]:checked').value;
+            const isRepeat = document.getElementById('repeatMode').checked;
+            const meta = segmentMeta[currentIndex];
 
-            if (!isSeekingNow && now >= currentMeta.end - 0.05) {
-                if (mode === 'manual') {
-                    audio.pause(); isPlaying = false; updateControlIcons();
-                    if (currentIndex === segments.length - 1 && document.getElementById('repeatMode').checked) {
-                        currentIndex = 0;
-                        audio.currentTime = segmentMeta[0].start;
-                        updateHighlight();
-                        document.getElementById('playbackCursor').style.left = `0%`;
+            // 終了判定を先に行う (オーバーシュートによるインデックスのズレを防ぐ)
+            if (meta && now >= meta.end - 0.05) {
+                if (pMode === 'manual') {
+                    if (isRepeat) {
+                        audio.currentTime = meta.start;
+                        audio.play();
+                        moveCursor();
+                        return;
+                    } else {
+                        audio.pause();
+                        isPlaying = false;
+                        updateControlIcons();
+                        moveCursor();
+                        return;
                     }
+                } else if (currentIndex === segmentMeta.length - 1 && isRepeat) {
+                    currentIndex = 0;
+                    audio.currentTime = segmentMeta[0].start;
+                    audio.play();
+                    updateHighlight();
+                    moveCursor();
                     return;
-                } else {
-                    if (currentIndex < segments.length - 1) { 
-                        currentIndex++; updateHighlight(); 
-                    } else { 
-                        if (document.getElementById('repeatMode').checked) {
-                            seek(0);
-                        } else {
-                            stopPlayback(); 
-                        }
-                        return; 
-                    }
                 }
+            }
+
+            // 終了判定に引っかからなかった場合のみインデックスを追従させる
+            const idx = segmentMeta.findIndex(m => now >= m.start && now < m.end);
+            if (idx !== -1 && idx !== currentIndex) { 
+                currentIndex = idx; 
+                updateHighlight(); 
             }
             
-            if (!isSeekingNow) {
-                const found = segmentMeta.findIndex(m => now >= m.start && now < m.end);
-                if (found !== -1 && found !== currentIndex) { 
-                    currentIndex = found; updateHighlight(); 
-                }
-            }
+            moveCursor();
             monitorId = requestAnimationFrame(monitorPlayback);
+        }
+
+        function moveCursor() {
+            if (!audio || !globalBuffer) return;
+            const cursor = document.getElementById('playbackCursor');
+            const totalW = document.getElementById('waveformWrapper').clientWidth;
+            cursor.style.left = (audio.currentTime/globalBuffer.duration)*totalW + "px";
         }
 
         function seek(idx) {
@@ -710,33 +718,33 @@
             }
         }
 
-        function playWebSpeech() {
+        function playWebSpeech(index = currentIndex) {
             window.speechSynthesis.cancel();
-            const mode = document.querySelector('input[name="pMode"]:checked').value;
-            const utter = new SpeechSynthesisUtterance(segments[currentIndex]);
-            utter.lang = currentLang === 'zh' ? 'zh-CN' : 'en-US';
-            utter.rate = parseFloat(document.getElementById('rateRange').value);
-            utter.onstart = () => { isPlaying = true; updateControlIcons(); updateHighlight(); };
-            utter.onend = () => {
+            const utterance = new SpeechSynthesisUtterance(segments[index].text);
+            utterance.lang = currentLang === 'zh' ? 'zh-CN' : 'en-US';
+            utterance.rate = parseFloat(document.getElementById('rateRange').value);
+            
+            utterance.onstart = () => { isPlaying = true; updateControlIcons(); updateHighlight(index); };
+            utterance.onend = () => {
                 if (!isPlaying) return;
+                const mode = document.querySelector('input[name="pMode"]:checked').value;
+                const isRepeat = document.getElementById('repeatMode').checked;
+
                 if (mode === 'continuous') {
-                    if (currentIndex < segments.length - 1) { 
-                        currentIndex++; playWebSpeech(); 
+                    if (index < segments.length - 1) { 
+                        currentIndex++; playWebSpeech(currentIndex); 
+                    } else if (index === segments.length - 1 && isRepeat) {
+                        currentIndex = 0; playWebSpeech(0);
                     } else {
-                        if (document.getElementById('repeatMode').checked) {
-                            currentIndex = 0; playWebSpeech();
-                        } else {
-                            stopPlayback();
-                        }
+                        stopPlayback();
                     }
+                } else if (mode === 'manual' && isRepeat) {
+                    playWebSpeech(index);
                 } else { 
                     isPlaying = false; updateControlIcons(); 
-                    if (currentIndex >= segments.length - 1 && document.getElementById('repeatMode').checked) {
-                        currentIndex = 0; updateHighlight();
-                    }
                 }
             };
-            window.speechSynthesis.speak(utter);
+            window.speechSynthesis.speak(utterance);
         }
 
         function drawWaveform() {
@@ -929,9 +937,9 @@
             document.getElementById('iconPlay').classList.toggle('hidden', isPlaying);
             document.getElementById('iconPause').classList.toggle('hidden', !isPlaying);
         }
-        function updateHighlight() {
+        function updateHighlight(index = currentIndex) {
             document.querySelectorAll('.segment').forEach(s => s.classList.remove('highlight-active'));
-            const target = document.getElementById(`seg-${currentIndex}`);
+            const target = document.getElementById(`seg-${index}`);
             if (target) target.classList.add('highlight-active');
         }
         function showLimitModal(msg) {
@@ -948,7 +956,7 @@
         document.getElementById('btnPrev').onclick = () => seek(Math.max(0, currentIndex - 1));
         document.getElementById('btnNext').onclick = () => seek(Math.min(segments.length - 1, currentIndex + 1));
         document.getElementById('clearBtn').onclick = () => { document.getElementById('rawInput').value = ""; log("テキスト消去"); };
-        document.getElementById('zoomRange').oninput = (e) => { zoomScale = e.target.value; drawWaveform(); renderMarkers(); };
+        document.getElementById('zoomRange').oninput = (e) => { zoomScale = e.target.value; drawWaveform(); renderMarkers(); moveCursor(); };
         document.getElementById('rateRange').oninput = (e) => {
             const val = e.target.value;
             document.getElementById('rateLabel').innerText = val + "x";
@@ -1071,7 +1079,7 @@
         document.addEventListener('mousedown', hideTrigger);
         document.addEventListener('touchstart', hideTrigger);
 
-        window.onload = () => { renderVocab(); log("Ready."); if(!userKey) document.getElementById('settingsModal').classList.remove('hidden'); };
+        window.onload = () => { renderVocab(); log("Language Buddy v4.01 initialized."); if(!userKey) document.getElementById('settingsModal').classList.remove('hidden'); };
     </script>
 </body>
 </html>
