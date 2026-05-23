@@ -1110,15 +1110,25 @@
 
         // iOS and Desktop Selection Trigger Logic
         const trg = document.getElementById('searchTrigger');
+        function positionSearchTrigger(x, y) {
+            trg.style.display = 'block';
+            const margin = 12;
+            const maxLeft = window.scrollX + window.innerWidth - trg.offsetWidth - margin;
+            const left = Math.max(window.scrollX + margin, Math.min(x, maxLeft));
+            trg.style.left = left + 'px';
+            trg.style.top = y + 'px';
+        }
+
         function handleSelection() {
             const sel = window.getSelection();
             const txt = sel.toString().trim();
             if (txt && /[\u4e00-\u9fa5a-zA-Z]/.test(txt)) {
                 try {
                     const r = sel.getRangeAt(0).getBoundingClientRect();
-                    trg.style.display = 'block';
-                    trg.style.top = (r.top + window.scrollY - 50) + 'px';
-                    trg.style.left = (r.left + window.scrollX + (r.width / 2) - 80) + 'px';
+                    positionSearchTrigger(
+                        r.left + window.scrollX + (r.width / 2) - 80,
+                        r.bottom + window.scrollY + 18
+                    );
                     
                     const executeLookup = (e) => { 
                         e.preventDefault(); 
@@ -1140,9 +1150,7 @@
             const sel = window.getSelection().toString().trim();
             if (sel && /[\u4e00-\u9fa5a-zA-Z]/.test(sel)) {
                 e.preventDefault();
-                trg.style.display = 'block';
-                trg.style.top = e.pageY + 'px';
-                trg.style.left = e.pageX + 'px';
+                positionSearchTrigger(e.pageX + 12, e.pageY + 28);
                 trg.onclick = () => { lookupWord(sel); trg.style.display = 'none'; };
                 trg.ontouchend = () => { lookupWord(sel); trg.style.display = 'none'; };
             }
