@@ -524,13 +524,7 @@
 
                 if (audio) { audio.pause(); audio = null; }
                 audio = new Audio(URL.createObjectURL(rawAudioBlob));
-                audio.onended = () => { 
-                    if(!useWebSpeech) {
-                        const isRepeat = document.getElementById('repeatMode').checked;
-                        const mode = document.querySelector('input[name="pMode"]:checked').value;
-                        if (isRepeat && mode === 'continuous') { seek(0); } else { stopPlayback(); }
-                    }
-                };
+                setupAudioEvents();
 
                 segmentMeta = calculateSyncPoints(segments, globalBuffer);
                 
@@ -612,17 +606,7 @@
                 rawAudioBlob = new Blob([pcmToWavString(bytes.buffer, 24000)], { type: 'audio/wav' });
                 if (audio) { audio.pause(); audio = null; }
                 audio = new Audio(URL.createObjectURL(rawAudioBlob));
-                audio.onended = () => { 
-                    if(!useWebSpeech) {
-                        const isRepeat = document.getElementById('repeatMode').checked;
-                        const mode = document.querySelector('input[name="pMode"]:checked').value;
-                        if (isRepeat && mode === 'continuous') {
-                            seek(0);
-                        } else {
-                            stopPlayback(); 
-                        }
-                    }
-                };
+                setupAudioEvents();
                 
                 segmentMeta = calculateSyncPoints(segments, globalBuffer);
                 useWebSpeech = false;
@@ -677,6 +661,73 @@
         }
 
         // --- Playback Controls ---
+        function getPlaybackMode() {
+            return document.querySelector('input[name="pMode"]:checked').value;
+        }
+
+        function isRepeatEnabled() {
+            return document.getElementById('repeatMode').checked;
+        }
+
+        function setupAudioEvents() {
+            if (!audio) return;
+            audio.ontimeupdate = () => enforceSegmentBoundary();
+            audio.onended = handleAudioEnded;
+        }
+
+        function restartCurrentSegment() {
+            const meta = segmentMeta[currentIndex];
+            if (!audio || !meta) return;
+            audio.currentTime = meta.start;
+            audio.play().catch(e => log(`再生エラー: ${e.message}`, 'error'));
+            isPlaying = true;
+            updateControlIcons();
+            updateHighlight();
+            moveCursor();
+        }
+
+        function handleAudioEnded() {
+            if (useWebSpeech) return;
+
+            const mode = getPlaybackMode();
+            const isRepeat = isRepeatEnabled();
+            if (mode === 'manual' && isRepeat) {
+                restartCurrentSegment();
+            } else if (mode === 'continuous' && isRepeat) {
+                seek(0);
+            } else {
+                stopPlayback();
+            }
+        }
+
+        function enforceSegmentBoundary() {
+            if (!isPlaying || !audio || useWebSpeech) return false;
+            const meta = segmentMeta[currentIndex];
+            if (!meta || audio.currentTime < meta.end - 0.05) return false;
+
+            const mode = getPlaybackMode();
+            const isRepeat = isRepeatEnabled();
+            if (mode === 'manual') {
+                if (isRepeat) {
+                    restartCurrentSegment();
+                } else {
+                    audio.pause();
+                    isPlaying = false;
+                    updateControlIcons();
+                    moveCursor();
+                }
+                return true;
+            }
+
+            if (currentIndex === segmentMeta.length - 1 && isRepeat) {
+                currentIndex = 0;
+                restartCurrentSegment();
+                return true;
+            }
+
+            return false;
+        }
+
         function playPlayback() {
             if (useWebSpeech) return playWebSpeech();
             if (!audio) return;
@@ -702,35 +753,11 @@
         function monitorPlayback() {
             if (!isPlaying || !audio || useWebSpeech) return;
             const now = audio.currentTime;
-            const pMode = document.querySelector('input[name="pMode"]:checked').value;
-            const isRepeat = document.getElementById('repeatMode').checked;
-            const meta = segmentMeta[currentIndex];
 
             // 終了判定を先に行う (オーバーシュートによるインデックスのズレを防ぐ)
-            if (meta && now >= meta.end - 0.05) {
-                if (pMode === 'manual') {
-                    if (isRepeat) {
-                        audio.currentTime = meta.start;
-                        audio.play();
-                        moveCursor();
-                        monitorId = requestAnimationFrame(monitorPlayback);
-                        return;
-                    } else {
-                        audio.pause();
-                        isPlaying = false;
-                        updateControlIcons();
-                        moveCursor();
-                        return;
-                    }
-                } else if (currentIndex === segmentMeta.length - 1 && isRepeat) {
-                    currentIndex = 0;
-                    audio.currentTime = segmentMeta[0].start;
-                    audio.play();
-                    updateHighlight();
-                    moveCursor();
-                    monitorId = requestAnimationFrame(monitorPlayback);
-                    return;
-                }
+            if (enforceSegmentBoundary()) {
+                if (isPlaying) monitorId = requestAnimationFrame(monitorPlayback);
+                return;
             }
 
             // 終了判定に引っかからなかった場合のみインデックスを追従させる
@@ -876,13 +903,7 @@
                 document.getElementById('readableOutput').innerHTML = segments.map((s, i) => `<span class="segment" id="seg-${i}" onclick="seek(${i})">${s}</span>`).join('');
                 if (audio) audio.pause();
                 audio = new Audio(URL.createObjectURL(rawAudioBlob)); 
-                audio.onended = () => { 
-                    if(!useWebSpeech) {
-                        const isRepeat = document.getElementById('repeatMode').checked;
-                        const mode = document.querySelector('input[name="pMode"]:checked').value;
-                        if (isRepeat && mode === 'continuous') { seek(0); } else { stopPlayback(); }
-                    }
-                };
+                setupAudioEvents();
 
                 toggleMainUI(true); useWebSpeech = false;
                 document.getElementById('syncArea').classList.remove('hidden');
@@ -1030,6 +1051,12 @@
             if(e.target.files[0]) importZipData(e.target.files[0]); 
             e.target.value = '';
         };
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && enforceSegmentBoundary() && isPlaying) {
+                cancelAnimationFrame(monitorId);
+                monitorId = requestAnimationFrame(monitorPlayback);
+            }
+        });
 
         // Log Draggable/Resizable
         const pnl = document.getElementById('logPanel'), hdr = document.getElementById('logHeader'), hnd = document.getElementById('logResizeHandle');
