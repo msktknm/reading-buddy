@@ -1110,15 +1110,34 @@
 
         // iOS and Desktop Selection Trigger Logic
         const trg = document.getElementById('searchTrigger');
+        function positionSearchTriggerForRect(rect) {
+            trg.style.display = 'block';
+
+            const margin = 12;
+            const browserMenuGap = 92;
+            const centerX = rect.left + window.scrollX + (rect.width / 2);
+            const maxLeft = window.scrollX + window.innerWidth - trg.offsetWidth - margin;
+            const left = Math.max(window.scrollX + margin, Math.min(centerX - (trg.offsetWidth / 2), maxLeft));
+            const isUpperHalf = (rect.top + rect.height / 2) < (window.innerHeight / 2);
+            let top = isUpperHalf
+                ? rect.bottom + window.scrollY + browserMenuGap
+                : rect.top + window.scrollY - trg.offsetHeight - browserMenuGap;
+
+            const minTop = window.scrollY + margin;
+            const maxTop = window.scrollY + window.innerHeight - trg.offsetHeight - margin;
+            top = Math.max(minTop, Math.min(top, maxTop));
+
+            trg.style.left = left + 'px';
+            trg.style.top = top + 'px';
+        }
+
         function handleSelection() {
             const sel = window.getSelection();
             const txt = sel.toString().trim();
             if (txt && /[\u4e00-\u9fa5a-zA-Z]/.test(txt)) {
                 try {
                     const r = sel.getRangeAt(0).getBoundingClientRect();
-                    trg.style.display = 'block';
-                    trg.style.top = (r.top + window.scrollY - 50) + 'px';
-                    trg.style.left = (r.left + window.scrollX + (r.width / 2) - 80) + 'px';
+                    positionSearchTriggerForRect(r);
                     
                     const executeLookup = (e) => { 
                         e.preventDefault(); 
@@ -1140,9 +1159,13 @@
             const sel = window.getSelection().toString().trim();
             if (sel && /[\u4e00-\u9fa5a-zA-Z]/.test(sel)) {
                 e.preventDefault();
-                trg.style.display = 'block';
-                trg.style.top = e.pageY + 'px';
-                trg.style.left = e.pageX + 'px';
+                positionSearchTriggerForRect({
+                    left: e.clientX,
+                    top: e.clientY,
+                    bottom: e.clientY,
+                    width: 0,
+                    height: 0
+                });
                 trg.onclick = () => { lookupWord(sel); trg.style.display = 'none'; };
                 trg.ontouchend = () => { lookupWord(sel); trg.style.display = 'none'; };
             }
