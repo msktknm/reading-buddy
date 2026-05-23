@@ -352,6 +352,7 @@
         let monitorId = null, globalBuffer = null, zoomScale = 1, isSeekingNow = false;
         let rawAudioBlob = null;
         let importedDataFileName = "";
+        let audioPlayRequestId = 0, speechRequestId = 0;
         let currentLang = 'zh';
 
         function log(msg, type = 'info') {
@@ -684,6 +685,8 @@
 
         function setupAudioEvents() {
             if (!audio) return;
+            audio.onplay = () => setPlaybackState(true);
+            audio.onpause = () => { if (!isSeekingNow) setPlaybackState(false); };
             audio.ontimeupdate = () => enforceSegmentBoundary();
             audio.onended = handleAudioEnded;
         }
@@ -691,10 +694,16 @@
         function restartCurrentSegment() {
             const meta = segmentMeta[currentIndex];
             if (!audio || !meta) return;
+            const requestId = ++audioPlayRequestId;
             audio.currentTime = meta.start;
-            audio.play().catch(e => log(`再生エラー: ${e.message}`, 'error'));
-            isPlaying = true;
-            updateControlIcons();
+            audio.play().then(() => {
+                if (requestId !== audioPlayRequestId) return;
+                setPlaybackState(true);
+            }).catch(e => {
+                if (requestId !== audioPlayRequestId) return;
+                setPlaybackState(false);
+                log(`再生エラー: ${e.message}`, 'error');
+            });
             updateHighlight();
             moveCursor();
         }
@@ -725,8 +734,7 @@
                     restartCurrentSegment();
                 } else {
                     audio.pause();
-                    isPlaying = false;
-                    updateControlIcons();
+                    setPlaybackState(false);
                     moveCursor();
                 }
                 return true;
@@ -750,17 +758,24 @@
                 isSeekingNow = true; setTimeout(() => { isSeekingNow = false; }, 250);
             }
             audio.playbackRate = parseFloat(document.getElementById('rateRange').value);
+            const requestId = ++audioPlayRequestId;
             audio.play().then(() => {
-                isPlaying = true; updateControlIcons(); updateHighlight();
+                if (requestId !== audioPlayRequestId) return;
+                setPlaybackState(true); updateHighlight();
                 cancelAnimationFrame(monitorId); monitorId = requestAnimationFrame(monitorPlayback);
-            }).catch(e => log(`再生エラー: ${e.message}`, 'error'));
+            }).catch(e => {
+                if (requestId !== audioPlayRequestId) return;
+                setPlaybackState(false);
+                log(`再生エラー: ${e.message}`, 'error');
+            });
         }
 
         function stopPlayback() {
-            isPlaying = false; cancelAnimationFrame(monitorId);
+            audioPlayRequestId++;
+            speechRequestId++;
+            setPlaybackState(false); cancelAnimationFrame(monitorId);
             if (audio) audio.pause();
             if (window.speechSynthesis) window.speechSynthesis.cancel();
-            updateControlIcons();
         }
 
         function monitorPlayback() {
@@ -805,13 +820,19 @@
 
         function playWebSpeech(index = currentIndex) {
             currentIndex = index;
+            const requestId = ++speechRequestId;
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(segments[index]);
             utterance.lang = currentLang === 'zh' ? 'zh-CN' : 'en-US';
             utterance.rate = parseFloat(document.getElementById('rateRange').value);
             
-            utterance.onstart = () => { isPlaying = true; updateControlIcons(); updateHighlight(index); };
+            utterance.onstart = () => {
+                if (requestId !== speechRequestId) return;
+                setPlaybackState(true);
+                updateHighlight(index);
+            };
             utterance.onend = () => {
+                if (requestId !== speechRequestId) return;
                 if (!isPlaying) return;
                 const mode = document.querySelector('input[name="pMode"]:checked').value;
                 const isRepeat = document.getElementById('repeatMode').checked;
@@ -827,7 +848,7 @@
                 } else if (mode === 'manual' && isRepeat) {
                     playWebSpeech(index);
                 } else { 
-                    isPlaying = false; updateControlIcons(); 
+                    setPlaybackState(false);
                 }
             };
             window.speechSynthesis.speak(utterance);
@@ -1015,6 +1036,14 @@
             // clearBtn remains visible but changes context contextually if needed (currently kept visible)
         }
         
+        function setPlaybackState(nextIsPlaying) {
+            isPlaying = nextIsPlaying;
+            updateControlIcons();
+        }
+        function isPlaybackActive() {
+            if (useWebSpeech) return isPlaying;
+            return !!(audio && !audio.paused && !audio.ended);
+        }
         function updateControlIcons() {
             document.getElementById('iconPlay').classList.toggle('hidden', isPlaying);
             document.getElementById('iconPause').classList.toggle('hidden', !isPlaying);
@@ -1033,7 +1062,7 @@
 
         // UI Events
         document.getElementById('processBtn').onclick = startProcessing;
-        document.getElementById('btnPlay').onclick = () => isPlaying ? stopPlayback() : playPlayback();
+        document.getElementById('btnPlay').onclick = () => isPlaybackActive() ? stopPlayback() : playPlayback();
         document.getElementById('btnStop').onclick = () => { stopPlayback(); toggleMainUI(false); document.getElementById('syncArea').classList.add('hidden'); };
         document.getElementById('btnPrev').onclick = () => seek(Math.max(0, currentIndex - 1));
         document.getElementById('btnNext').onclick = () => seek(Math.min(segments.length - 1, currentIndex + 1));
