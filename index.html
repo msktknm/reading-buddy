@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Language Buddy v4.04</title>
+    <title>Language Buddy v4.1.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -142,7 +142,7 @@
     <div id="logPanel" class="log-minimized">
         <div id="logResizeHandle"></div>
         <div id="logHeader">
-            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v4.04</span>
+            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v4.1.0</span>
             <div class="flex gap-2">
                 <button id="btnLogMin" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">MIN/MAX</button>
                 <button id="btnLogCopy" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">COPY</button>
@@ -158,7 +158,7 @@
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200 px-6 py-4">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <h1 class="text-2xl font-black text-indigo-600 tracking-tighter" style="font-family: 'Syne', sans-serif;">
-                LANGUAGE BUDDY <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v4.04</span>
+                LANGUAGE BUDDY <span class="text-[10px] bg-indigo-100 px-2 py-0.5 rounded ml-1 align-middle">v4.1.0</span>
             </h1>
             <div class="flex gap-2 items-center">
                 <button id="settingsBtn" class="p-2 hover:bg-slate-100 rounded-full text-slate-500">
@@ -223,7 +223,10 @@
                     <button id="btnNext" class="w-12 h-12 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-full text-lg hover:bg-slate-100 active:scale-90 transition-all">⏭</button>
                 </div>
 
-                <button id="processBtn" class="bg-indigo-600 text-white font-bold px-10 py-4 rounded-2xl shadow-xl active:scale-95 transition-all ml-auto">読み上げ変換</button>
+                <div id="processControls" class="ml-auto flex flex-col items-end gap-2">
+                    <p id="ttsLengthWarning" class="hidden max-w-xs text-right text-[11px] font-bold text-red-500 leading-snug">中国語が500字以上あります。音声変換に失敗する可能性があります。</p>
+                    <button id="processBtn" class="bg-indigo-600 text-white font-bold px-10 py-4 rounded-2xl shadow-xl active:scale-95 transition-all">読み上げ変換</button>
+                </div>
             </div>
         </div>
 
@@ -335,7 +338,7 @@
 
     <script>
         const CONFIG = {
-            VERSION: "v4.04",
+            VERSION: "v4.1.0",
             MODELS: {
                 TTS: "gemini-2.5-flash-preview-tts",
                 DICT: "gemini-3-flash-preview"
@@ -376,9 +379,20 @@
             label.classList.toggle('hidden', !importedDataFileName);
         }
 
+        function getChineseCharCount(text) {
+            return (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+        }
+
+        function updateTtsLengthWarning() {
+            const warning = document.getElementById('ttsLengthWarning');
+            if (!warning) return;
+            const text = document.getElementById('rawInput').value;
+            warning.classList.toggle('hidden', getChineseCharCount(text) < 500);
+        }
+
         // --- 英語・中国語自動判定 ---
         function detectLanguage(text) {
-            const zhCount = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+            const zhCount = getChineseCharCount(text);
             const enCount = (text.match(/[a-zA-Z]/g) || []).length;
             currentLang = zhCount > enCount * 0.3 ? 'zh' : 'en';
             
@@ -528,6 +542,7 @@
 
                 const cleanText = transcribedText.trim();
                 document.getElementById('rawInput').value = cleanText;
+                updateTtsLengthWarning();
                 log(`文字起こし成功`, 'success');
 
                 const lang = detectLanguage(cleanText);
@@ -929,6 +944,7 @@
                 actx.close();
 
                 document.getElementById('rawInput').value = data.rawInput || "";
+                updateTtsLengthWarning();
                 currentLang = data.lang || detectLanguage(data.rawInput || "");
                 detectLanguage(data.rawInput || ""); 
                 
@@ -1026,7 +1042,7 @@
         function toggleMainUI(isReading) {
             document.getElementById('rawInput').classList.toggle('hidden', isReading);
             document.getElementById('readableOutput').classList.toggle('hidden', !isReading);
-            document.getElementById('processBtn').classList.toggle('hidden', isReading);
+            document.getElementById('processControls').classList.toggle('hidden', isReading);
             
             // playerUI is moved into rawInput's bottom area in layout
             document.getElementById('playerUI').classList.toggle('hidden', !isReading);
@@ -1066,7 +1082,8 @@
         document.getElementById('btnStop').onclick = () => { stopPlayback(); toggleMainUI(false); document.getElementById('syncArea').classList.add('hidden'); };
         document.getElementById('btnPrev').onclick = () => seek(Math.max(0, currentIndex - 1));
         document.getElementById('btnNext').onclick = () => seek(Math.min(segments.length - 1, currentIndex + 1));
-        document.getElementById('clearBtn').onclick = () => { document.getElementById('rawInput').value = ""; log("テキスト消去"); };
+        document.getElementById('clearBtn').onclick = () => { document.getElementById('rawInput').value = ""; updateTtsLengthWarning(); log("テキスト消去"); };
+        document.getElementById('rawInput').addEventListener('input', updateTtsLengthWarning);
         document.getElementById('zoomRange').oninput = (e) => { zoomScale = e.target.value; drawWaveform(); renderMarkers(); moveCursor(); };
         document.getElementById('rateRange').oninput = (e) => {
             const val = e.target.value;
@@ -1219,7 +1236,7 @@
         document.addEventListener('mousedown', hideTrigger);
         document.addEventListener('touchstart', hideTrigger);
 
-        window.onload = () => { renderVocab(); log("Language Buddy v4.04 initialized."); if(!userKey) document.getElementById('settingsModal').classList.remove('hidden'); };
+        window.onload = () => { renderVocab(); updateTtsLengthWarning(); log(`Language Buddy ${CONFIG.VERSION} initialized.`); if(!userKey) document.getElementById('settingsModal').classList.remove('hidden'); };
     </script>
 </body>
 </html>
