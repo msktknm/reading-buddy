@@ -177,6 +177,7 @@
             <div class="flex flex-wrap gap-2">
                 <button id="importAudioBtn" class="text-[11px] font-bold bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2.5 rounded-xl hover:bg-blue-100 transition-colors">AUDIO IMPORT</button>
                 <button id="importDataBtn" class="text-[11px] font-bold bg-slate-100 text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-200 transition-colors">DATA IMPORT</button>
+                <span id="importedDataFilename" class="hidden max-w-[220px] truncate text-[11px] font-bold text-slate-400 self-center" title=""></span>
                 <button id="exportDataBtn" class="hidden text-[11px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-200 px-4 py-2.5 rounded-xl hover:bg-indigo-100 transition-colors">DATA EXPORT (ZIP)</button>
             </div>
             <div id="playModes" class="hidden flex items-center gap-4 bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
@@ -350,6 +351,7 @@
         let audio = null, isPlaying = false, useWebSpeech = false;
         let monitorId = null, globalBuffer = null, zoomScale = 1, isSeekingNow = false;
         let rawAudioBlob = null;
+        let importedDataFileName = "";
         let currentLang = 'zh';
 
         function log(msg, type = 'info') {
@@ -362,6 +364,15 @@
             div.className = "mb-1 text-[10px]";
             div.innerHTML = `<span class="opacity-40 mr-2">${ts}</span>${typeof msg === 'object' ? JSON.stringify(msg) : msg}`;
             container.prepend(div);
+        }
+
+        function setImportedDataFileName(name) {
+            importedDataFileName = name || "";
+            const label = document.getElementById('importedDataFilename');
+            if (!label) return;
+            label.innerText = importedDataFileName ? `DATA: ${importedDataFileName}` : "";
+            label.title = importedDataFileName;
+            label.classList.toggle('hidden', !importedDataFileName);
         }
 
         // --- 英語・中国語自動判定 ---
@@ -476,6 +487,7 @@
             const file = e.target.files[0];
             if (!file) return;
             log(`音声ファイル読込開始: ${file.name}`, 'info');
+            setImportedDataFileName("");
             const loader = document.getElementById('loadingOverlay');
             document.getElementById('loadingStatus').innerText = "TRANSCRIBING AUDIO...";
             loader.classList.remove('hidden');
@@ -552,6 +564,7 @@
             const input = document.getElementById('rawInput').value.trim();
             if (!input) { log("テキストがありません", "warn"); return; }
             if (!userKey) { log("APIキー未設定", "warn"); document.getElementById('settingsModal').classList.remove('hidden'); return; }
+            setImportedDataFileName("");
 
             log(`テキスト処理開始 (${CONFIG.VERSION}): ${input.substring(0,20)}...`);
             
@@ -875,7 +888,8 @@
             zip.file("audio.wav", rawAudioBlob);
             zip.file("metadata.json", JSON.stringify({ version: CONFIG.VERSION, lang: currentLang, segments, meta: segmentMeta, rawInput: document.getElementById('rawInput').value }));
             const content = await zip.generateAsync({ type: "blob" });
-            const a = document.createElement("a"); a.href = URL.createObjectURL(content); a.download = `language_buddy_${Date.now()}.zip`; a.click();
+            const exportFileName = importedDataFileName || `language_buddy_${Date.now()}.zip`;
+            const a = document.createElement("a"); a.href = URL.createObjectURL(content); a.download = exportFileName; a.click();
             log("エクスポート完了", 'success');
         }
 
@@ -908,9 +922,10 @@
                 toggleMainUI(true); useWebSpeech = false;
                 document.getElementById('syncArea').classList.remove('hidden');
                 document.getElementById('exportDataBtn').classList.remove('hidden');
+                setImportedDataFileName(file.name);
                 drawWaveform(); renderMarkers(); seek(0);
                 log("データ読込成功", 'success');
-            } catch (err) { log(`読込失敗: ${err.message}`, 'error'); } finally { loader.classList.add('hidden'); e.target.value=''; }
+            } catch (err) { log(`読込失敗: ${err.message}`, 'error'); } finally { loader.classList.add('hidden'); }
         }
 
         async function lookupWord(word) {
