@@ -966,6 +966,7 @@
             const content = await zip.generateAsync({ type: "blob" });
             const exportFileName = importedDataFileName || `language_buddy_${Date.now()}.zip`;
             const a = document.createElement("a"); a.href = URL.createObjectURL(content); a.download = exportFileName; a.click();
+            setImportedDataFileName(exportFileName);
             log("エクスポート完了", 'success');
         }
 
