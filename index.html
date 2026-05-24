@@ -340,7 +340,11 @@
         const CONFIG = {
             VERSION: "v4.1.0",
             MODELS: {
-                TTS: "gemini-2.5-flash-preview-tts",
+                TTS_TRY_LIST: [
+                    "gemini-3.5-flash",
+                    "gemini-3.1-flash-tts-preview",
+                    "gemini-2.5-flash-preview-tts"
+                ],
                 DICT: "gemini-3-flash-preview"
             },
             STORAGE_KEYS: {
@@ -599,26 +603,46 @@
             document.getElementById('loadingStatus').innerText = "TTS GENERATING...";
             
             try {
-                log(`TTSリクエスト: ${CONFIG.MODELS.TTS}`, 'api');
                 const voiceName = lang === 'zh' ? 'Kore' : 'Aoede';
-                
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.MODELS.TTS}:generateContent?key=${userKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: text }] }],
-                        generationConfig: {
-                            responseModalities: ["AUDIO"],
-                            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } } }
-                        }
-                    })
-                });
+                const requestBody = {
+                    contents: [{ parts: [{ text: text }] }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } } }
+                    }
+                };
+                const errors = [];
+                let data = null;
+                let usedModel = "";
 
-                const data = await response.json();
-                if (!response.ok) {
-                    log(`API Error: ${JSON.stringify(data)}`, 'error');
-                    if (response.status === 429) return showLimitModal(data.error?.message || "Rate limit reached");
-                    throw new Error(data.error?.message || "TTS API Error");
+                for (const model of CONFIG.MODELS.TTS_TRY_LIST) {
+                    log(`TTSリクエスト: ${model}`, 'api');
+                    try {
+                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userKey}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(requestBody)
+                        });
+                        const result = await response.json();
+                        if (!response.ok) {
+                            const message = result.error?.message || `HTTP ${response.status}`;
+                            errors.push(`${model}: ${message}`);
+                            log(`TTSモデル失敗 (${model}): ${message}`, 'warn');
+                            continue;
+                        }
+                        data = result;
+                        usedModel = model;
+                        break;
+                    } catch (err) {
+                        errors.push(`${model}: ${err.message}`);
+                        log(`TTSモデル失敗 (${model}): ${err.message}`, 'warn');
+                    }
+                }
+
+                if (!data) {
+                    const rateLimitError = errors.find(msg => msg.includes("429") || msg.toLowerCase().includes("rate"));
+                    if (rateLimitError) return showLimitModal(rateLimitError);
+                    throw new Error(errors.join(" / ") || "TTS API Error");
                 }
 
                 const part = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
@@ -642,7 +666,7 @@
                 document.getElementById('syncArea').classList.remove('hidden');
                 document.getElementById('exportDataBtn').classList.remove('hidden');
                 drawWaveform(); renderMarkers(); seek(0);
-                log("TTS生成成功", 'success');
+                log(`TTS生成成功: ${usedModel}`, 'success');
             } catch (err) {
                 log(`TTS失敗: ${err.message}`, 'error');
                 startWebSpeechMode();
