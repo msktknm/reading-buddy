@@ -965,9 +965,40 @@
             zip.file("metadata.json", JSON.stringify({ version: CONFIG.VERSION, lang: currentLang, segments, meta: segmentMeta, rawInput: document.getElementById('rawInput').value }));
             const content = await zip.generateAsync({ type: "blob" });
             const exportFileName = importedDataFileName || `language_buddy_${Date.now()}.zip`;
-            const a = document.createElement("a"); a.href = URL.createObjectURL(content); a.download = exportFileName; a.click();
-            setImportedDataFileName(exportFileName);
+            const savedFileName = await saveZipBlob(content, exportFileName);
+            if (!savedFileName) {
+                log("エクスポートをキャンセルしました", 'warn');
+                return;
+            }
+            setImportedDataFileName(savedFileName);
             log("エクスポート完了", 'success');
+        }
+
+        async function saveZipBlob(blob, suggestedName) {
+            if (window.showSaveFilePicker) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName,
+                        types: [{
+                            description: 'Language Buddy ZIP',
+                            accept: { 'application/zip': ['.zip'] }
+                        }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    return handle.name;
+                } catch (err) {
+                    if (err.name === 'AbortError') return "";
+                    throw err;
+                }
+            }
+
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = suggestedName;
+            a.click();
+            return importedDataFileName || "初回保存時は表示不可";
         }
 
         async function importZipData(file) {
