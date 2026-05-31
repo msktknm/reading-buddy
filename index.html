@@ -29,10 +29,12 @@
         .segment { 
             transition: all 0.2s ease; 
             border-radius: 4px; 
-            padding: 2px 4px; 
-            cursor: pointer; 
+            padding: 1px 2px;
+            cursor: text;
             border-bottom: 2px solid transparent; 
             display: inline;
+            user-select: text;
+            -webkit-user-select: text;
         }
         .highlight-active { background: #fef08a !important; border-bottom: 2px solid #eab308; color: #000; }
         
@@ -448,6 +450,19 @@
             return res.filter(s => s && s.trim().length > 0);
         }
 
+        function renderReadableSegments() {
+            const output = document.getElementById('readableOutput');
+            output.textContent = "";
+            segments.forEach((segment, i) => {
+                const span = document.createElement('span');
+                span.className = "segment";
+                span.id = `seg-${i}`;
+                span.dataset.segmentIndex = i;
+                span.textContent = segment;
+                output.appendChild(span);
+            });
+        }
+
         function audioBufferToWav(buffer) {
             const numChannels = buffer.numberOfChannels;
             const sampleRate = buffer.sampleRate;
@@ -552,7 +567,7 @@
                 const lang = detectLanguage(cleanText);
                 segments = segmentText(cleanText, lang);
                 currentIndex = 0;
-                document.getElementById('readableOutput').innerHTML = segments.map((s, i) => `<span class="segment" id="seg-${i}" onclick="seek(${i})">${s}</span>`).join('');
+                renderReadableSegments();
 
                 if (audio) { audio.pause(); audio = null; }
                 audio = new Audio(URL.createObjectURL(rawAudioBlob));
@@ -592,7 +607,7 @@
             segments = segmentText(input, lang);
             currentIndex = 0;
             
-            document.getElementById('readableOutput').innerHTML = segments.map((s, i) => `<span class="segment" id="seg-${i}" onclick="seek(${i})">${s}</span>`).join('');
+            renderReadableSegments();
             toggleMainUI(true);
             await generateAudio(input, lang);
         }
@@ -1023,7 +1038,7 @@
                 segments = data.segments || segmentText(data.rawInput || "", currentLang); 
                 segmentMeta = data.meta || [];
                 
-                document.getElementById('readableOutput').innerHTML = segments.map((s, i) => `<span class="segment" id="seg-${i}" onclick="seek(${i})">${s}</span>`).join('');
+                renderReadableSegments();
                 if (audio) audio.pause();
                 audio = new Audio(URL.createObjectURL(rawAudioBlob)); 
                 setupAudioEvents();
@@ -1148,7 +1163,28 @@
         }
         function startWebSpeechMode() { useWebSpeech = true; log("WebSpeechモードへ移行", 'warn'); seek(0); }
 
+        function selectionTouchesReadableOutput() {
+            const output = document.getElementById('readableOutput');
+            const sel = window.getSelection();
+            if (!output || !sel || !sel.rangeCount) return false;
+            const range = sel.getRangeAt(0);
+            const insideOutput = (node) => node && output.contains(node);
+            return insideOutput(sel.anchorNode) || insideOutput(sel.focusNode) || insideOutput(range.commonAncestorContainer);
+        }
+
+        function hasReadableTextSelection() {
+            const sel = window.getSelection();
+            return !!(sel && !sel.isCollapsed && sel.toString().trim() && selectionTouchesReadableOutput());
+        }
+
+        function closestSegmentFromTarget(target) {
+            const el = target?.nodeType === Node.ELEMENT_NODE ? target : target?.parentElement;
+            return el ? el.closest('.segment') : null;
+        }
+
         // UI Events
+        let readableTouchStart = null;
+        let suppressSegmentClickUntil = 0;
         document.getElementById('processBtn').onclick = startProcessing;
         document.getElementById('btnPlay').onclick = () => isPlaybackActive() ? stopPlayback() : playPlayback();
         document.getElementById('btnStop').onclick = () => { stopPlayback(); toggleMainUI(false); document.getElementById('syncArea').classList.add('hidden'); };
@@ -1156,6 +1192,25 @@
         document.getElementById('btnNext').onclick = () => seek(Math.min(segments.length - 1, currentIndex + 1));
         document.getElementById('clearBtn').onclick = () => { document.getElementById('rawInput').value = ""; updateTtsLengthWarning(); log("テキスト消去"); };
         document.getElementById('rawInput').addEventListener('input', updateTtsLengthWarning);
+        document.getElementById('readableOutput').addEventListener('touchstart', (e) => {
+            if (!closestSegmentFromTarget(e.target)) return;
+            const touch = e.touches[0];
+            readableTouchStart = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+        }, { passive: true });
+        document.getElementById('readableOutput').addEventListener('touchend', (e) => {
+            if (!readableTouchStart) return;
+            const touch = e.changedTouches[0];
+            const moved = Math.hypot(touch.clientX - readableTouchStart.x, touch.clientY - readableTouchStart.y);
+            const held = Date.now() - readableTouchStart.time;
+            if (moved > 8 || held > 350) suppressSegmentClickUntil = Date.now() + 700;
+            readableTouchStart = null;
+        }, { passive: true });
+        document.getElementById('readableOutput').addEventListener('click', (e) => {
+            if (Date.now() < suppressSegmentClickUntil || hasReadableTextSelection()) return;
+            const segment = closestSegmentFromTarget(e.target);
+            if (!segment || !e.currentTarget.contains(segment)) return;
+            seek(Number(segment.dataset.segmentIndex));
+        });
         document.getElementById('zoomRange').oninput = (e) => { zoomScale = e.target.value; drawWaveform(); renderMarkers(); moveCursor(); };
         document.getElementById('rateRange').oninput = (e) => {
             const val = e.target.value;
@@ -1243,6 +1298,7 @@
 
         // iOS and Desktop Selection Trigger Logic
         const trg = document.getElementById('searchTrigger');
+        let selectionUpdateTimer = null;
         function positionSearchTriggerForRect(rect) {
             trg.style.display = 'block';
 
@@ -1286,7 +1342,10 @@
             }
         }
 
-        document.addEventListener('selectionchange', () => setTimeout(handleSelection, 150));
+        document.addEventListener('selectionchange', () => {
+            clearTimeout(selectionUpdateTimer);
+            selectionUpdateTimer = setTimeout(handleSelection, 350);
+        });
 
         document.addEventListener('contextmenu', (e) => {
             const sel = window.getSelection().toString().trim();
