@@ -26,7 +26,14 @@
 
         .chinese-text { font-family: 'Noto Sans SC', serif; line-height: 2.2; }
         
-        .segment { 
+        #readableOutput {
+            position: relative;
+            cursor: text;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .segment {
             transition: all 0.2s ease; 
             border-radius: 4px; 
             padding: 1px 2px;
@@ -35,6 +42,16 @@
             display: inline;
             user-select: text;
             -webkit-user-select: text;
+        }
+        ::highlight(active-segment) { background: #fef08a; color: #000; text-decoration: underline #eab308 2px; }
+        .segment-highlight {
+            position: absolute;
+            background: rgba(254, 240, 138, 0.65);
+            border-bottom: 2px solid #eab308;
+            border-radius: 4px;
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-select: none;
         }
         .highlight-active { background: #fef08a !important; border-bottom: 2px solid #eab308; color: #000; }
         
@@ -363,6 +380,7 @@
         let importedDataFileName = "";
         let audioPlayRequestId = 0, speechRequestId = 0;
         let currentLang = 'zh';
+        let readableTextNode = null, segmentOffsets = [];
 
         function log(msg, type = 'info') {
             const container = document.getElementById('logContent');
@@ -452,15 +470,15 @@
 
         function renderReadableSegments() {
             const output = document.getElementById('readableOutput');
-            output.textContent = "";
-            segments.forEach((segment, i) => {
-                const span = document.createElement('span');
-                span.className = "segment";
-                span.id = `seg-${i}`;
-                span.dataset.segmentIndex = i;
-                span.textContent = segment;
-                output.appendChild(span);
+            output.textContent = segments.join('');
+            readableTextNode = output.firstChild;
+            segmentOffsets = [];
+            let offset = 0;
+            segments.forEach((segment) => {
+                segmentOffsets.push({ start: offset, end: offset + segment.length });
+                offset += segment.length;
             });
+            updateHighlight();
         }
 
         function audioBufferToWav(buffer) {
@@ -1152,9 +1170,32 @@
             document.getElementById('iconPause').classList.toggle('hidden', !isPlaying);
         }
         function updateHighlight(index = currentIndex) {
-            document.querySelectorAll('.segment').forEach(s => s.classList.remove('highlight-active'));
-            const target = document.getElementById(`seg-${index}`);
-            if (target) target.classList.add('highlight-active');
+            if (window.CSS?.highlights) CSS.highlights.delete('active-segment');
+            document.querySelectorAll('#readableOutput .segment-highlight').forEach(el => el.remove());
+
+            const meta = segmentOffsets[index];
+            if (!readableTextNode || !meta) return;
+
+            const range = document.createRange();
+            range.setStart(readableTextNode, meta.start);
+            range.setEnd(readableTextNode, meta.end);
+
+            if (window.CSS?.highlights && window.Highlight) {
+                CSS.highlights.set('active-segment', new Highlight(range));
+                return;
+            }
+
+            const output = document.getElementById('readableOutput');
+            const outputRect = output.getBoundingClientRect();
+            Array.from(range.getClientRects()).forEach(rect => {
+                const highlight = document.createElement('span');
+                highlight.className = 'segment-highlight';
+                highlight.style.left = `${rect.left - outputRect.left + output.scrollLeft}px`;
+                highlight.style.top = `${rect.top - outputRect.top + output.scrollTop}px`;
+                highlight.style.width = `${rect.width}px`;
+                highlight.style.height = `${rect.height}px`;
+                output.appendChild(highlight);
+            });
         }
         function showLimitModal(msg) {
             const timeMatch = msg.match(/\d{1,2}:\d{2}:\d{2}/);
@@ -1177,9 +1218,41 @@
             return !!(sel && !sel.isCollapsed && sel.toString().trim() && selectionTouchesReadableOutput());
         }
 
-        function closestSegmentFromTarget(target) {
-            const el = target?.nodeType === Node.ELEMENT_NODE ? target : target?.parentElement;
-            return el ? el.closest('.segment') : null;
+        function getTextOffsetFromPoint(clientX, clientY) {
+            const output = document.getElementById('readableOutput');
+            if (!output || !readableTextNode) return null;
+
+            let node = null;
+            let offset = 0;
+            if (document.caretPositionFromPoint) {
+                const pos = document.caretPositionFromPoint(clientX, clientY);
+                node = pos?.offsetNode || null;
+                offset = pos?.offset || 0;
+            } else if (document.caretRangeFromPoint) {
+                const range = document.caretRangeFromPoint(clientX, clientY);
+                node = range?.startContainer || null;
+                offset = range?.startOffset || 0;
+            }
+
+            if (!node || !output.contains(node)) return null;
+            if (node === readableTextNode) return offset;
+
+            const walker = document.createTreeWalker(output, NodeFilter.SHOW_TEXT);
+            let total = 0;
+            let current = walker.nextNode();
+            while (current) {
+                if (current === node) return total + offset;
+                total += current.textContent.length;
+                current = walker.nextNode();
+            }
+            return null;
+        }
+
+        function getSegmentIndexFromPoint(clientX, clientY) {
+            const offset = getTextOffsetFromPoint(clientX, clientY);
+            if (offset === null) return -1;
+            const index = segmentOffsets.findIndex(meta => offset >= meta.start && offset < meta.end);
+            return index === -1 && offset === readableTextNode?.textContent.length ? segmentOffsets.length - 1 : index;
         }
 
         // UI Events
@@ -1193,7 +1266,6 @@
         document.getElementById('clearBtn').onclick = () => { document.getElementById('rawInput').value = ""; updateTtsLengthWarning(); log("テキスト消去"); };
         document.getElementById('rawInput').addEventListener('input', updateTtsLengthWarning);
         document.getElementById('readableOutput').addEventListener('touchstart', (e) => {
-            if (!closestSegmentFromTarget(e.target)) return;
             const touch = e.touches[0];
             readableTouchStart = { x: touch.clientX, y: touch.clientY, time: Date.now() };
         }, { passive: true });
@@ -1207,9 +1279,9 @@
         }, { passive: true });
         document.getElementById('readableOutput').addEventListener('click', (e) => {
             if (Date.now() < suppressSegmentClickUntil || hasReadableTextSelection()) return;
-            const segment = closestSegmentFromTarget(e.target);
-            if (!segment || !e.currentTarget.contains(segment)) return;
-            seek(Number(segment.dataset.segmentIndex));
+            const index = getSegmentIndexFromPoint(e.clientX, e.clientY);
+            if (index === -1) return;
+            seek(index);
         });
         document.getElementById('zoomRange').oninput = (e) => { zoomScale = e.target.value; drawWaveform(); renderMarkers(); moveCursor(); };
         document.getElementById('rateRange').oninput = (e) => {
