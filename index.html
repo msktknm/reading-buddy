@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Language Buddy v5.0.2</title>
+    <title>Language Buddy v5.0.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -61,7 +61,7 @@
                 background: #020617;
                 color: #e2e8f0;
             }
-            body, button, input, textarea, select, #readableOutput, .segment, .logPanel, #logContent, #logHeader, #dictModal, #limitModal {
+            body, button, input, textarea, select, #readableOutput, .segment, .logPanel, #logContent, #logHeader, #floatingPlayer, #floatingPlayerHeader, #dictModal, #limitModal {
                 color: #e2e8f0;
             }
             textarea#rawInput, #readableOutput {
@@ -90,6 +90,9 @@
             .highlight-active { background: #fde68a !important; color: #000 !important; }
             #logPanel { background: rgba(15, 23, 42, 0.96); border-color: rgba(100, 116, 139, 0.3); }
             #logHeader { background: #111827; }
+            #floatingPlayer { background: rgba(15, 23, 42, 0.96); border-color: rgba(100, 116, 139, 0.45); }
+            #floatingPlayerHeader { background: #111827; }
+            #floatingPrev, #floatingNext { background: #1e293b; border-color: #475569; }
             #searchTrigger { background: #4f46e5; color: #fff; border-color: #fff; }
             #settingsModal > div, #dictModal > div, #limitModal > div {
                 background: #0f172a;
@@ -110,6 +113,26 @@
         #logContent { flex: 1; overflow-y: auto; font-size: 10px; padding: 10px; font-family: 'Consolas', 'Monaco', monospace; display: flex; flex-direction: column-reverse; word-break: break-all; }
         .log-minimized { height: 42px !important; width: 250px !important; }
         #logResizeHandle { position: absolute; top: 0; left: 0; width: 24px; height: 24px; cursor: nw-resize; z-index: 5001; }
+
+        /* Floating Player */
+        #floatingPlayer {
+            position: fixed; bottom: 20px; left: 20px; z-index: 4900;
+            width: 224px; overflow: hidden; touch-action: none;
+            background: rgba(255, 255, 255, 0.96); border: 1px solid rgba(148, 163, 184, 0.45);
+            border-radius: 16px; box-shadow: 0 12px 35px rgba(15, 23, 42, 0.25);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        }
+        #floatingPlayerHeader {
+            cursor: move; padding: 8px 12px; user-select: none;
+            background: #f1f5f9; border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+        }
+        #floatingPlayerControls { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px; }
+        .floating-player-button {
+            display: flex; align-items: center; justify-content: center;
+            width: 46px; height: 46px; border-radius: 9999px;
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+        .floating-player-button:active { transform: scale(0.9); }
 
         /* Waveform Scrollbar */
         #waveformScroll { 
@@ -161,7 +184,7 @@
     <div id="logPanel" class="log-minimized">
         <div id="logResizeHandle"></div>
         <div id="logHeader">
-            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v5.0.2</span>
+            <span class="text-[10px] font-bold text-slate-400 tracking-widest">LOG v5.0.3</span>
             <div class="flex gap-2">
                 <button id="btnLogMin" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">MIN/MAX</button>
                 <button id="btnLogCopy" class="text-[9px] bg-slate-700 px-2 py-0.5 rounded hover:bg-slate-600 text-white">COPY</button>
@@ -171,13 +194,27 @@
         <div id="logContent"></div>
     </div>
 
+    <!-- Floating Player Panel -->
+    <div id="floatingPlayer" class="hidden" aria-label="フローティング再生操作">
+        <div id="floatingPlayerHeader">
+            <span class="block text-center text-[9px] font-bold text-slate-400 tracking-[0.2em]">PLAYER</span>
+        </div>
+        <div id="floatingPlayerControls">
+            <button id="floatingPrev" class="floating-player-button bg-slate-50 border border-slate-200 text-lg hover:bg-slate-100" aria-label="前のセグメント">⏮</button>
+            <button id="floatingPlay" class="floating-player-button w-14 h-14 bg-indigo-600 text-white text-xl shadow-lg shadow-indigo-200" aria-label="再生">
+                <span id="floatingIconPlay">▶</span><span id="floatingIconPause" class="hidden">||</span>
+            </button>
+            <button id="floatingNext" class="floating-player-button bg-slate-50 border border-slate-200 text-lg hover:bg-slate-100" aria-label="次のセグメント">⏭</button>
+        </div>
+    </div>
+
     <div id="searchTrigger">その単語を調べますか？</div>
 
     <!-- 5.1 機能名、バージョン、設定メニューボタン -->
     <nav class="sticky top-0 z-50 bg-slate-950/95 backdrop-blur border-b border-slate-800 px-6 py-4">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <h1 class="text-2xl font-black bg-indigo-600 text-white tracking-tighter px-4 py-2 rounded-xl" style="font-family: 'Syne', sans-serif;">
-                LANGUAGE BUDDY <span class="text-[10px] bg-white text-indigo-600 px-2 py-0.5 rounded ml-1 align-middle">v5.0.2</span>
+                LANGUAGE BUDDY <span class="text-[10px] bg-white text-indigo-600 px-2 py-0.5 rounded ml-1 align-middle">v5.0.3</span>
             </h1>
             <div class="flex gap-2 items-center">
                 <button id="settingsBtn" class="p-2 hover:bg-slate-100 rounded-full text-slate-500">
@@ -357,7 +394,7 @@
 
     <script>
         const CONFIG = {
-            VERSION: "v5.0.2",
+            VERSION: "v5.0.3",
             MODELS: {
                 TTS_TRY_LIST: [
                     "gemini-3.5-flash",
@@ -1151,6 +1188,7 @@
             
             // playerUI is moved into rawInput's bottom area in layout
             document.getElementById('playerUI').classList.toggle('hidden', !isReading);
+            document.getElementById('floatingPlayer').classList.toggle('hidden', !isReading);
             document.getElementById('playModes').classList.toggle('hidden', !isReading);
             if(!isReading) document.getElementById('exportDataBtn').classList.add('hidden');
             
@@ -1166,8 +1204,15 @@
             return !!(audio && !audio.paused && !audio.ended);
         }
         function updateControlIcons() {
-            document.getElementById('iconPlay').classList.toggle('hidden', isPlaying);
-            document.getElementById('iconPause').classList.toggle('hidden', !isPlaying);
+            ['iconPlay', 'floatingIconPlay'].forEach(id => {
+                document.getElementById(id).classList.toggle('hidden', isPlaying);
+            });
+            ['iconPause', 'floatingIconPause'].forEach(id => {
+                document.getElementById(id).classList.toggle('hidden', !isPlaying);
+            });
+            ['btnPlay', 'floatingPlay'].forEach(id => {
+                document.getElementById(id).setAttribute('aria-label', isPlaying ? '一時停止' : '再生');
+            });
         }
         function updateHighlight(index = currentIndex) {
             if (window.CSS?.highlights) CSS.highlights.delete('active-segment');
@@ -1258,11 +1303,17 @@
         // UI Events
         let readableTouchStart = null;
         let suppressSegmentClickUntil = 0;
+        const togglePlayback = () => isPlaybackActive() ? stopPlayback() : playPlayback();
+        const playPreviousSegment = () => seek(Math.max(0, currentIndex - 1));
+        const playNextSegment = () => seek(Math.min(segments.length - 1, currentIndex + 1));
         document.getElementById('processBtn').onclick = startProcessing;
-        document.getElementById('btnPlay').onclick = () => isPlaybackActive() ? stopPlayback() : playPlayback();
+        document.getElementById('btnPlay').onclick = togglePlayback;
+        document.getElementById('floatingPlay').onclick = togglePlayback;
         document.getElementById('btnStop').onclick = () => { stopPlayback(); toggleMainUI(false); document.getElementById('syncArea').classList.add('hidden'); };
-        document.getElementById('btnPrev').onclick = () => seek(Math.max(0, currentIndex - 1));
-        document.getElementById('btnNext').onclick = () => seek(Math.min(segments.length - 1, currentIndex + 1));
+        document.getElementById('btnPrev').onclick = playPreviousSegment;
+        document.getElementById('floatingPrev').onclick = playPreviousSegment;
+        document.getElementById('btnNext').onclick = playNextSegment;
+        document.getElementById('floatingNext').onclick = playNextSegment;
         document.getElementById('clearBtn').onclick = () => { document.getElementById('rawInput').value = ""; updateTtsLengthWarning(); log("テキスト消去"); };
         document.getElementById('rawInput').addEventListener('input', updateTtsLengthWarning);
         document.getElementById('readableOutput').addEventListener('touchstart', (e) => {
@@ -1340,6 +1391,36 @@
             window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up); window.addEventListener('touchmove',mv); window.addEventListener('touchend',up);
         };
         hdr.onmousedown = startDrag; hdr.ontouchstart = startDrag;
+        const floatingPnl = document.getElementById('floatingPlayer');
+        const floatingHdr = document.getElementById('floatingPlayerHeader');
+        const startFloatingDrag = (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            const point = e.touches?.[0] || e;
+            const offsetX = point.clientX - floatingPnl.offsetLeft;
+            const offsetY = point.clientY - floatingPnl.offsetTop;
+            const move = (event) => {
+                const nextPoint = event.touches?.[0] || event;
+                const maxLeft = Math.max(0, window.innerWidth - floatingPnl.offsetWidth);
+                const maxTop = Math.max(0, window.innerHeight - floatingPnl.offsetHeight);
+                floatingPnl.style.left = Math.min(maxLeft, Math.max(0, nextPoint.clientX - offsetX)) + 'px';
+                floatingPnl.style.top = Math.min(maxTop, Math.max(0, nextPoint.clientY - offsetY)) + 'px';
+                floatingPnl.style.right = 'auto';
+                floatingPnl.style.bottom = 'auto';
+                if (event.cancelable) event.preventDefault();
+            };
+            const end = () => {
+                window.removeEventListener('mousemove', move);
+                window.removeEventListener('mouseup', end);
+                window.removeEventListener('touchmove', move);
+                window.removeEventListener('touchend', end);
+            };
+            window.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', end);
+            window.addEventListener('touchmove', move, { passive: false });
+            window.addEventListener('touchend', end);
+        };
+        floatingHdr.onmousedown = startFloatingDrag;
+        floatingHdr.ontouchstart = startFloatingDrag;
         hnd.onmousedown = (e) => {
             rsz=true; e.preventDefault();
             const startX = e.clientX, startY = e.clientY, startW = pnl.clientWidth, startH = pnl.clientHeight, startL = pnl.offsetLeft, startT = pnl.offsetTop;
